@@ -3,10 +3,18 @@
 //
 // Runs on `npm run build` (via the prebuild hook). Re-uses the disk cache in
 // .cache/edgar/ when fresh, so iterative rebuilds are fast.
+//
+// On Vercel build infra we sometimes see ETIMEDOUT against data.sec.gov — likely
+// IP-range throttling or an IPv6 path that hangs. Two mitigations: force the
+// IPv4 resolver first, and treat prebuild failure as non-fatal so the deploy
+// falls back to whatever screen.json is already committed in the repo.
 
+import dns from "node:dns";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { runScreen } from "../lib/run-screen";
+
+dns.setDefaultResultOrder("ipv4first");
 
 const OUT_PATH = path.resolve(process.cwd(), "public/data/screen.json");
 
@@ -26,7 +34,25 @@ async function main() {
   );
 }
 
-main().catch((e) => {
-  console.error("[bake] failed:", e);
-  process.exit(1);
+main().catch(async (e) => {
+  // If EDGAR was unreachable during build, keep whatever screen.json is
+  // already on disk. The page reads it as-is; the API can re-fetch on demand.
+  let existingSize: number | null = null;
+  try {
+    const stat = await fs.stat(OUT_PATH);
+    existingSize = stat.size;
+  } catch {
+    /* no existing file */
+  }
+  console.warn("[bake] screen run failed:", e?.message ?? e);
+  if (existingSize != null) {
+    console.warn(
+      `[bake] keeping existing ${OUT_PATH} (${existingSize} bytes) and continuing build.`
+    );
+    process.exit(0);
+  }
+  console.warn(
+    "[bake] no existing screen.json — page will fall back to live EDGAR fetch on first request."
+  );
+  process.exit(0);
 });

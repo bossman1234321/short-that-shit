@@ -1,6 +1,15 @@
+import dns from "node:dns";
 import { readCache, writeCache } from "./cache";
 import { throttle } from "./rate-limit";
 import type { FiscalYearFigure, Fundamentals } from "./types";
+
+// Some serverless environments resolve data.sec.gov to an IPv6 address that
+// silently hangs. Forcing IPv4 first avoids 30s TCP timeouts during builds.
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch {
+  /* no-op on environments that don't support it */
+}
 
 const USER_AGENT =
   process.env.SEC_USER_AGENT || "Stock Screener research@example.com";
