@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "JetBrains Mono Local";
+  src: local("JetBrains Mono"), local("JetBrainsMono");
+  font-display: swap;
+}
+
+:root {
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-serif: "Fraunces", "Georgia", ui-serif, serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  background-color: #0c0a09;
+  color: #e7e5e4;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.font-display {
+  font-family: var(--font-serif);
+  font-feature-settings: "ss01" 1, "ss02" 1;
+}
+
+::selection {
+  background-color: #f59e0b;
+  color: #0c0a09;
+}
+
+table.terminal {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table.terminal th,
+table.terminal td {
+  border-bottom: 1px solid #292524;
+}
+
+table.terminal tr:hover td {
+  background-color: #1c1917;
+}
+
+.dim {
+  color: #57534e;
+}
