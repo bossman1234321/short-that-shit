@@ -438,7 +438,15 @@ function Row({ row, dim }: { row: ScreenRow; dim: boolean }) {
   return (
     <tr className={`${rowBg} ${dim ? "opacity-50" : ""}`}>
       <td className={`px-3 py-2 font-data font-semibold ${baseColor}`}>
-        {row.ticker}
+        <a
+          href={`https://finance.yahoo.com/quote/${encodeURIComponent(row.ticker)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-amber-accent hover:underline"
+          title={`${row.ticker} on Yahoo Finance`}
+        >
+          {row.ticker}
+        </a>
         {row.matched && (
           <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-amber-accent" />
         )}
