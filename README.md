@@ -19,6 +19,18 @@ by regulator). Toggle "include excluded sectors" in the UI, or pass
 - `ttm ↓↓` (accelerating): YTD declining faster than the most recent annual — the
   thesis is strengthening.
 
+**Backtest + ML overlay.** A historical backtest replays the screen across every
+ticker's full EDGAR history and computes 1y forward returns vs SPY (`scripts/backtest-aggregate.ts`).
+Aggregate hit rates by sector are surfaced in the page footer. A logistic-regression
+model is then trained on the historical events with a **walk-forward train/test split**
+(train pre-2020, test 2020+) — the model produces an ML score in [0, 1] for current
+candidates. Read the train/test AUCs in the footer before trusting the score; a
+small dataset means the test AUC is the only number that matters.
+
+**Levers**: D/E threshold (universe-avg / custom), conviction mode (matched / high-only),
+sector exclusion (financials/REITs/utilities default-off), TTM-confirmed filter,
+**decline duration (1y / 2y / 3y)**, and per-sector filter.
+
 Data comes from **SEC EDGAR** XBRL company facts. No API key required.
 
 ## Stack

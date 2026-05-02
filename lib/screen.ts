@@ -5,6 +5,12 @@ import type {
   ScreenFlag,
   ScreenRow,
 } from "./types";
+import {
+  buildFeatureVector,
+  scoreFeatures,
+  type ModelWeights,
+} from "./ml-score";
+import type { Sector } from "./universe";
 
 export function debtToEquity(
   liabilities: number | null,
@@ -22,6 +28,24 @@ export function isMonotonicRevenueDecline(
 ): boolean {
   if (rev_t2 == null || rev_t1 == null || rev_t == null) return false;
   return rev_t < rev_t1 && rev_t1 < rev_t2;
+}
+
+// Generic n-year monotonic-decline check. Pass revenues newest-first; the
+// function returns true iff the most recent `years` consecutive YoY changes
+// are all strict declines. years=1 → 1 YoY drop, years=2 → 2 (current
+// default), years=3 → 3.
+export function isMonotonicRevenueDeclineN(
+  newestFirst: Array<number | null>,
+  years: 1 | 2 | 3
+): boolean {
+  if (newestFirst.length < years + 1) return false;
+  for (let i = 0; i < years; i++) {
+    const newer = newestFirst[i];
+    const older = newestFirst[i + 1];
+    if (newer == null || older == null) return false;
+    if (!(newer < older)) return false;
+  }
+  return true;
 }
 
 export function yoy(prior: number | null, current: number | null): number | null {
@@ -111,14 +135,21 @@ function isOcfResilient(
 
 export function buildRow(
   fundamentals: Fundamentals,
-  threshold: number
+  threshold: number,
+  options: {
+    declineYears?: 1 | 2 | 3;
+    sector?: Sector;
+    model?: ModelWeights | null;
+  } = {}
 ): ScreenRow {
+  const declineYears = options.declineYears ?? 2;
   const flags: ScreenFlag[] = [];
 
   // revenue array is sorted newest-first by fetchFundamentals
   const r0 = fundamentals.revenue[0] ?? null;
   const r1 = fundamentals.revenue[1] ?? null;
   const r2 = fundamentals.revenue[2] ?? null;
+  const r3 = fundamentals.revenue[3] ?? null;
   if (!r0 || !r1 || !r2) flags.push("missing_revenue");
 
   const o0 = fundamentals.operatingCashFlow[0] ?? null;
@@ -135,10 +166,9 @@ export function buildRow(
   if (negEquityType === "buyback_winding_down") flags.push("buyback_winding_down");
 
   const de = debtToEquity(liab, eq);
-  const declineMatched = isMonotonicRevenueDecline(
-    r2?.val ?? null,
-    r1?.val ?? null,
-    r0?.val ?? null
+  const declineMatched = isMonotonicRevenueDeclineN(
+    [r0?.val ?? null, r1?.val ?? null, r2?.val ?? null, r3?.val ?? null],
+    declineYears
   );
 
   const ocfDeclineMatched = isOcfDecline(
@@ -178,6 +208,40 @@ export function buildRow(
 
   const recentRepurchases = fundamentals.stockRepurchases[0]?.val ?? null;
 
+  // ML score: only meaningful for *triggered* rows. The model is trained
+  // exclusively on historical screen triggers (decline + leverage), so
+  // scoring untriggered names is out-of-distribution and produces
+  // misleadingly extreme outputs (saw NCLH score 1.000 simply for high
+  // D/E with rising revenue — the model never saw growing-revenue
+  // companies during training).
+  //
+  // Note: declineMatched here uses the user's chosen years lever; we score
+  // any row that meets the decline condition, even if leverage / sector
+  // ineligibility ultimately prevent it from being "matched". That gives
+  // the user a more complete signal when they tune levers.
+  let mlShortScore: number | null = null;
+  if (options.model && options.sector && declineMatched) {
+    const ocfYoY = yoy(o1?.val ?? null, o0?.val ?? null);
+    const ocfDec2y =
+      o2?.val != null &&
+      o1?.val != null &&
+      o0?.val != null &&
+      o0.val < o1.val &&
+      o1.val < o2.val;
+    const yoyT1 = yoy(r2?.val ?? null, r1?.val ?? null);
+    const yoyT = yoy(r1?.val ?? null, r0?.val ?? null);
+    const features = buildFeatureVector({
+      de,
+      negEquity: eq != null && eq <= 0,
+      yoy_t: yoyT,
+      yoy_t1: yoyT1,
+      ocfYoY,
+      ocfDecline2y: ocfDec2y,
+      sector: options.sector,
+    });
+    if (features) mlShortScore = scoreFeatures(features, options.model);
+  }
+
   return {
     ticker: fundamentals.ticker,
     entityName: fundamentals.entityName,
@@ -203,6 +267,9 @@ export function buildRow(
     ocfResilient,
     negEquityType,
     recentRepurchases,
+    rev_t3: r3?.val ?? null,
+    rev_t3_end: r3?.end ?? null,
+    mlShortScore,
     revTtm: fundamentals.ttm?.ttm ?? null,
     revTtmEnd: fundamentals.ttm?.current.end ?? null,
     revTtmMonthsYtd: fundamentals.ttm?.current.monthsYtd ?? null,

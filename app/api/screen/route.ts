@@ -9,11 +9,18 @@ function parseBool(v: string | null): boolean {
   return v === "1" || v.toLowerCase() === "true";
 }
 
+function parseDeclineYears(v: string | null): 1 | 2 | 3 {
+  if (v === "1") return 1;
+  if (v === "3") return 3;
+  return 2;
+}
+
 export async function GET(req: NextRequest) {
   const search = req.nextUrl.searchParams;
   const thresholdParam = search.get("threshold") || "avg";
   const tickersParam = search.get("tickers");
   const includeAllSectors = parseBool(search.get("includeAllSectors"));
+  const declineYears = parseDeclineYears(search.get("declineYears"));
 
   let threshold: ThresholdInput;
   if (thresholdParam === "avg" || thresholdParam === "average") {
@@ -37,7 +44,11 @@ export async function GET(req: NextRequest) {
     : undefined;
 
   try {
-    const result = await runScreen(threshold, { tickers, includeAllSectors });
+    const result = await runScreen(threshold, {
+      tickers,
+      includeAllSectors,
+      declineYears,
+    });
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

@@ -7,6 +7,7 @@ type SortKey =
   | "ticker"
   | "entityName"
   | "sector"
+  | "mlShortScore"
   | "debtToEquity"
   | "rev_t"
   | "rev_t1"
@@ -58,6 +59,8 @@ function getCmp(row: ScreenRow, key: SortKey): number | string {
       return row.entityName;
     case "sector":
       return row.sector ?? "";
+    case "mlShortScore":
+      return row.mlShortScore ?? -Infinity;
     case "debtToEquity":
       return row.debtToEquity ?? -Infinity;
     case "rev_t":
@@ -81,27 +84,66 @@ function getCmp(row: ScreenRow, key: SortKey): number | string {
   }
 }
 
-// Recomputes leverage match against a new D/E threshold, preserving the
-// neg-equity classification (buyback-driven still excluded from leverage).
-// When includeAllSectors is false, sector-ineligible rows (Financials, REITs,
-// Utilities) never match, regardless of D/E.
-function applyThreshold(
+// Recomputes match flags against new threshold / sector / decline-duration
+// settings. All inputs needed are present on the row, so this avoids an
+// API roundtrip when the user retunes the levers.
+function applyLevers(
   rows: ScreenRow[],
   threshold: number,
-  includeAllSectors: boolean
+  includeAllSectors: boolean,
+  declineYears: 1 | 2 | 3
 ): ScreenRow[] {
   return rows.map((r) => {
+    const revsNewestFirst: Array<number | null> = [
+      r.rev_t,
+      r.rev_t1,
+      r.rev_t2,
+      r.rev_t3,
+    ];
+    let declineMatched = revsNewestFirst.length >= declineYears + 1;
+    for (let i = 0; declineMatched && i < declineYears; i++) {
+      const newer = revsNewestFirst[i];
+      const older = revsNewestFirst[i + 1];
+      if (newer == null || older == null || !(newer < older)) {
+        declineMatched = false;
+      }
+    }
+
     const ineligible = !includeAllSectors && r.sectorIneligible;
     const negEqCountsAsLeverage =
-      r.flags.includes("negative_equity") && r.negEquityType !== "buyback_driven";
+      r.flags.includes("negative_equity") &&
+      r.negEquityType !== "buyback_driven";
     const leverageMatched =
-      negEqCountsAsLeverage || (r.debtToEquity != null && r.debtToEquity > threshold);
-    const matched = !ineligible && r.declineMatched && leverageMatched;
+      negEqCountsAsLeverage ||
+      (r.debtToEquity != null && r.debtToEquity > threshold);
+    const matched = !ineligible && declineMatched && leverageMatched;
+
+    // TTM flags are conditional on declineMatched, so recompute them here
+    // when the duration lever changes the matched set.
+    const ttmRecovering =
+      declineMatched && r.revTtmYoy != null && r.revTtmYoy >= -0.01;
+    const ttmAccelerating =
+      declineMatched &&
+      r.revTtmYoy != null &&
+      r.yoy_t != null &&
+      r.revTtmYoy < r.yoy_t - 0.03;
+
+    const flags: ScreenFlag[] = r.flags.filter(
+      (f): f is ScreenFlag =>
+        f !== "ttm_recovering" && f !== "ttm_accelerating"
+    );
+    if (ttmRecovering) flags.push("ttm_recovering");
+    if (ttmAccelerating) flags.push("ttm_accelerating");
+
     return {
       ...r,
+      declineMatched,
       leverageMatched,
+      ttmRecovering,
+      ttmAccelerating,
       matched,
       highConvictionMatched: matched && r.ocfDeclineMatched,
+      flags,
     };
   });
 }
@@ -132,6 +174,9 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [includeAllSectors, setIncludeAllSectors] = useState<boolean>(false);
   const [ttmConfirmedOnly, setTtmConfirmedOnly] = useState<boolean>(false);
+  const [declineYears, setDeclineYears] = useState<1 | 2 | 3>(
+    initial.declineYears ?? 2
+  );
 
   const sectors = useMemo(() => {
     const set = new Set<string>();
@@ -155,8 +200,9 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
   }, [thresholdMode, computedAvg]);
 
   const recomputed = useMemo(
-    () => applyThreshold(initial.rows, activeThreshold, includeAllSectors),
-    [initial.rows, activeThreshold, includeAllSectors]
+    () =>
+      applyLevers(initial.rows, activeThreshold, includeAllSectors, declineYears),
+    [initial.rows, activeThreshold, includeAllSectors, declineYears]
   );
 
   const matchedCount = useMemo(
@@ -239,6 +285,8 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
         setIncludeAllSectors={setIncludeAllSectors}
         ttmConfirmedOnly={ttmConfirmedOnly}
         setTtmConfirmedOnly={setTtmConfirmedOnly}
+        declineYears={declineYears}
+        setDeclineYears={setDeclineYears}
         isPending={isPending}
       />
 
@@ -255,6 +303,9 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
                 </Th>
                 <Th onClick={() => toggleSort("sector")} active={sortKey === "sector"} dir={sortDir}>
                   Sector
+                </Th>
+                <Th right onClick={() => toggleSort("mlShortScore")} active={sortKey === "mlShortScore"} dir={sortDir}>
+                  ML
                 </Th>
                 <Th right onClick={() => toggleSort("debtToEquity")} active={sortKey === "debtToEquity"} dir={sortDir}>
                   D/E
@@ -303,6 +354,7 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
           </p>
         )}
 
+        <BacktestPanel data={data} />
         <Footer data={data} />
       </main>
     </div>
@@ -352,6 +404,8 @@ function FilterBar(props: {
   setIncludeAllSectors: (v: boolean) => void;
   ttmConfirmedOnly: boolean;
   setTtmConfirmedOnly: (v: boolean) => void;
+  declineYears: 1 | 2 | 3;
+  setDeclineYears: (v: 1 | 2 | 3) => void;
   isPending: boolean;
 }) {
   const {
@@ -372,6 +426,8 @@ function FilterBar(props: {
     setIncludeAllSectors,
     ttmConfirmedOnly,
     setTtmConfirmedOnly,
+    declineYears,
+    setDeclineYears,
     isPending,
   } = props;
 
@@ -465,6 +521,27 @@ function FilterBar(props: {
           >
             high only
           </button>
+        </div>
+
+        <div className="flex items-center gap-2 border-l border-terminal-border pl-8">
+          <span className="text-xs uppercase tracking-wider text-terminal-muted">
+            decline yrs
+          </span>
+          {([1, 2, 3] as const).map((n) => (
+            <button
+              key={n}
+              onClick={() => setDeclineYears(n)}
+              className={`rounded border px-2 py-1 font-data text-xs transition-colors ${
+                declineYears === n
+                  ? "border-amber-accent text-amber-accent"
+                  : "border-terminal-border text-terminal-muted hover:text-terminal-fg"
+              }`}
+              disabled={isPending}
+              title={`Require ${n} consecutive year${n > 1 ? "s" : ""} of revenue decline`}
+            >
+              {n}y
+            </button>
+          ))}
         </div>
 
         <label className="flex items-center gap-2 border-l border-terminal-border pl-8 text-xs uppercase tracking-wider text-terminal-muted">
@@ -646,6 +723,16 @@ function Row({ row, dim }: { row: ScreenRow; dim: boolean }) {
       <td className={`px-3 py-2 ${baseColor}`}>{row.entityName}</td>
       <td className="px-3 py-2 text-xs text-terminal-muted">{row.sector ?? "—"}</td>
       <td
+        className={`px-3 py-2 text-right font-data ${mlScoreColor(row.mlShortScore, dim)}`}
+        title={
+          row.mlShortScore != null
+            ? `Logistic-regression score (test AUC modest — see footer). Higher = model thinks this looks more like historical successful shorts.`
+            : "No ML score: missing required features (yoy_t, yoy_t1, ocf_yoy)."
+        }
+      >
+        {row.mlShortScore != null ? row.mlShortScore.toFixed(2) : "—"}
+      </td>
+      <td
         className={`px-3 py-2 text-right font-data ${
           negEquity ? (buybackDriven ? "text-sky-400" : "text-red-400") : baseColor
         }`}
@@ -710,6 +797,183 @@ function yoyColor(n: number | null, dim: boolean): string {
   if (n == null) return "text-terminal-muted";
   if (n < 0) return "text-red-400";
   return "text-terminal-fg";
+}
+
+function mlScoreColor(s: number | null, dim: boolean): string {
+  if (dim) return "text-terminal-muted";
+  if (s == null) return "text-terminal-muted";
+  if (s >= 0.7) return "text-amber-accent";
+  if (s >= 0.5) return "text-terminal-fg";
+  return "text-terminal-muted";
+}
+
+function BacktestPanel({ data }: { data: ScreenResult }) {
+  const bt = data.backtest;
+  const ml = data.mlModel;
+  if (!bt && !ml) return null;
+  return (
+    <section className="mt-10 border-t border-terminal-border pt-8 text-xs text-terminal-muted">
+      <h3 className="font-display text-base text-terminal-fg">
+        Historical backtest &amp; ML model
+      </h3>
+      <div className="mt-4 grid gap-6 md:grid-cols-2">
+        {bt && (
+          <div>
+            <h4 className="font-display text-sm text-terminal-fg">
+              Backtest aggregate
+            </h4>
+            <p className="mt-1">
+              <span className="font-data text-terminal-fg">
+                {bt.withForwardReturns}
+              </span>{" "}
+              historical screen triggers with ≥1y forward returns. Forward
+              return measured from the original 10-K filing date, vs SPY
+              over the same window.
+            </p>
+            <table className="mt-3 w-full text-xs">
+              <tbody>
+                <tr>
+                  <td className="py-0.5">Mean α₁y vs SPY</td>
+                  <td className="py-0.5 text-right font-data">
+                    {bt.meanAlpha1y != null
+                      ? `${(bt.meanAlpha1y * 100).toFixed(1)}%`
+                      : "—"}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-0.5">Median α₁y</td>
+                  <td className="py-0.5 text-right font-data">
+                    {bt.medianAlpha1y != null
+                      ? `${(bt.medianAlpha1y * 100).toFixed(1)}%`
+                      : "—"}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-0.5">Hit rate (α₁y &lt; -5%)</td>
+                  <td className="py-0.5 text-right font-data">
+                    {bt.hitRate != null
+                      ? `${(bt.hitRate * 100).toFixed(0)}%`
+                      : "—"}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-0.5">Big miss rate (α₁y &gt; +20%)</td>
+                  <td className="py-0.5 text-right font-data">
+                    {bt.hitRateBigMiss != null
+                      ? `${(bt.hitRateBigMiss * 100).toFixed(0)}%`
+                      : "—"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <h5 className="mt-4 text-[11px] uppercase tracking-wider text-terminal-muted">
+              Hit rate by sector
+            </h5>
+            <table className="mt-1 w-full text-xs">
+              <tbody>
+                {Object.entries(bt.bySector)
+                  .filter(([, v]) => v.count >= 3)
+                  .sort(
+                    (a, b) =>
+                      (a[1].meanAlpha1y ?? 0) - (b[1].meanAlpha1y ?? 0)
+                  )
+                  .map(([sector, v]) => (
+                    <tr key={sector}>
+                      <td className="py-0.5">{sector}</td>
+                      <td className="py-0.5 text-right font-data text-terminal-muted">
+                        n={v.count}
+                      </td>
+                      <td
+                        className={`py-0.5 pl-3 text-right font-data ${v.meanAlpha1y != null && v.meanAlpha1y < 0 ? "text-red-400" : "text-terminal-fg"}`}
+                      >
+                        {v.meanAlpha1y != null
+                          ? `${(v.meanAlpha1y * 100).toFixed(1)}%`
+                          : "—"}
+                      </td>
+                      <td className="py-0.5 pl-3 text-right font-data text-terminal-muted">
+                        hit{" "}
+                        {v.hitRate != null
+                          ? `${(v.hitRate * 100).toFixed(0)}%`
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+            <p className="mt-3 leading-relaxed">
+              <span className="text-amber-accent">Honest read:</span> the
+              strategy works in some sectors (notably Consumer Staples) and{" "}
+              <em>fails</em> in others (Industrials, Consumer Discretionary
+              tend to mean-revert hard). Survivorship bias inflates the
+              numbers — the universe is current SP500, so companies that
+              went bankrupt (the best historical shorts) aren&apos;t included.
+            </p>
+          </div>
+        )}
+        {ml && (
+          <div>
+            <h4 className="font-display text-sm text-terminal-fg">
+              ML short-conviction model
+            </h4>
+            <p className="mt-1">
+              Logistic regression. Target:{" "}
+              <span className="font-data">{ml.positiveLabelDef}</span>.
+              Walk-forward split: train on events with end-year &lt;{" "}
+              <span className="font-data">{ml.trainSplitYearLt}</span>, test
+              on later events.
+            </p>
+            <table className="mt-3 w-full text-xs">
+              <tbody>
+                <tr>
+                  <td className="py-0.5">Train AUC</td>
+                  <td className="py-0.5 text-right font-data">
+                    {ml.trainAuc.toFixed(3)} <span className="dim">(n={ml.trainSize})</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-0.5">Test AUC</td>
+                  <td
+                    className={`py-0.5 text-right font-data ${ml.testAuc < 0.5 ? "text-red-400" : ml.testAuc < 0.55 ? "text-yellow-500" : "text-emerald-400"}`}
+                  >
+                    {ml.testAuc.toFixed(3)} <span className="dim">(n={ml.testSize})</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <h5 className="mt-3 text-[11px] uppercase tracking-wider text-terminal-muted">
+              Top features (|coef|)
+            </h5>
+            <table className="mt-1 w-full text-xs">
+              <tbody>
+                {ml.topFeatures.map((f) => (
+                  <tr key={f.name}>
+                    <td className="py-0.5 font-data text-[11px]">{f.name}</td>
+                    <td
+                      className={`py-0.5 text-right font-data ${f.coef >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                    >
+                      {f.coef >= 0 ? "+" : ""}
+                      {f.coef.toFixed(3)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-3 leading-relaxed">
+              <span className="text-amber-accent">Honest read:</span> with{" "}
+              {ml.trainAuc.toFixed(2)} train AUC and {ml.testAuc.toFixed(2)}{" "}
+              test AUC,{" "}
+              {ml.testAuc < 0.55
+                ? "the model did not generalize across the regime split. The training-set patterns (which sectors / D/E shapes worked pre-2020) didn&apos;t hold post-2020. Use ML score as a relative ranking signal at most, not a calibrated probability."
+                : "the model has modest out-of-sample signal. Treat scores as a ranking, not a probability."}{" "}
+              Coefficients shown above are interpretable: positive ⇒
+              feature pushes the score up (more like historical successful
+              shorts), negative ⇒ down.
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 function Footer({ data }: { data: ScreenResult }) {

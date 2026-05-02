@@ -80,6 +80,13 @@ export type ScreenRow = {
   ocfResilient: boolean;
   negEquityType: NegEquityType;
   recentRepurchases: number | null;
+  // 4th year of revenue is included so the client can recompute matches
+  // for declineYears=3 (4 years of monotonic decline) without a refetch.
+  rev_t3: number | null;
+  rev_t3_end: string | null;
+  // ML short-conviction score in [0, 1]. Null when feature vector cannot
+  // be built (missing yoy/ocf data) or no model is loaded.
+  mlShortScore: number | null;
   // Most recent partial-year revenue from the latest 10-Q. partialYoy is
   // the YTD-over-prior-YTD rate, ttm is the rolling-12 figure derived from
   // lastAnnual + current YTD - prior-year YTD.
@@ -103,8 +110,34 @@ export type ScreenRow = {
   flags: ScreenFlag[];
 };
 
+// Surfaced backtest summary for the UI footer. Subset of what's in
+// public/data/backtest.json — full per-event records aren't shipped.
+export type BacktestSummary = {
+  generatedAt: string;
+  triggerCount: number;
+  withForwardReturns: number;
+  meanAlpha1y: number | null;
+  medianAlpha1y: number | null;
+  hitRate: number | null;
+  hitRateBigMiss: number | null;
+  bySector: Record<string, { count: number; meanAlpha1y: number | null; hitRate: number | null }>;
+};
+
+export type MlMetadata = {
+  trainSize: number;
+  testSize: number;
+  trainAuc: number;
+  testAuc: number;
+  trainSplitYearLt: number;
+  trainedAt: string;
+  positiveLabelDef: string;
+  // Top features by absolute coefficient, with sign — for the footer.
+  topFeatures: Array<{ name: string; coef: number }>;
+};
+
 export type ScreenResult = {
   threshold: { kind: "average" | "fixed"; value: number };
+  declineYears: 1 | 2 | 3;
   universeSize: number;
   matchedCount: number;
   highConvictionCount: number;
@@ -112,4 +145,6 @@ export type ScreenResult = {
   generatedAt: string;
   cacheHits: number;
   cacheMisses: number;
+  backtest: BacktestSummary | null;
+  mlModel: MlMetadata | null;
 };

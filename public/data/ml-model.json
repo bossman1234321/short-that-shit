@@ -1,0 +1,60 @@
+{
+  "features": [
+    "log_de_or_neg",
+    "yoy_t",
+    "yoy_t1",
+    "ocf_yoy",
+    "ocf_decline_2y",
+    "neg_eq",
+    "sector_Technology",
+    "sector_Communication_Services",
+    "sector_Consumer_Discretionary",
+    "sector_Consumer_Staples",
+    "sector_Energy",
+    "sector_Health_Care",
+    "sector_Industrials",
+    "sector_Materials",
+    "bias"
+  ],
+  "numericMeans": [
+    1.1804185007570287,
+    -0.078277097814392,
+    -0.07528610837796497,
+    0.09148751757113632,
+    0.2631578947368421,
+    0.2631578947368421
+  ],
+  "numericStds": [
+    1.405190354740946,
+    0.10986429201193572,
+    0.05435010576042079,
+    0.7936298827687783,
+    0.44034738238635557,
+    0.44034738238635557
+  ],
+  "coefs": [
+    0.07703546239821982,
+    -0.005107674088866423,
+    0.04222058683708519,
+    0.31710205952941417,
+    -0.15939146396272824,
+    -0.031536601479133085,
+    0.013356027239205828,
+    0,
+    -0.26963439203160605,
+    0.714869273251531,
+    0,
+    0,
+    -0.36662007395206153,
+    -0.0919708345070732,
+    -0.2362410515686725
+  ],
+  "trainSize": 38,
+  "testSize": 24,
+  "trainAuc": 0.8067226890756303,
+  "testAuc": 0.37777777777777777,
+  "trainSplitYearLt": 2020,
+  "trainedAt": "2026-05-02T05:53:40.913Z",
+  "positiveLabelDef": "alpha1y < -0.05",
+  "notes": "Logistic regression, L2=0.1, walk-forward split. Treat score as ranking signal, not calibrated probability."
+}

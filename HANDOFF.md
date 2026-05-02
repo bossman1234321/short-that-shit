@@ -123,6 +123,52 @@ EDGAR call in a try/catch on `429` and fall through to a Polygon adapter
 that produces the same `Fundamentals` shape. Keep the cache key the same so
 both sources share one cache.
 
+## Backtest aggregator
+
+`scripts/backtest-aggregate.ts` replays the screen across every ticker's
+full EDGAR history. For each historical (ticker × FY end) where the screen
+would have matched (decline + leverage, sector-eligible), it:
+
+1. Resolves the **earliest 10-K filing date** for that period (avoids
+   look-ahead bias from later restatements — every entry's `filed`
+   timestamp is the most-recent filing by default).
+2. Fetches Yahoo monthly bars for the ticker + SPY (cached to
+   `.cache/edgar/yahoo-monthly-{TICKER}.json`).
+3. Computes 6m / 1y / 2y forward returns, plus alpha vs SPY.
+
+Output: `public/data/backtest.json` with both per-event records (used as
+ML training data downstream) and aggregate hit-rate stats by sector / year
+/ D/E bucket.
+
+Re-run: `npx tsx scripts/backtest-aggregate.ts`. Takes ~30s on a warm
+cache.
+
+## ML model
+
+`scripts/train-model.ts` reads `backtest.json`, builds feature vectors via
+`lib/ml-score.ts:buildFeatureVector`, and trains a logistic regression with
+L2 regularization. Walk-forward split: events with `endYear < SPLIT_YEAR`
+(2020 by default) are training, later events are test. Outputs:
+`public/data/ml-model.json` with coefficients, standardization
+parameters, and train/test AUC.
+
+`lib/screen.ts:buildRow` loads the persisted model at run time and applies
+it **only to declineMatched rows** — the model was trained on screen
+triggers exclusively, so applying it to non-triggered names is
+out-of-distribution and produces misleading extreme scores (saw NCLH
+score 1.000 simply for high D/E with growing revenue).
+
+To retrain after fundamentals change:
+```sh
+npx tsx scripts/backtest-aggregate.ts && npx tsx scripts/train-model.ts && npm run bake
+```
+
+The current model is small (38 train, 24 test events). Test AUC tracks
+modestly above random or worse; sector dummies dominate the coefficients.
+This is the honest output of the available data — don't try to inflate it
+without expanding the universe to include delisted tickers (would address
+survivorship bias) or moving to richer features (price action, IV).
+
 ## TTM revenue extraction
 
 `lib/edgar.ts:extractTtmRevenue` pairs the most recent 10-Q YTD revenue

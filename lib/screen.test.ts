@@ -4,6 +4,7 @@ import {
   classifyTtmTrend,
   debtToEquity,
   isMonotonicRevenueDecline,
+  isMonotonicRevenueDeclineN,
   yoy,
   buildRow,
   universeAverageDE,
@@ -100,6 +101,28 @@ describe("isMonotonicRevenueDecline", () => {
     expect(isMonotonicRevenueDecline(null, 90, 80)).toBe(false);
     expect(isMonotonicRevenueDecline(100, null, 80)).toBe(false);
     expect(isMonotonicRevenueDecline(100, 90, null)).toBe(false);
+  });
+});
+
+describe("isMonotonicRevenueDeclineN", () => {
+  // newest-first: [t, t-1, t-2, t-3]
+  it("years=1 needs only 1 YoY drop", () => {
+    expect(isMonotonicRevenueDeclineN([80, 90], 1)).toBe(true);
+    expect(isMonotonicRevenueDeclineN([100, 90], 1)).toBe(false);
+    expect(isMonotonicRevenueDeclineN([80], 1)).toBe(false); // not enough data
+  });
+  it("years=2 matches the legacy 2y check", () => {
+    expect(isMonotonicRevenueDeclineN([80, 90, 100], 2)).toBe(true);
+    expect(isMonotonicRevenueDeclineN([80, 90, 85], 2)).toBe(false); // not strict
+  });
+  it("years=3 needs 4 entries with strict descent", () => {
+    expect(isMonotonicRevenueDeclineN([70, 80, 90, 100], 3)).toBe(true);
+    expect(isMonotonicRevenueDeclineN([80, 90, 100], 3)).toBe(false); // only 3 entries
+    expect(isMonotonicRevenueDeclineN([70, 80, 80, 100], 3)).toBe(false); // tie at t-1=t-2
+  });
+  it("returns false on any null along the required prefix", () => {
+    expect(isMonotonicRevenueDeclineN([80, null, 100], 2)).toBe(false);
+    expect(isMonotonicRevenueDeclineN([null, 90, 100], 2)).toBe(false);
   });
 });
 
