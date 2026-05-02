@@ -19,13 +19,16 @@ Two-layer cache, both in `lib/cache.ts`:
 
 1. **Disk cache** (`.cache/edgar/*.json`), 24h TTL. Keys:
    - `ticker-map` — the company_tickers.json lookup
-   - `fundamentals-{TICKER}` — full processed fundamentals object
+   - `fundamentals-v{N}-{TICKER}` — full processed fundamentals object. The
+     `v{N}` is `FUNDAMENTALS_CACHE_VERSION` in `lib/edgar.ts` — bump it when
+     the `Fundamentals` shape changes so old entries are skipped automatically.
 2. **Process-local memo** for `tickerMapCache` only (in `lib/edgar.ts`).
 
-To force a refresh, delete `.cache/`. The next request rebuilds.
+To force a refresh, delete `.cache/` or bump the cache version. The next
+request rebuilds.
 
 The cache is keyed on processed output, not raw EDGAR responses — so logic
-changes to the GAAP tag merging require a cache flush.
+changes to the GAAP tag merging require a cache flush (or a version bump).
 
 ## Extending the universe
 
@@ -120,10 +123,62 @@ EDGAR call in a try/catch on `429` and fall through to a Polygon adapter
 that produces the same `Fundamentals` shape. Keep the cache key the same so
 both sources share one cache.
 
+## TTM revenue extraction
+
+`lib/edgar.ts:extractTtmRevenue` pairs the most recent 10-Q YTD revenue
+with its prior-year same-period comparable to compute trailing-12-month
+revenue and partial-year YoY. Mechanics:
+
+- Iterate all entries across `REVENUE_TAGS` (handles ASC-606 transitions).
+- Bucket each entry by period length (3, 6, 9, or 12 months); reject other
+  durations (transition stubs etc.).
+- Among non-FY entries that end after the latest annual, prefer the longest
+  YTD bucket (12 → 9 → 6 → 3) for the most precise TTM.
+- Match prior year by end date ±7 days, same bucket.
+- TTM = `lastAnnual.val + current.val − priorYear.val` (or `current.val`
+  directly when the bucket is 12).
+
+Returns `null` when:
+- no quarterly entries exist (older filers, 20-F only),
+- no prior-year comparable can be found,
+- the latest YTD ends on or before the latest annual.
+
+`lib/screen.ts:classifyTtmTrend` consumes `partialYoy` and the latest annual
+YoY to set two flags: `ttm_recovering` (YTD ≥ −1%, i.e. flat or growing)
+and `ttm_accelerating` (YTD at least 3pp worse than annual). The thresholds
+are the constants `TTM_RECOVERING_PCT` and `TTM_ACCELERATING_DELTA` at the
+top of `lib/screen.ts`.
+
+## Sector exclusion
+
+`lib/run-screen.ts:EXCLUDED_SECTORS` lists sectors where D/E isn't a
+meaningful distress signal — Financials, Real Estate, Utilities. Names in
+those sectors are still fetched and rendered, but `matched=false`,
+`sectorIneligible=true`, and the `sector_ineligible` flag is added.
+
+The universe-average D/E threshold is computed over the *eligible* subset
+only — including banks/REITs in the average produced misleadingly high
+thresholds (~6) that suppressed real industrial signals.
+
+To toggle behavior:
+- UI: "include excluded sectors" checkbox in the filter bar
+- API: `?includeAllSectors=1`
+- Programmatic: `runScreen(threshold, { includeAllSectors: true })`
+
+To add or remove sectors from exclusion, edit the constant in
+`lib/run-screen.ts`. Energy is **not** excluded — D/E is a real distress
+signal there (overleveraged shale producers go bankrupt regularly).
+
+The hand-picked tickers in `scripts/backtest.ts` (`PRU`, `MTB`) are now in
+excluded sectors. They'll print as ineligible. Prune the list or override
+via `includeAllSectors` if you want to backtest those names.
+
 ## Known limitations
 
-- **TTM revenue not used.** Annual figures only. A company with three
-  declining annuals but a recovering TTM won't be caught as "recovering."
+- **TTM is informational, not a match condition.** Core matching is still
+  annual-only. TTM powers the `ttm ↑` / `ttm ↓↓` flags and the optional
+  "TTM-confirmed only" UI filter. To make TTM affect the core match, change
+  `buildRow` in `lib/screen.ts` (e.g. `matched = matched && !ttmRecovering`).
 - **Sector filter is naive.** It uses the static map in `lib/universe.ts`,
   not GICS lookups from EDGAR.
 - **No dual-class handling.** GOOG vs GOOGL, FOX vs FOXA — treated as

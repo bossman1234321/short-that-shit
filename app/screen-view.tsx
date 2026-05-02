@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { ScreenResult, ScreenRow } from "@/lib/types";
+import { useEffect, useMemo, useState } from "react";
+import type { ScreenFlag, ScreenResult, ScreenRow } from "@/lib/types";
 
 type SortKey =
   | "ticker"
@@ -12,9 +12,14 @@ type SortKey =
   | "rev_t1"
   | "rev_t2"
   | "yoy_t"
-  | "yoy_t1";
+  | "yoy_t1"
+  | "revTtm"
+  | "revTtmYoy"
+  | "ocf_t"
+  | "yoy_ocf_t";
 
 type ThresholdMode = "avg" | "custom";
+type ConvictionMode = "all" | "highOnly";
 
 function fmtUSD(n: number | null | undefined, digits = 1): string {
   if (n == null || !Number.isFinite(n)) return "—";
@@ -42,7 +47,7 @@ function fmtPct(n: number | null | undefined): string {
 
 function shortDate(s: string | null | undefined): string {
   if (!s) return "—";
-  return s.slice(0, 7); // YYYY-MM
+  return s.slice(0, 7);
 }
 
 function getCmp(row: ScreenRow, key: SortKey): number | string {
@@ -65,24 +70,56 @@ function getCmp(row: ScreenRow, key: SortKey): number | string {
       return row.yoy_t ?? -Infinity;
     case "yoy_t1":
       return row.yoy_t1 ?? -Infinity;
+    case "revTtm":
+      return row.revTtm ?? -Infinity;
+    case "revTtmYoy":
+      return row.revTtmYoy ?? -Infinity;
+    case "ocf_t":
+      return row.ocf_t ?? -Infinity;
+    case "yoy_ocf_t":
+      return row.yoy_ocf_t ?? -Infinity;
   }
 }
 
-function applyThreshold(rows: ScreenRow[], threshold: number): ScreenRow[] {
+// Recomputes leverage match against a new D/E threshold, preserving the
+// neg-equity classification (buyback-driven still excluded from leverage).
+// When includeAllSectors is false, sector-ineligible rows (Financials, REITs,
+// Utilities) never match, regardless of D/E.
+function applyThreshold(
+  rows: ScreenRow[],
+  threshold: number,
+  includeAllSectors: boolean
+): ScreenRow[] {
   return rows.map((r) => {
+    const ineligible = !includeAllSectors && r.sectorIneligible;
+    const negEqCountsAsLeverage =
+      r.flags.includes("negative_equity") && r.negEquityType !== "buyback_driven";
     const leverageMatched =
-      r.flags.includes("negative_equity") ||
-      (r.debtToEquity != null && r.debtToEquity > threshold);
+      negEqCountsAsLeverage || (r.debtToEquity != null && r.debtToEquity > threshold);
+    const matched = !ineligible && r.declineMatched && leverageMatched;
     return {
       ...r,
       leverageMatched,
-      matched: r.declineMatched && leverageMatched,
+      matched,
+      highConvictionMatched: matched && r.ocfDeclineMatched,
     };
   });
 }
 
+// Universe-average D/E computed client-side over the eligible subset, so the
+// threshold tracks the sector toggle without a server roundtrip. Mirrors
+// lib/screen.ts:universeAverageDE.
+function computeAverageDE(rows: ScreenRow[]): number {
+  const valid = rows
+    .map((r) => r.debtToEquity)
+    .filter((d): d is number => d != null && Number.isFinite(d) && d > 0);
+  if (valid.length === 0) return 0;
+  return valid.reduce((a, b) => a + b, 0) / valid.length;
+}
+
 export function ScreenView({ initial }: { initial: ScreenResult }) {
   const [showAll, setShowAll] = useState(false);
+  const [convictionMode, setConvictionMode] = useState<ConvictionMode>("all");
   const [sortKey, setSortKey] = useState<SortKey>("debtToEquity");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [thresholdMode, setThresholdMode] = useState<ThresholdMode>("avg");
@@ -93,6 +130,8 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
     initial.threshold.value
   );
   const [sectorFilter, setSectorFilter] = useState<string>("all");
+  const [includeAllSectors, setIncludeAllSectors] = useState<boolean>(false);
+  const [ttmConfirmedOnly, setTtmConfirmedOnly] = useState<boolean>(false);
 
   const sectors = useMemo(() => {
     const set = new Set<string>();
@@ -100,19 +139,44 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
     return [...set].sort();
   }, [initial.rows]);
 
+  // Average tracks the sector toggle: when excluded sectors are included,
+  // the average jumps because financials/REITs have structurally high D/E.
+  const computedAvg = useMemo(() => {
+    const eligible = includeAllSectors
+      ? initial.rows
+      : initial.rows.filter((r) => !r.sectorIneligible);
+    return computeAverageDE(eligible);
+  }, [initial.rows, includeAllSectors]);
+
+  // In avg mode, keep the active threshold synced to the computed average.
+  // In custom mode, the user-typed value sticks.
+  useEffect(() => {
+    if (thresholdMode === "avg") setActiveThreshold(computedAvg);
+  }, [thresholdMode, computedAvg]);
+
   const recomputed = useMemo(
-    () => applyThreshold(initial.rows, activeThreshold),
-    [initial.rows, activeThreshold]
+    () => applyThreshold(initial.rows, activeThreshold, includeAllSectors),
+    [initial.rows, activeThreshold, includeAllSectors]
   );
 
   const matchedCount = useMemo(
     () => recomputed.filter((r) => r.matched).length,
     [recomputed]
   );
+  const highConvictionCount = useMemo(
+    () => recomputed.filter((r) => r.highConvictionMatched).length,
+    [recomputed]
+  );
 
   const visibleRows = useMemo(() => {
     let rows = [...recomputed];
-    if (!showAll) rows = rows.filter((r) => r.matched);
+    if (!showAll) {
+      rows =
+        convictionMode === "highOnly"
+          ? rows.filter((r) => r.highConvictionMatched)
+          : rows.filter((r) => r.matched);
+      if (ttmConfirmedOnly) rows = rows.filter((r) => !r.ttmRecovering);
+    }
     if (sectorFilter !== "all")
       rows = rows.filter((r) => r.sector === sectorFilter);
     rows.sort((a, b) => {
@@ -123,7 +187,7 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
       return 0;
     });
     return rows;
-  }, [recomputed, showAll, sectorFilter, sortKey, sortDir]);
+  }, [recomputed, showAll, convictionMode, sectorFilter, sortKey, sortDir, ttmConfirmedOnly]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -136,7 +200,7 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
 
   function applyMode(mode: ThresholdMode) {
     setThresholdMode(mode);
-    if (mode === "avg") setActiveThreshold(initial.threshold.value);
+    if (mode === "avg") setActiveThreshold(computedAvg);
   }
 
   function applyCustom() {
@@ -148,6 +212,7 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
     ...initial,
     rows: recomputed,
     matchedCount,
+    highConvictionCount,
     threshold: { kind: thresholdMode === "avg" ? "average" : "fixed", value: activeThreshold },
   };
   const isPending = false;
@@ -160,6 +225,8 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
         data={data}
         showAll={showAll}
         setShowAll={setShowAll}
+        convictionMode={convictionMode}
+        setConvictionMode={setConvictionMode}
         thresholdMode={thresholdMode}
         setThresholdMode={applyMode}
         customThreshold={customThresholdInput}
@@ -168,6 +235,10 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
         sectors={sectors}
         sectorFilter={sectorFilter}
         setSectorFilter={setSectorFilter}
+        includeAllSectors={includeAllSectors}
+        setIncludeAllSectors={setIncludeAllSectors}
+        ttmConfirmedOnly={ttmConfirmedOnly}
+        setTtmConfirmedOnly={setTtmConfirmedOnly}
         isPending={isPending}
       />
 
@@ -202,6 +273,18 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
                 </Th>
                 <Th right onClick={() => toggleSort("rev_t")} active={sortKey === "rev_t"} dir={sortDir}>
                   Rev T
+                </Th>
+                <Th right onClick={() => toggleSort("revTtm")} active={sortKey === "revTtm"} dir={sortDir}>
+                  Rev TTM
+                </Th>
+                <Th right onClick={() => toggleSort("revTtmYoy")} active={sortKey === "revTtmYoy"} dir={sortDir}>
+                  ΔTTM
+                </Th>
+                <Th right onClick={() => toggleSort("ocf_t")} active={sortKey === "ocf_t"} dir={sortDir}>
+                  OCF T
+                </Th>
+                <Th right onClick={() => toggleSort("yoy_ocf_t")} active={sortKey === "yoy_ocf_t"} dir={sortDir}>
+                  ΔOCF
                 </Th>
                 <Th>Flags</Th>
               </tr>
@@ -255,6 +338,8 @@ function FilterBar(props: {
   data: ScreenResult;
   showAll: boolean;
   setShowAll: (v: boolean) => void;
+  convictionMode: ConvictionMode;
+  setConvictionMode: (m: ConvictionMode) => void;
   thresholdMode: ThresholdMode;
   setThresholdMode: (m: ThresholdMode) => void;
   customThreshold: string;
@@ -263,12 +348,18 @@ function FilterBar(props: {
   sectors: string[];
   sectorFilter: string;
   setSectorFilter: (v: string) => void;
+  includeAllSectors: boolean;
+  setIncludeAllSectors: (v: boolean) => void;
+  ttmConfirmedOnly: boolean;
+  setTtmConfirmedOnly: (v: boolean) => void;
   isPending: boolean;
 }) {
   const {
     data,
     showAll,
     setShowAll,
+    convictionMode,
+    setConvictionMode,
     thresholdMode,
     setThresholdMode,
     customThreshold,
@@ -277,6 +368,10 @@ function FilterBar(props: {
     sectors,
     sectorFilter,
     setSectorFilter,
+    includeAllSectors,
+    setIncludeAllSectors,
+    ttmConfirmedOnly,
+    setTtmConfirmedOnly,
     isPending,
   } = props;
 
@@ -284,9 +379,10 @@ function FilterBar(props: {
     <div className="border-b border-terminal-border bg-terminal-bg">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-end gap-x-8 gap-y-4 px-6 py-4">
         <Stat label="universe" value={data.universeSize.toString()} />
+        <Stat label="matched" value={data.matchedCount.toString()} accent />
         <Stat
-          label="matched"
-          value={data.matchedCount.toString()}
+          label="high conviction"
+          value={data.highConvictionCount.toString()}
           accent
         />
         <Stat
@@ -341,6 +437,36 @@ function FilterBar(props: {
           )}
         </div>
 
+        <div className="flex items-center gap-2 border-l border-terminal-border pl-8">
+          <span className="text-xs uppercase tracking-wider text-terminal-muted">
+            conviction
+          </span>
+          <button
+            onClick={() => setConvictionMode("all")}
+            className={`rounded border px-2 py-1 font-data text-xs transition-colors ${
+              convictionMode === "all"
+                ? "border-amber-accent text-amber-accent"
+                : "border-terminal-border text-terminal-muted hover:text-terminal-fg"
+            }`}
+            disabled={isPending}
+            title="All matches: revenue declining + leverage match (excludes buyback-driven neg-eq)"
+          >
+            all matches
+          </button>
+          <button
+            onClick={() => setConvictionMode("highOnly")}
+            className={`rounded border px-2 py-1 font-data text-xs transition-colors ${
+              convictionMode === "highOnly"
+                ? "border-amber-accent text-amber-accent"
+                : "border-terminal-border text-terminal-muted hover:text-terminal-fg"
+            }`}
+            disabled={isPending}
+            title="High conviction: also requires OCF declining (filters out dividend traps like MO)"
+          >
+            high only
+          </button>
+        </div>
+
         <label className="flex items-center gap-2 border-l border-terminal-border pl-8 text-xs uppercase tracking-wider text-terminal-muted">
           <input
             type="checkbox"
@@ -349,6 +475,32 @@ function FilterBar(props: {
             className="accent-amber-accent"
           />
           show full universe
+        </label>
+
+        <label
+          className="flex items-center gap-2 text-xs uppercase tracking-wider text-terminal-muted"
+          title="By default Financials, Real Estate (REITs), and Utilities are excluded — D/E is structurally meaningless as a distress signal in those sectors. Toggle on to include them."
+        >
+          <input
+            type="checkbox"
+            checked={includeAllSectors}
+            onChange={(e) => setIncludeAllSectors(e.target.checked)}
+            className="accent-amber-accent"
+          />
+          include excluded sectors
+        </label>
+
+        <label
+          className="flex items-center gap-2 text-xs uppercase tracking-wider text-terminal-muted"
+          title="TTM-confirmed only: hide matches whose YTD revenue trend has turned positive (potential turnarounds). Tightens the short-candidate list."
+        >
+          <input
+            type="checkbox"
+            checked={ttmConfirmedOnly}
+            onChange={(e) => setTtmConfirmedOnly(e.target.checked)}
+            className="accent-amber-accent"
+          />
+          TTM-confirmed only
         </label>
 
         <div className="flex items-center gap-2">
@@ -431,10 +583,42 @@ function Th({
   );
 }
 
+const FLAG_STYLE: Record<ScreenFlag, string> = {
+  negative_equity: "border-red-700 text-red-400",
+  buyback_driven_neg_equity: "border-sky-700 text-sky-400",
+  buyback_winding_down: "border-orange-700 text-orange-400",
+  ocf_declining: "border-amber-accent/60 text-amber-accent",
+  ocf_resilient: "border-emerald-700 text-emerald-400",
+  missing_revenue: "border-terminal-border text-terminal-muted",
+  missing_balance_sheet: "border-terminal-border text-terminal-muted",
+  sector_ineligible: "border-slate-700 text-slate-400",
+  ttm_recovering: "border-yellow-700 text-yellow-500",
+  ttm_accelerating: "border-rose-700 text-rose-400",
+};
+
+const FLAG_LABEL: Record<ScreenFlag, string> = {
+  negative_equity: "neg eq",
+  buyback_driven_neg_equity: "buyback-driven",
+  buyback_winding_down: "buyback ↓",
+  ocf_declining: "ocf ↓",
+  ocf_resilient: "ocf resilient",
+  missing_revenue: "missing rev",
+  missing_balance_sheet: "missing bs",
+  sector_ineligible: "sector excl",
+  ttm_recovering: "ttm ↑",
+  ttm_accelerating: "ttm ↓↓",
+};
+
 function Row({ row, dim }: { row: ScreenRow; dim: boolean }) {
   const negEquity = row.flags.includes("negative_equity");
+  const buybackDriven = row.negEquityType === "buyback_driven";
   const baseColor = dim ? "text-terminal-muted" : "text-terminal-fg";
-  const rowBg = negEquity ? "bg-red-950/30" : "";
+  // Buyback-driven neg-eq gets a softer treatment than true distress
+  const rowBg = negEquity
+    ? buybackDriven
+      ? "bg-sky-950/20"
+      : "bg-red-950/30"
+    : "";
   return (
     <tr className={`${rowBg} ${dim ? "opacity-50" : ""}`}>
       <td className={`px-3 py-2 font-data font-semibold ${baseColor}`}>
@@ -447,13 +631,25 @@ function Row({ row, dim }: { row: ScreenRow; dim: boolean }) {
         >
           {row.ticker}
         </a>
-        {row.matched && (
-          <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-amber-accent" />
-        )}
+        {row.highConvictionMatched ? (
+          <span
+            className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-amber-accent"
+            title="high conviction: rev + ocf both declining"
+          />
+        ) : row.matched ? (
+          <span
+            className="ml-2 inline-block h-1.5 w-1.5 rounded-full border border-amber-accent/50"
+            title="matched (rev decline + leverage); ocf not also declining"
+          />
+        ) : null}
       </td>
       <td className={`px-3 py-2 ${baseColor}`}>{row.entityName}</td>
       <td className="px-3 py-2 text-xs text-terminal-muted">{row.sector ?? "—"}</td>
-      <td className={`px-3 py-2 text-right font-data ${negEquity ? "text-red-400" : baseColor}`}>
+      <td
+        className={`px-3 py-2 text-right font-data ${
+          negEquity ? (buybackDriven ? "text-sky-400" : "text-red-400") : baseColor
+        }`}
+      >
         {negEquity ? "neg eq" : fmtNum(row.debtToEquity)}
       </td>
       <td className={`px-3 py-2 text-right font-data ${baseColor}`}>
@@ -474,6 +670,23 @@ function Row({ row, dim }: { row: ScreenRow; dim: boolean }) {
         <div>{fmtUSD(row.rev_t)}</div>
         <div className="text-[10px] dim">{shortDate(row.rev_t_end)}</div>
       </td>
+      <td className={`px-3 py-2 text-right font-data ${baseColor}`}>
+        <div>{fmtUSD(row.revTtm)}</div>
+        <div className="text-[10px] dim">
+          {row.revTtmEnd ? shortDate(row.revTtmEnd) : "—"}
+          {row.revTtmMonthsYtd ? ` · ${row.revTtmMonthsYtd}m ytd` : ""}
+        </div>
+      </td>
+      <td className={`px-3 py-2 text-right font-data ${yoyColor(row.revTtmYoy, dim)}`}>
+        {fmtPct(row.revTtmYoy)}
+      </td>
+      <td className={`px-3 py-2 text-right font-data ${baseColor}`}>
+        <div>{fmtUSD(row.ocf_t)}</div>
+        <div className="text-[10px] dim">{shortDate(row.ocf_t_end)}</div>
+      </td>
+      <td className={`px-3 py-2 text-right font-data ${yoyColor(row.yoy_ocf_t, dim)}`}>
+        {fmtPct(row.yoy_ocf_t)}
+      </td>
       <td className="px-3 py-2 font-data text-[10px] text-terminal-muted">
         {row.flags.length === 0 ? (
           <span className="dim">—</span>
@@ -481,13 +694,9 @@ function Row({ row, dim }: { row: ScreenRow; dim: boolean }) {
           row.flags.map((f) => (
             <span
               key={f}
-              className={`mr-1 inline-block rounded border px-1 py-0.5 ${
-                f === "negative_equity"
-                  ? "border-red-700 text-red-400"
-                  : "border-terminal-border text-terminal-muted"
-              }`}
+              className={`mr-1 inline-block rounded border px-1 py-0.5 ${FLAG_STYLE[f]}`}
             >
-              {f.replace(/_/g, " ")}
+              {FLAG_LABEL[f]}
             </span>
           ))
         )}
@@ -520,27 +729,57 @@ function Footer({ data }: { data: ScreenResult }) {
             <sub>t-2</sub> across the last three reported fiscal years.
           </li>
           <li>
-            Liabilities derived as <span className="font-data">Total Assets − Equity</span> when
-            EDGAR&apos;s direct <span className="font-data">Liabilities</span> tag is absent.
+            <span className="font-data text-amber-accent">Sector exclusion</span> —
+            Financials, Real Estate (REITs), and Utilities are excluded by
+            default. D/E is a structurally bad distress signal there: bank
+            liabilities are deposits, REITs are designed to be highly levered,
+            utility capital structures are set by regulators. Toggle{" "}
+            <span className="font-data">include excluded sectors</span> to
+            override.
           </li>
-          <li>Negative equity flagged separately and counted as &quot;high leverage.&quot;</li>
+          <li>
+            <span className="font-data text-amber-accent">Buyback-driven neg-eq filter</span> —
+            negative equity is only counted as leverage when cumulative 5y
+            buybacks are smaller than the equity deficit (i.e. buybacks can&apos;t
+            plausibly explain the deficit).
+          </li>
+          <li>
+            <span className="font-data text-amber-accent">High conviction</span> —
+            also requires operating cash flow declining 2y straight, filtering
+            out dividend-trap names where revenue shrinks but cash holds up.
+          </li>
+          <li>
+            <span className="font-data text-amber-accent">TTM trend flags</span> —
+            <span className="font-data"> ttm ↑</span> means YTD revenue from the
+            most recent 10-Q has turned positive vs. prior-year same period
+            (potential turnaround, cautionary for shorts).{" "}
+            <span className="font-data">ttm ↓↓</span> means YTD is declining
+            faster than the most recent annual rate (high conviction).
+          </li>
         </ul>
       </div>
 
       <div>
         <h3 className="font-display text-base text-terminal-fg">Caveats</h3>
         <ul className="mt-2 space-y-1 text-xs">
-          <li>Filings can lag quarter-end by 60–90 days.</li>
           <li>
-            Annual figures only — TTM revenue not used. Mid-year fiscal-year-end
-            companies may show stale data vs. calendar comparables.
+            10-K filings can lag fiscal-year-end by 60–90 days; 10-Q filings
+            (the source of TTM data) lag quarter-end by ~45 days.
           </li>
           <li>
-            Revenue tags merged across <span className="font-data">RevenueFromContractWithCustomerExcludingAssessedTax</span>,
-            <span className="font-data"> Revenues</span>, and <span className="font-data">SalesRevenueNet</span> for
-            ASC-606 transition continuity.
+            TTM is computed as <span className="font-data">last annual + current YTD − prior-year same-period YTD</span>;
+            falls back to null when EDGAR has no quarterly data for the ticker.
           </li>
-          <li>De-listed tickers may have stale or missing recent data.</li>
+          <li>
+            Revenue and OCF tags merged across multiple GAAP variants
+            (ASC-606 transition, continuing-operations splits).
+          </li>
+          <li>
+            Buybacks measured by{" "}
+            <span className="font-data">PaymentsForRepurchaseOfCommonStock</span>;
+            companies that report only authorization (not actual repurchases)
+            may be misclassified as &quot;distress.&quot;
+          </li>
         </ul>
       </div>
 
