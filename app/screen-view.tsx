@@ -374,6 +374,12 @@ function Header({ data }: { data: ScreenResult }) {
             <div className="mt-1 dim">
               cache {data.cacheHits}H / {data.cacheMisses}M · source SEC EDGAR
             </div>
+            <a
+              href="/backtest"
+              className="mt-1 inline-block text-amber-accent hover:underline"
+            >
+              backtest review →
+            </a>
           </div>
         </div>
       </div>
