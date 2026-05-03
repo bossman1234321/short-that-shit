@@ -212,27 +212,34 @@ type StrategyCtx = {
 };
 
 type StrategyMetrics = {
-  // Risk-adjusted return ratios. Computed from a monthly equity curve where
-  // positions are held flat at entry size until close. r_f = 4% T-bill avg.
   sharpeRatio: number | null;
   sortinoRatio: number | null;
   calmarRatio: number | null;
-  informationRatio: number | null; // alpha / tracking-error vs SPY
-  // Yearly portfolio P&L (calendar year of position exit).
+  informationRatio: number | null;
   yearlyPnL: Record<string, number>;
   bestYear: { year: string; pnl: number } | null;
   worstYear: { year: string; pnl: number } | null;
-  // Per-position outcome streaks (chronological by exitDate).
   longestWinStreak: number;
   longestLossStreak: number;
-  // P&L distribution stats (per-position).
   pnlMean: number;
   pnlStd: number;
   pnlSkew: number;
-  // Bootstrap 95% CI on annualized return (5th/95th percentile, 1000 iters
-  // resampling positions with replacement). Wide CIs flag noisy results.
   bootstrapCI95Lo: number | null;
   bootstrapCI95Hi: number | null;
+  // ─── New (2026-05-03): mark-to-market interim risk + tax/cost adj ─
+  // Interim peak-to-trough drawdown using monthly mark-to-market on open
+  // positions. Different from the exit-only `maxDrawdown` because it
+  // captures intra-trade swings that could trigger margin calls.
+  interimMaxDrawdown: number | null;
+  // Worst monthly equity drop across the simulation (for sizing margin
+  // requirement intuition).
+  worstMonthlyMtmReturn: number | null;
+  // Post-tax annualized return at three federal-marginal-rate scenarios.
+  // Short-sale P&L is always short-term gain (Section 1233) so taxed at
+  // ordinary income. Pair-trade SPY long held 12m = also short-term.
+  postTaxAnnReturn22pct: number | null;
+  postTaxAnnReturn32pct: number | null;
+  postTaxAnnReturn37pct: number | null;
 };
 
 type StrategyResult = {
@@ -355,10 +362,88 @@ function skewness(xs: number[]): number {
 const RF_ANNUAL = 0.04;
 const RF_MONTHLY = RF_ANNUAL / 12;
 
+// Walk monthly bars and mark each open position to market. Captures
+// intra-trade equity swings that the exit-only equity curve misses —
+// critical for understanding margin-call risk on leveraged strategies.
+function markToMarketCurve(
+  positions: Position[],
+  startBalance: number,
+  barsByTicker: Map<string, Bar[]>,
+  spyBars: Bar[] | undefined,
+  isPairTrade: boolean,
+  pairLev: number
+): { interimMaxDD: number; worstMonthlyRet: number } {
+  if (positions.length === 0 || !spyBars) {
+    return { interimMaxDD: 0, worstMonthlyRet: 0 };
+  }
+  const sorted = [...positions].sort((a, b) => a.entryDate.localeCompare(b.entryDate));
+  const startMonth = sorted[0].entryDate.slice(0, 7);
+  const endMonth = sorted.reduce(
+    (a, p) => (p.exitDate > a ? p.exitDate.slice(0, 7) : a),
+    sorted[0].exitDate.slice(0, 7)
+  );
+
+  let peak = startBalance;
+  let maxDD = 0;
+  let worstMonthlyRet = 0;
+  let prevEquity = startBalance;
+
+  let cur = new Date(`${startMonth}-01`);
+  const last = new Date(`${endMonth}-01`);
+  while (cur <= last) {
+    const ym = cur.toISOString().slice(0, 10);
+    let equity = startBalance;
+
+    for (const p of sorted) {
+      if (p.exitDate <= ym) {
+        // Position has closed — book realized P&L.
+        equity += p.pnl;
+        continue;
+      }
+      if (p.entryDate > ym) continue; // not yet open
+
+      // Position is open this month — mark to market using ticker price
+      // change since entry.
+      const tickerBars = barsByTicker.get(p.ticker);
+      if (!tickerBars) continue;
+      const entryBar = priceAtOrAfter(tickerBars, p.entryDate);
+      const curBar = priceClosestBefore(tickerBars, ym) ?? priceAtOrAfter(tickerBars, ym);
+      if (!entryBar || !curBar) continue;
+      const tickerRet = entryBar.close > 0 ? (curBar.close - entryBar.close) / entryBar.close : 0;
+
+      if (isPairTrade) {
+        const spyEntry = priceAtOrAfter(spyBars, p.entryDate);
+        const spyCur = priceClosestBefore(spyBars, ym) ?? priceAtOrAfter(spyBars, ym);
+        if (!spyEntry || !spyCur) continue;
+        const spyRet = spyEntry.close > 0 ? (spyCur.close - spyEntry.close) / spyEntry.close : 0;
+        const halfSize = (p.size / 2) * pairLev;
+        equity += halfSize * (-tickerRet + spyRet);
+      } else {
+        equity += -p.size * tickerRet;
+      }
+    }
+
+    if (equity > peak) peak = equity;
+    const dd = peak > 0 ? (equity - peak) / peak : 0;
+    if (dd < maxDD) maxDD = dd;
+
+    if (prevEquity > 0) {
+      const monthRet = (equity - prevEquity) / prevEquity;
+      if (monthRet < worstMonthlyRet) worstMonthlyRet = monthRet;
+    }
+    prevEquity = equity;
+    cur = new Date(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 1);
+  }
+  return { interimMaxDD: maxDD, worstMonthlyRet };
+}
+
 function computeMetrics(
   positions: Position[],
   startBalance: number,
-  spyBars?: Bar[]
+  spyBars?: Bar[],
+  barsByTicker?: Map<string, Bar[]>,
+  isPairTrade: boolean = false,
+  pairLev: number = 1
 ): StrategyMetrics {
   if (positions.length === 0) {
     return {
@@ -376,6 +461,11 @@ function computeMetrics(
       pnlSkew: 0,
       bootstrapCI95Lo: null,
       bootstrapCI95Hi: null,
+      interimMaxDrawdown: null,
+      worstMonthlyMtmReturn: null,
+      postTaxAnnReturn22pct: null,
+      postTaxAnnReturn32pct: null,
+      postTaxAnnReturn37pct: null,
     };
   }
   const curve = buildEquityCurve(positions, startBalance);
@@ -502,6 +592,30 @@ function computeMetrics(
       ? bootstrapAnn[Math.floor(bootstrapAnn.length * 0.95)]
       : null;
 
+  // Mark-to-market interim drawdown (margin-call risk proxy)
+  const mtm =
+    barsByTicker != null && spyBars != null
+      ? markToMarketCurve(
+          positions,
+          startBalance,
+          barsByTicker,
+          spyBars,
+          isPairTrade,
+          pairLev
+        )
+      : { interimMaxDD: maxDD, worstMonthlyRet: 0 };
+
+  // Post-tax annualized at three federal-marginal-rate scenarios. Short-
+  // sale gains are always short-term (Section 1233) → ordinary income.
+  // Pair-trade SPY long held exactly 12m is also short-term. Both legs
+  // taxed at marginal rate.
+  const postTaxAnn = (rate: number): number | null => {
+    if (totalYears <= 0) return null;
+    const postTaxFinal = startBalance + totalReturn * startBalance * (1 - rate);
+    if (postTaxFinal <= 0) return null;
+    return Math.pow(postTaxFinal / startBalance, 1 / totalYears) - 1;
+  };
+
   return {
     sharpeRatio: sharpe,
     sortinoRatio: sortino,
@@ -517,6 +631,11 @@ function computeMetrics(
     pnlSkew,
     bootstrapCI95Lo: lo,
     bootstrapCI95Hi: hi,
+    interimMaxDrawdown: mtm.interimMaxDD,
+    worstMonthlyMtmReturn: mtm.worstMonthlyRet,
+    postTaxAnnReturn22pct: postTaxAnn(0.22),
+    postTaxAnnReturn32pct: postTaxAnn(0.32),
+    postTaxAnnReturn37pct: postTaxAnn(0.37),
   };
 }
 
@@ -840,7 +959,14 @@ async function simulate(
       worstPos: null,
       maxDrawdown: 0,
       positions: [],
-      metrics: computeMetrics([], STARTING_BALANCE, spyBars ?? undefined),
+      metrics: computeMetrics(
+        [],
+        STARTING_BALANCE,
+        spyBars ?? undefined,
+        barsByTicker,
+        cfg.pairTrade ?? false,
+        pairLev
+      ),
     };
   }
 
@@ -903,7 +1029,14 @@ async function simulate(
     worstPos: sorted[sorted.length - 1],
     maxDrawdown: maxDD,
     positions,
-    metrics: computeMetrics(positions, STARTING_BALANCE, spyBars ?? undefined),
+    metrics: computeMetrics(
+      positions,
+      STARTING_BALANCE,
+      spyBars ?? undefined,
+      barsByTicker,
+      cfg.pairTrade ?? false,
+      pairLev
+    ),
   };
 }
 
@@ -2117,6 +2250,52 @@ async function main() {
     );
   }
 
+  // Transaction-cost sensitivity. Real round-trip costs:
+  //   liquid SP500 bid-ask: 1-5bps
+  //   slippage on market orders: 5-15bps
+  //   pair trade has 2 legs → roughly double the per-leg cost
+  // Effective round-trip ranges: 10bps (best, limit orders, big caps) to
+  // 100bps (market orders, illiquid names).
+  console.log("\n=== transaction-cost sensitivity (headline) ===");
+  type TxnSens = {
+    bpsRoundTrip: number;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    deltaPp: number;
+  };
+  const txnSensitivities: TxnSens[] = [];
+  for (const bps of [0, 10, 25, 50, 100]) {
+    let adjustedFinal = STARTING_BALANCE;
+    for (const p of headlineResult.positions) {
+      const lev = headlineCfg.pairLeverage ?? 1;
+      const grossNotional = headlineCfg.pairTrade
+        ? p.size * lev // pair trade has 2 legs of half-size each = full size at lev
+        : p.size;
+      const txnCost = (bps / 10000) * grossNotional;
+      adjustedFinal += p.pnl - txnCost;
+    }
+    const totalReturn = (adjustedFinal - STARTING_BALANCE) / STARTING_BALANCE;
+    const firstEntry = headlineResult.positions[0]?.entryDate;
+    const lastExit = headlineResult.positions.reduce(
+      (a, p) => (p.exitDate > a ? p.exitDate : a),
+      headlineResult.positions[0]?.exitDate ?? ""
+    );
+    const yrs = firstEntry && lastExit ? yearsBetween(firstEntry, lastExit) : 0;
+    const ann =
+      1 + totalReturn > 0 && yrs > 0
+        ? Math.pow(1 + totalReturn, 1 / yrs) - 1
+        : 0;
+    txnSensitivities.push({
+      bpsRoundTrip: bps,
+      finalEquity: adjustedFinal,
+      annualizedReturn: ann,
+      deltaPp: ann - headlineAnn,
+    });
+    console.log(
+      `  txn ${bps.toString().padStart(3)}bps → $${adjustedFinal.toFixed(0).padStart(7)}  ann ${(ann * 100).toFixed(1).padStart(5)}%`
+    );
+  }
+
   // Borrow-cost sensitivity
   console.log("\n=== borrow-cost sensitivity (headline strategy) ===");
   type Sensitivity = {
@@ -2318,6 +2497,7 @@ async function main() {
         },
         ablations,
         sensitivities,
+        txnSensitivities,
         benchmarks,
         annualizedBar: ANNUALIZED_BAR,
         riskFreeRate: RF_ANNUAL,

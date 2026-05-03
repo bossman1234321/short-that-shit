@@ -115,6 +115,11 @@ type StrategyMetrics = {
   pnlSkew: number;
   bootstrapCI95Lo: number | null;
   bootstrapCI95Hi: number | null;
+  interimMaxDrawdown?: number | null;
+  worstMonthlyMtmReturn?: number | null;
+  postTaxAnnReturn22pct?: number | null;
+  postTaxAnnReturn32pct?: number | null;
+  postTaxAnnReturn37pct?: number | null;
 };
 
 type HeadlineSummary = {
@@ -154,6 +159,13 @@ type SensitivityRow = {
   deltaPp: number;
 };
 
+type TxnSensitivityRow = {
+  bpsRoundTrip: number;
+  finalEquity: number;
+  annualizedReturn: number | null;
+  deltaPp: number;
+};
+
 type BenchmarkRow = {
   name: string;
   description: string;
@@ -172,6 +184,7 @@ type PortfolioFile = {
   headline?: HeadlineSummary;
   ablations?: AblationRow[];
   sensitivities?: SensitivityRow[];
+  txnSensitivities?: TxnSensitivityRow[];
   benchmarks?: BenchmarkRow[];
 };
 
@@ -217,6 +230,7 @@ export function BacktestReview({
         {portfolio?.headline && (
           <HeadlineEvaluation portfolio={portfolio} />
         )}
+        {portfolio?.headline && <RealWorldRisks portfolio={portfolio} />}
         {portfolio?.benchmarks && portfolio.benchmarks.length > 0 && (
           <Benchmarks portfolio={portfolio} />
         )}
@@ -229,6 +243,7 @@ export function BacktestReview({
         {portfolio?.headline && (
           <PerTradeDetail portfolio={portfolio} />
         )}
+        <CaveatsAndOperational />
         {portfolio && <Strategies portfolio={portfolio} />}
         {portfolio?.bySector && portfolio.bySector.length > 0 && (
           <PortfolioBySector portfolio={portfolio} />
@@ -487,6 +502,175 @@ function HeadlineEvaluation({ portfolio }: { portfolio: PortfolioFile }) {
           )}
         </div>
       )}
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function RealWorldRisks({ portfolio }: { portfolio: PortfolioFile }) {
+  const m = portfolio.headline!.metrics;
+  const headlineAnn = portfolio.headline?.annualizedReturn ?? 0;
+  const interim = m.interimMaxDrawdown;
+  const worstMonth = m.worstMonthlyMtmReturn;
+  const txn = portfolio.txnSensitivities ?? [];
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Real-world risk &amp; cost adjustments
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        Caveats that the basic backtest hides: interim mark-to-market
+        drawdowns (margin-call risk), tax treatment, transaction costs,
+        position-level execution costs.
+      </p>
+
+      {/* Interim DD + Worst month */}
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="rounded border border-red-700/40 bg-red-950/20 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-red-400">
+            Interim mark-to-market drawdown
+          </div>
+          <div className="mt-1 font-data text-2xl text-red-400">
+            {interim != null ? fmtPct(interim) : "—"}
+          </div>
+          <div className="text-[11px] text-terminal-muted">
+            worst monthly MTM:{" "}
+            <span className="font-data">
+              {worstMonth != null ? fmtPct(worstMonth) : "—"}
+            </span>
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed">
+            The headline strategy looks smooth at exit dates, but during open
+            positions the equity can swing meaningfully. With 2x portfolio
+            leverage, a{" "}
+            <span className="font-data text-red-400">
+              {interim != null ? fmtPct(Math.abs(interim)) : "—"}
+            </span>{" "}
+            drawdown comes close to (or breaches) typical margin-maintenance
+            thresholds (~30% on most retail platforms), which would force a
+            real-world unwind even though the backtest assumed hold-to-term.
+          </p>
+        </div>
+
+        <div className="rounded border border-orange-700/40 bg-orange-950/20 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-orange-400">
+            Post-tax annualized return
+          </div>
+          <table className="mt-1 w-full text-xs">
+            <tbody>
+              <tr>
+                <td className="py-0.5">Pre-tax</td>
+                <td className="py-0.5 text-right font-data text-amber-accent">
+                  {fmtPct(headlineAnn)}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0.5">22% bracket</td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtPct(m.postTaxAnnReturn22pct)}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0.5">32% bracket</td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtPct(m.postTaxAnnReturn32pct)}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0.5">37% bracket</td>
+                <td className="py-0.5 text-right font-data text-red-400">
+                  {fmtPct(m.postTaxAnnReturn37pct)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-2 text-[11px] leading-relaxed text-terminal-muted">
+            Short-sale gains are <em>always</em> taxed as short-term capital
+            gains (IRS §1233 / §1234B), regardless of holding period. So
+            both legs of a 12-month pair trade pay ordinary-income rates
+            on gains. At top federal bracket the 8.7% pre-tax shrinks to{" "}
+            <span className="font-data text-red-400">
+              {fmtPct(m.postTaxAnnReturn37pct)}
+            </span>{" "}
+            — below the 8% deployment bar.
+          </p>
+        </div>
+      </div>
+
+      {/* Transaction cost sensitivity */}
+      {txn.length > 0 && (
+        <div className="mt-4 rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Transaction-cost sensitivity (round-trip basis points on gross)
+          </div>
+          <table className="mt-2 w-full text-xs">
+            <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+              <tr>
+                <th className="text-left">Round-trip cost</th>
+                <th className="text-right">Final $</th>
+                <th className="text-right">Annualized</th>
+                <th className="text-right">Δ vs 0bps</th>
+                <th className="text-left pl-3">Realistic for…</th>
+              </tr>
+            </thead>
+            <tbody>
+              {txn.map((t) => {
+                const realistic =
+                  t.bpsRoundTrip === 0
+                    ? "frictionless ideal"
+                    : t.bpsRoundTrip <= 10
+                      ? "limit orders, large-cap, deep liquidity"
+                      : t.bpsRoundTrip <= 25
+                        ? "market orders, large-cap"
+                        : t.bpsRoundTrip <= 50
+                          ? "market orders, mid-cap or wider spreads"
+                          : "illiquid / pre-bankruptcy / acquisition pending";
+                return (
+                  <tr key={t.bpsRoundTrip} className="border-t border-terminal-border/50">
+                    <td className="py-0.5 font-data">{t.bpsRoundTrip} bps</td>
+                    <td className="py-0.5 text-right font-data">
+                      {fmtUSD(t.finalEquity)}
+                    </td>
+                    <td className="py-0.5 text-right font-data">
+                      {fmtPct(t.annualizedReturn)}
+                    </td>
+                    <td
+                      className={`py-0.5 text-right font-data ${t.deltaPp < 0 ? "text-red-400" : "text-terminal-muted"}`}
+                    >
+                      {t.deltaPp >= 0 ? "+" : ""}
+                      {(t.deltaPp * 100).toFixed(1)}pp
+                    </td>
+                    <td className="py-0.5 pl-3 text-[11px] text-terminal-muted">
+                      {realistic}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="mt-4 rounded border border-amber-accent/40 bg-amber-accent/5 p-3">
+        <div className="text-[10px] uppercase tracking-wider text-amber-accent">
+          Stacked-realism scenario
+        </div>
+        <p className="mt-1 text-xs leading-relaxed">
+          When all real-world frictions are stacked — 5% borrow (realistic
+          for some periods), 25bps txn cost (market orders, large-cap), 32%
+          marginal tax bracket — the headline strategy&apos;s effective
+          annualized drops materially below its{" "}
+          <span className="font-data text-amber-accent">
+            {fmtPct(headlineAnn)}
+          </span>{" "}
+          backtest figure. Combined with the{" "}
+          <span className="font-data text-red-400">
+            {interim != null ? fmtPct(interim) : "—"}
+          </span>{" "}
+          interim drawdown, the practical edge is narrower than the headline
+          suggests.
+        </p>
+      </div>
     </section>
   );
 }
@@ -803,6 +987,131 @@ function PerTradeDetail({ portfolio }: { portfolio: PortfolioFile }) {
               ))}
           </tbody>
         </table>
+      </div>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function CaveatsAndOperational() {
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Capacity, paper-trade tracking, remaining unmodeled risks
+      </h2>
+      <div className="mt-3 grid gap-4 md:grid-cols-2">
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <h3 className="font-display text-sm text-terminal-fg">
+            Crowdedness &amp; capacity
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed text-terminal-muted">
+            We don&apos;t model short interest per name — that would require
+            FINRA biweekly short-interest data joined to each historical
+            event. Heuristic guidance instead:
+          </p>
+          <ul className="mt-2 space-y-1 text-xs leading-relaxed text-terminal-muted">
+            <li>
+              <span className="font-data text-amber-accent">Retail</span>{" "}
+              ($10K–$1M): non-issue. The matched names have $5B–$500B
+              market caps; you can&apos;t move them.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">Mid AUM</span>{" "}
+              ($1M–$100M): mostly fine but watch borrow rates on smaller
+              names. SHLD pre-BK borrowed at 50%+ — the 2% assumption fails.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">High AUM</span>{" "}
+              ($100M+): capacity-constrained. Short positions of $5–50M can
+              represent 1–3% of float on smaller SP500 names; expect
+              borrow-cost spikes and adverse execution.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">Crowding</span>:
+              if too many traders deploy this same screen at once, short
+              interest spikes and squeeze risk rises. Mitigation: monitor
+              SI as % of float; if &gt; 20%, skip.
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <h3 className="font-display text-sm text-terminal-fg">
+            Forward paper-trade tracking
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed text-terminal-muted">
+            A backtest selected with hindsight on the same dataset that
+            evaluates it isn&apos;t a real out-of-sample test. The credible
+            forward signal is{" "}
+            <em>does the strategy actually work in real time</em>. We&apos;ve
+            scaffolded a paper-trade tracker at{" "}
+            <a
+              href="/data/paper-trades.json"
+              className="font-data text-amber-accent hover:underline"
+            >
+              /data/paper-trades.json
+            </a>
+            ; once a matched trade is opened (by you or the monthly
+            routine), it&apos;s logged, marked-to-market over time, and
+            compared against the backtest expectation.
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-terminal-muted">
+            <span className="font-data text-amber-accent">Tracking since:</span>{" "}
+            2026-05-03 (no live trades yet). After ~12 months of forward
+            data we&apos;ll have a real out-of-sample anchor.
+          </p>
+        </div>
+
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3 md:col-span-2">
+          <h3 className="font-display text-sm text-terminal-fg">
+            Remaining unmodeled risks
+          </h3>
+          <ul className="mt-2 grid gap-1 text-xs leading-relaxed text-terminal-muted md:grid-cols-2">
+            <li>
+              <span className="font-data text-amber-accent">Hard-to-borrow events</span>:
+              if a stock becomes hard-to-borrow mid-trade, broker may force
+              a buy-in (close your short at the worst possible time). Not
+              captured by flat 2% borrow assumption.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">Stock recall risk</span>:
+              brokers can pull shares loaned to you, forcing a buy-in.
+              More common in high-conviction shorts.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">Reg SHO threshold</span>:
+              listing on the SHO list (high fail-to-deliver) often triggers
+              a forced unwind. Not modeled.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">Dividend payments</span>:
+              the short pays the long&apos;s dividend. Built into the 2%
+              borrow as a rough proxy but actual varies by name and year.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">Wash sale rules</span>:
+              IRS §1091 — can&apos;t deduct loss if you re-establish a
+              substantially identical position within 30 days. Affects tax
+              treatment when re-shorting same name.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">Constructive sale</span>:
+              IRS §1259 — short-against-the-box rules. Niche but real.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">Black-swan tail</span>:
+              the 95% bootstrap CI assumes the past distribution captures
+              the future. Tail events (Volkswagen squeeze, GameStop, AMC)
+              live outside this distribution.
+            </li>
+            <li>
+              <span className="font-data text-amber-accent">Regime persistence</span>:
+              the alpha came from sectors with secular declines (Util/CS).
+              If those sectors stop declining (e.g. utility renaissance from
+              data-center demand), the strategy alpha disappears.
+            </li>
+          </ul>
+        </div>
       </div>
     </section>
   );

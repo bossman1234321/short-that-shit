@@ -1,0 +1,6 @@
+{
+  "_doc": "Live forward paper-trade tracker. Populated by the monthly routine when the screen surfaces matched names; each entry records entry date, ticker, sector, and is updated with mark-to-market + final P&L over time. Empty until first deployment.",
+  "trackingSince": "2026-05-03",
+  "lastUpdated": "2026-05-03",
+  "trades": []
+}

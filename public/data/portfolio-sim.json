@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T22:06:28.337Z",
+  "generatedAt": "2026-05-03T22:13:43.612Z",
   "startingBalance": 10000,
   "annualBorrowCost": 0.02,
   "results": [
@@ -64,8 +64,13 @@
         "pnlMean": -110.91908128887846,
         "pnlStd": 216.73181358997354,
         "pnlSkew": 0.7117527650227734,
-        "bootstrapCI95Lo": -0.2644497527789993,
-        "bootstrapCI95Hi": -0.08183293340412512
+        "bootstrapCI95Lo": -0.2599123232649506,
+        "bootstrapCI95Hi": -0.0790792233851414,
+        "interimMaxDrawdown": -1.364003963849439,
+        "worstMonthlyMtmReturn": -3.2915652908794106,
+        "postTaxAnnReturn22pct": null,
+        "postTaxAnnReturn32pct": -0.14808180508451207,
+        "postTaxAnnReturn37pct": -0.11337336048053115
       }
     },
     {
@@ -129,8 +134,13 @@
         "pnlMean": -108.74140238341005,
         "pnlStd": 220.4115521804493,
         "pnlSkew": 0.7141938566786714,
-        "bootstrapCI95Lo": -0.2745473140375003,
-        "bootstrapCI95Hi": -0.06245923692159938
+        "bootstrapCI95Lo": -0.2649335812948165,
+        "bootstrapCI95Hi": -0.07480348475675369,
+        "interimMaxDrawdown": -1.3497982221219944,
+        "worstMonthlyMtmReturn": -17.32970937052568,
+        "postTaxAnnReturn22pct": null,
+        "postTaxAnnReturn32pct": -0.14085784718429195,
+        "postTaxAnnReturn37pct": -0.10959997890063455
       }
     },
     {
@@ -193,8 +203,13 @@
         "pnlMean": -65.17588560147833,
         "pnlStd": 157.10870552003135,
         "pnlSkew": -1.3980243430440642,
-        "bootstrapCI95Lo": -0.21646620899207347,
-        "bootstrapCI95Hi": -0.04890636659341918
+        "bootstrapCI95Lo": -0.21625931519469477,
+        "bootstrapCI95Hi": -0.05085424503836711,
+        "interimMaxDrawdown": -0.9325620528735453,
+        "worstMonthlyMtmReturn": -0.35618964438821216,
+        "postTaxAnnReturn22pct": -0.06962109100514646,
+        "postTaxAnnReturn32pct": -0.05514886123305485,
+        "postTaxAnnReturn37pct": -0.04900727825536422
       }
     },
     {
@@ -258,8 +273,13 @@
         "pnlMean": -62.20613093678885,
         "pnlStd": 105.49933658315341,
         "pnlSkew": 0.6917967630685599,
-        "bootstrapCI95Lo": -0.23309812952253461,
-        "bootstrapCI95Hi": -0.07142408976423342
+        "bootstrapCI95Lo": -0.23576220856382124,
+        "bootstrapCI95Hi": -0.07163001227924393,
+        "interimMaxDrawdown": -0.9446657656961739,
+        "worstMonthlyMtmReturn": -0.35678723763507875,
+        "postTaxAnnReturn22pct": -0.07514621718706505,
+        "postTaxAnnReturn32pct": -0.05890478367855978,
+        "postTaxAnnReturn37pct": -0.0521454647390569
       }
     },
     {
@@ -322,8 +342,13 @@
         "pnlMean": -97.63288427283969,
         "pnlStd": 205.21049555983285,
         "pnlSkew": 0.6680946031756398,
-        "bootstrapCI95Lo": -0.20445307702015503,
-        "bootstrapCI95Hi": -0.04332776283082651
+        "bootstrapCI95Lo": -0.20237321307567913,
+        "bootstrapCI95Hi": -0.04324205738389564,
+        "interimMaxDrawdown": -0.8681037795209092,
+        "worstMonthlyMtmReturn": -0.2858389070270493,
+        "postTaxAnnReturn22pct": -0.062491033158246334,
+        "postTaxAnnReturn32pct": -0.050139968389933176,
+        "postTaxAnnReturn37pct": -0.044773453099622884
       }
     },
     {
@@ -383,8 +408,13 @@
         "pnlMean": -99.41212864323168,
         "pnlStd": 225.89220366306077,
         "pnlSkew": 0.4133660460165977,
-        "bootstrapCI95Lo": -0.1306009593221399,
-        "bootstrapCI95Hi": -0.027875554645099387
+        "bootstrapCI95Lo": -0.14572303646475226,
+        "bootstrapCI95Hi": -0.02483114752040383,
+        "interimMaxDrawdown": -0.6986144763434983,
+        "worstMonthlyMtmReturn": -0.2149701360754043,
+        "postTaxAnnReturn22pct": -0.04653925249357216,
+        "postTaxAnnReturn32pct": -0.03849438633855784,
+        "postTaxAnnReturn37pct": -0.03480376172064448
       }
     },
     {
@@ -445,8 +475,13 @@
         "pnlMean": -68.63408982160135,
         "pnlStd": 191.82585573528266,
         "pnlSkew": 0.3268805601889937,
-        "bootstrapCI95Lo": -0.05392624710484162,
-        "bootstrapCI95Hi": -0.009353686376317283
+        "bootstrapCI95Lo": -0.054532044287616044,
+        "bootstrapCI95Hi": -0.008718038030311792,
+        "interimMaxDrawdown": -0.41075724197689734,
+        "worstMonthlyMtmReturn": -0.07632043788386463,
+        "postTaxAnnReturn22pct": -0.021437902466207137,
+        "postTaxAnnReturn32pct": -0.01829187816421063,
+        "postTaxAnnReturn37pct": -0.016770865660099332
       }
     },
     {
@@ -504,8 +539,13 @@
         "pnlMean": -41.38950497477316,
         "pnlStd": 192.93171476322817,
         "pnlSkew": 0.3961125583056904,
-        "bootstrapCI95Lo": -0.022566556035650165,
-        "bootstrapCI95Hi": 0.003413828524162721
+        "bootstrapCI95Lo": -0.023161923749356217,
+        "bootstrapCI95Hi": 0.0040686060687984416,
+        "interimMaxDrawdown": -0.2040775701646414,
+        "worstMonthlyMtmReturn": -0.043923852262413736,
+        "postTaxAnnReturn22pct": -0.008123675416610299,
+        "postTaxAnnReturn32pct": -0.007036278858124856,
+        "postTaxAnnReturn37pct": -0.006497930615642522
       }
     },
     {
@@ -568,8 +608,13 @@
         "pnlMean": -64.00114988886472,
         "pnlStd": 203.007518776158,
         "pnlSkew": 0.37232619170138015,
-        "bootstrapCI95Lo": -0.0775080769947406,
-        "bootstrapCI95Hi": -0.010289905402750099
+        "bootstrapCI95Lo": -0.07895445997798756,
+        "bootstrapCI95Hi": -0.009742102323065716,
+        "interimMaxDrawdown": -0.5338485323839415,
+        "worstMonthlyMtmReturn": -0.11258945067868754,
+        "postTaxAnnReturn22pct": -0.027119294527374826,
+        "postTaxAnnReturn32pct": -0.022940444205105215,
+        "postTaxAnnReturn37pct": -0.020948498943763716
       }
     },
     {
@@ -632,8 +677,13 @@
         "pnlMean": -67.17817333361094,
         "pnlStd": 211.25619276379194,
         "pnlSkew": 0.39869096228171313,
-        "bootstrapCI95Lo": -0.07028020045570582,
-        "bootstrapCI95Hi": -0.009267995085438963
+        "bootstrapCI95Lo": -0.06822863450492167,
+        "bootstrapCI95Hi": -0.008585922186472139,
+        "interimMaxDrawdown": -0.4947351934496183,
+        "worstMonthlyMtmReturn": -0.10462839115809348,
+        "postTaxAnnReturn22pct": -0.025329600135612695,
+        "postTaxAnnReturn32pct": -0.02147458799032209,
+        "postTaxAnnReturn37pct": -0.01963018108508585
       }
     },
     {
@@ -691,8 +741,13 @@
         "pnlMean": -58.02483160741756,
         "pnlStd": 160.75597650438291,
         "pnlSkew": 0.05674617006860874,
-        "bootstrapCI95Lo": -0.023076314830461686,
-        "bootstrapCI95Hi": -0.0009864209662209245
+        "bootstrapCI95Lo": -0.024502553460528542,
+        "bootstrapCI95Hi": -0.0011339515228241392,
+        "interimMaxDrawdown": -0.1970318951906069,
+        "worstMonthlyMtmReturn": -0.03667918570600356,
+        "postTaxAnnReturn22pct": -0.010906430682878665,
+        "postTaxAnnReturn32pct": -0.009424597460167994,
+        "postTaxAnnReturn37pct": -0.008693608972606404
       }
     },
     {
@@ -749,8 +804,13 @@
         "pnlMean": -78.19289020950696,
         "pnlStd": 229.18007122470266,
         "pnlSkew": 0.8785901460342546,
-        "bootstrapCI95Lo": -0.03423444997109071,
-        "bootstrapCI95Hi": 0.0001882777925865664
+        "bootstrapCI95Lo": -0.03526561126806205,
+        "bootstrapCI95Hi": -0.0007466058442137102,
+        "interimMaxDrawdown": -0.30824170996720424,
+        "worstMonthlyMtmReturn": -0.061503142892703686,
+        "postTaxAnnReturn22pct": -0.017200478240225747,
+        "postTaxAnnReturn32pct": -0.014782603160908181,
+        "postTaxAnnReturn37pct": -0.013600044939289901
       }
     },
     {
@@ -813,8 +873,13 @@
         "pnlMean": 13.543839750914747,
         "pnlStd": 140.8713355845739,
         "pnlSkew": 0.2560176627954796,
-        "bootstrapCI95Lo": -0.004886534815669918,
-        "bootstrapCI95Hi": 0.025654761051086883
+        "bootstrapCI95Lo": -0.005295620658818501,
+        "bootstrapCI95Hi": 0.024666556909914483,
+        "interimMaxDrawdown": -0.11837976533132535,
+        "worstMonthlyMtmReturn": -0.0416335775332122,
+        "postTaxAnnReturn22pct": 0.008211901384387765,
+        "postTaxAnnReturn32pct": 0.0072136471190658025,
+        "postTaxAnnReturn37pct": 0.006708899957824865
       }
     },
     {
@@ -876,8 +941,13 @@
         "pnlMean": 46.059297030205514,
         "pnlStd": 137.9595815179973,
         "pnlSkew": -0.09660973181047636,
-        "bootstrapCI95Lo": 0.00554213603967546,
-        "bootstrapCI95Hi": 0.02353705826830832
+        "bootstrapCI95Lo": 0.005692437591519273,
+        "bootstrapCI95Hi": 0.023601295007200873,
+        "interimMaxDrawdown": -0.03884218665969216,
+        "worstMonthlyMtmReturn": -0.027448916474420396,
+        "postTaxAnnReturn22pct": 0.01152403319975348,
+        "postTaxAnnReturn32pct": 0.010152504299340004,
+        "postTaxAnnReturn37pct": 0.009456123222934876
       }
     },
     {
@@ -940,8 +1010,13 @@
         "pnlMean": 24.16127159984373,
         "pnlStd": 159.35485561318922,
         "pnlSkew": 0.037814049206825705,
-        "bootstrapCI95Lo": -0.00045852735035512016,
-        "bootstrapCI95Hi": 0.026154554905341465
+        "bootstrapCI95Lo": -0.0005529791920824145,
+        "bootstrapCI95Hi": 0.026026589047844606,
+        "interimMaxDrawdown": -0.10774041880931877,
+        "worstMonthlyMtmReturn": -0.03958171789575088,
+        "postTaxAnnReturn22pct": 0.009462254086984201,
+        "postTaxAnnReturn32pct": 0.008321185892973038,
+        "postTaxAnnReturn37pct": 0.007743306501349023
       }
     },
     {
@@ -999,8 +1074,13 @@
         "pnlMean": 66.75461596573273,
         "pnlStd": 110.56525922781752,
         "pnlSkew": -1.0376085560139423,
-        "bootstrapCI95Lo": 0.004209766855878927,
-        "bootstrapCI95Hi": 0.013858183987897066
+        "bootstrapCI95Lo": 0.0042751572693071616,
+        "bootstrapCI95Hi": 0.0136366800100447,
+        "interimMaxDrawdown": -0.025205211179238886,
+        "worstMonthlyMtmReturn": -0.014255641364484522,
+        "postTaxAnnReturn22pct": 0.006578840870350655,
+        "postTaxAnnReturn32pct": 0.005770661106340391,
+        "postTaxAnnReturn37pct": 0.0053628892058128486
       }
     },
     {
@@ -1058,8 +1138,13 @@
         "pnlMean": 395.7946320005478,
         "pnlStd": 432.340254287833,
         "pnlSkew": 0.30967061874339014,
-        "bootstrapCI95Lo": 0.02790318781265322,
-        "bootstrapCI95Hi": 0.0498718657753745
+        "bootstrapCI95Lo": 0.027708259292212878,
+        "bootstrapCI95Hi": 0.05067331319607615,
+        "interimMaxDrawdown": -0.08464333779004728,
+        "worstMonthlyMtmReturn": -0.04762363562725194,
+        "postTaxAnnReturn22pct": 0.030110010908307006,
+        "postTaxAnnReturn32pct": 0.026917680222252383,
+        "postTaxAnnReturn37pct": 0.02526393039812902
       }
     },
     {
@@ -1117,8 +1202,13 @@
         "pnlMean": -47.58414402423357,
         "pnlStd": 182.22989630895125,
         "pnlSkew": 0.858382578467891,
-        "bootstrapCI95Lo": -0.022398184082380923,
-        "bootstrapCI95Hi": 0.002588584291809415
+        "bootstrapCI95Lo": -0.023528567557435376,
+        "bootstrapCI95Hi": 0.00121352129460095,
+        "interimMaxDrawdown": -0.20664884972819447,
+        "worstMonthlyMtmReturn": -0.02979058847357456,
+        "postTaxAnnReturn22pct": -0.009148907434459619,
+        "postTaxAnnReturn32pct": -0.007917537068224623,
+        "postTaxAnnReturn37pct": -0.007308710687549236
       }
     },
     {
@@ -1172,8 +1262,13 @@
         "pnlMean": -59.358612726227406,
         "pnlStd": 225.10574617663283,
         "pnlSkew": 0.08248935600542867,
-        "bootstrapCI95Lo": -0.012228513804411922,
-        "bootstrapCI95Hi": 0.004113990079530394
+        "bootstrapCI95Lo": -0.012827305850276582,
+        "bootstrapCI95Hi": 0.004352356349696107,
+        "interimMaxDrawdown": -0.08377381646441265,
+        "worstMonthlyMtmReturn": -0.02705323503433146,
+        "postTaxAnnReturn22pct": -0.004862611850381726,
+        "postTaxAnnReturn32pct": -0.004224205871997233,
+        "postTaxAnnReturn37pct": -0.0039067080509603835
       }
     },
     {
@@ -1231,8 +1326,13 @@
         "pnlMean": 200.26384789719813,
         "pnlStd": 331.6957776834526,
         "pnlSkew": -1.0376085560139416,
-        "bootstrapCI95Lo": 0.012905566621518316,
-        "bootstrapCI95Hi": 0.0352916990795924
+        "bootstrapCI95Lo": 0.011069002478204526,
+        "bootstrapCI95Hi": 0.0350016213699218,
+        "interimMaxDrawdown": -0.06232106307093707,
+        "worstMonthlyMtmReturn": -0.0351329393005032,
+        "postTaxAnnReturn22pct": 0.018072122351435738,
+        "postTaxAnnReturn32pct": 0.016008429889881937,
+        "postTaxAnnReturn37pct": 0.014952524219217445
       }
     },
     {
@@ -1294,8 +1394,13 @@
         "pnlMean": 105.04492478106356,
         "pnlStd": 273.45413862966103,
         "pnlSkew": 0.024646541615726728,
-        "bootstrapCI95Lo": 0.014448614035164953,
-        "bootstrapCI95Hi": 0.04008148515021359
+        "bootstrapCI95Lo": 0.013422156939782326,
+        "bootstrapCI95Hi": 0.040415053403091816,
+        "interimMaxDrawdown": -0.07677529654306932,
+        "worstMonthlyMtmReturn": -0.044144600915817754,
+        "postTaxAnnReturn22pct": 0.02150533258103504,
+        "postTaxAnnReturn32pct": 0.019101624220189795,
+        "postTaxAnnReturn37pct": 0.01786712093518905
       }
     },
     {
@@ -1352,8 +1457,13 @@
         "pnlMean": 388.9759795267169,
         "pnlStd": 373.8256620805675,
         "pnlSkew": -0.056673274472972754,
-        "bootstrapCI95Lo": 0.024882544700592923,
-        "bootstrapCI95Hi": 0.04428702896607062
+        "bootstrapCI95Lo": 0.024467455644562763,
+        "bootstrapCI95Hi": 0.044317483108672784,
+        "interimMaxDrawdown": -0.09679253539691708,
+        "worstMonthlyMtmReturn": -0.044411901986066954,
+        "postTaxAnnReturn22pct": 0.025867228956718336,
+        "postTaxAnnReturn32pct": 0.0230527989362177,
+        "postTaxAnnReturn37pct": 0.02160081970019223
       }
     },
     {
@@ -1405,8 +1515,13 @@
         "pnlMean": 432.90059645161705,
         "pnlStd": 585.1320238706105,
         "pnlSkew": 0.14724415190616755,
-        "bootstrapCI95Lo": 0.017657370463939115,
-        "bootstrapCI95Hi": 0.07477449636131461
+        "bootstrapCI95Lo": 0.018132551731900426,
+        "bootstrapCI95Hi": 0.07541974826164988,
+        "interimMaxDrawdown": -0.11899484185985806,
+        "worstMonthlyMtmReturn": -0.06675031078447786,
+        "postTaxAnnReturn22pct": 0.030270718089727033,
+        "postTaxAnnReturn32pct": 0.026678334159935257,
+        "postTaxAnnReturn37pct": 0.024853471761189017
       }
     },
     {
@@ -1463,8 +1578,13 @@
         "pnlMean": 414.5417522428391,
         "pnlStd": 449.82748736937634,
         "pnlSkew": 0.17764426347897025,
-        "bootstrapCI95Lo": 0.02617035255500033,
-        "bootstrapCI95Hi": 0.04939559372852176
+        "bootstrapCI95Lo": 0.026091375238960213,
+        "bootstrapCI95Hi": 0.04921572346527081,
+        "interimMaxDrawdown": -0.08681355871681853,
+        "worstMonthlyMtmReturn": -0.048835404366089484,
+        "postTaxAnnReturn22pct": 0.02879587877243206,
+        "postTaxAnnReturn32pct": 0.025718395152412477,
+        "postTaxAnnReturn37pct": 0.02412613405685149
       }
     },
     {
@@ -1520,8 +1640,13 @@
         "pnlMean": 590.149012416929,
         "pnlStd": 385.73780453646384,
         "pnlSkew": 0.4102332995069907,
-        "bootstrapCI95Lo": 0.027964493345455255,
-        "bootstrapCI95Hi": 0.043429581435852294
+        "bootstrapCI95Lo": 0.02842760645947595,
+        "bootstrapCI95Hi": 0.043483273399805844,
+        "interimMaxDrawdown": -0.08947937026283416,
+        "worstMonthlyMtmReturn": -0.04727846593562747,
+        "postTaxAnnReturn22pct": 0.026796130383226924,
+        "postTaxAnnReturn32pct": 0.023897186729280318,
+        "postTaxAnnReturn37pct": 0.022400222421976368
       }
     },
     {
@@ -1576,8 +1701,13 @@
         "pnlMean": 393.99160952547896,
         "pnlStd": 462.90136994708524,
         "pnlSkew": 0.28728712458193406,
-        "bootstrapCI95Lo": 0.017397783044141413,
-        "bootstrapCI95Hi": 0.04134710928888752
+        "bootstrapCI95Lo": 0.017277927624272493,
+        "bootstrapCI95Hi": 0.042319134499038125,
+        "interimMaxDrawdown": -0.09555672518082495,
+        "worstMonthlyMtmReturn": -0.05371259407037669,
+        "postTaxAnnReturn22pct": 0.020861743798539,
+        "postTaxAnnReturn32pct": 0.01849665641239584,
+        "postTaxAnnReturn37pct": 0.017284997584856132
       }
     },
     {
@@ -1632,8 +1762,13 @@
         "pnlMean": 472.6022889987297,
         "pnlStd": 620.8191680844012,
         "pnlSkew": 0.43143709057402246,
-        "bootstrapCI95Lo": 0.018288208439191544,
-        "bootstrapCI95Hi": 0.048891581031961895
+        "bootstrapCI95Lo": 0.017216971028599648,
+        "bootstrapCI95Hi": 0.04948183065357159,
+        "interimMaxDrawdown": -0.1189948418598579,
+        "worstMonthlyMtmReturn": -0.06675031078447789,
+        "postTaxAnnReturn22pct": 0.02327390272542207,
+        "postTaxAnnReturn32pct": 0.020671593319048,
+        "postTaxAnnReturn37pct": 0.01933519073287493
       }
     },
     {
@@ -1688,8 +1823,13 @@
         "pnlMean": 710.0317137895208,
         "pnlStd": 973.4160335940672,
         "pnlSkew": 0.48393449112682635,
-        "bootstrapCI95Lo": 0.023766503786200932,
-        "bootstrapCI95Hi": 0.06753781583740714
+        "bootstrapCI95Lo": 0.025072897845188624,
+        "bootstrapCI95Hi": 0.06639484869061074,
+        "interimMaxDrawdown": -0.1567782808362144,
+        "worstMonthlyMtmReturn": -0.09179214479292905,
+        "postTaxAnnReturn22pct": 0.032090677880725726,
+        "postTaxAnnReturn32pct": 0.02867697778134426,
+        "postTaxAnnReturn37pct": 0.026909511459934032
       }
     },
     {
@@ -1744,8 +1884,13 @@
         "pnlMean": 787.9832190509579,
         "pnlStd": 925.8027398941705,
         "pnlSkew": 0.28728712458193406,
-        "bootstrapCI95Lo": 0.032652500503653537,
-        "bootstrapCI95Hi": 0.0686156417677024
+        "bootstrapCI95Lo": 0.029819156757271204,
+        "bootstrapCI95Hi": 0.06815353684328196,
+        "interimMaxDrawdown": -0.1444934528886703,
+        "worstMonthlyMtmReturn": -0.08296241723828686,
+        "postTaxAnnReturn22pct": 0.03710138989117362,
+        "postTaxAnnReturn32pct": 0.033262909227882886,
+        "postTaxAnnReturn37pct": 0.03126708428392333
       }
     },
     {
@@ -1800,8 +1945,13 @@
         "pnlMean": 1125.009707338472,
         "pnlStd": 1638.9910992942703,
         "pnlSkew": 0.555462332265671,
-        "bootstrapCI95Lo": 0.031372219842807025,
-        "bootstrapCI95Hi": 0.08936571208352273
+        "bootstrapCI95Lo": 0.03419606672954578,
+        "bootstrapCI95Hi": 0.08859729455948329,
+        "interimMaxDrawdown": -0.20578391840267216,
+        "worstMonthlyMtmReturn": -0.1307789252058459,
+        "postTaxAnnReturn22pct": 0.044810985523531466,
+        "postTaxAnnReturn32pct": 0.040365769274447905,
+        "postTaxAnnReturn37pct": 0.03804061505381817
       }
     },
     {
@@ -1856,8 +2006,13 @@
         "pnlMean": 393.99160952547896,
         "pnlStd": 462.90136994708524,
         "pnlSkew": 0.28728712458193406,
-        "bootstrapCI95Lo": 0.017001039247415584,
-        "bootstrapCI95Hi": 0.04103333324179781
+        "bootstrapCI95Lo": 0.016959753397746802,
+        "bootstrapCI95Hi": 0.042078993023780376,
+        "interimMaxDrawdown": -0.09555672518082495,
+        "worstMonthlyMtmReturn": -0.05371259407037669,
+        "postTaxAnnReturn22pct": 0.020861743798539,
+        "postTaxAnnReturn32pct": 0.01849665641239584,
+        "postTaxAnnReturn37pct": 0.017284997584856132
       }
     },
     {
@@ -1912,8 +2067,13 @@
         "pnlMean": 1125.009707338472,
         "pnlStd": 1638.9910992942703,
         "pnlSkew": 0.555462332265671,
-        "bootstrapCI95Lo": 0.03418060950971391,
-        "bootstrapCI95Hi": 0.08893381894654051
+        "bootstrapCI95Lo": 0.03279217325832784,
+        "bootstrapCI95Hi": 0.08896479723291195,
+        "interimMaxDrawdown": -0.20578391840267216,
+        "worstMonthlyMtmReturn": -0.1307789252058459,
+        "postTaxAnnReturn22pct": 0.044810985523531466,
+        "postTaxAnnReturn32pct": 0.040365769274447905,
+        "postTaxAnnReturn37pct": 0.03804061505381817
       }
     },
     {
@@ -1967,8 +2127,13 @@
         "pnlMean": 1020.4969379575455,
         "pnlStd": 1506.9770257423247,
         "pnlSkew": 0.6182888732164281,
-        "bootstrapCI95Lo": 0.028703289979037372,
-        "bootstrapCI95Hi": 0.09971343157479695
+        "bootstrapCI95Lo": 0.029007538906113073,
+        "bootstrapCI95Hi": 0.10105921012925578,
+        "interimMaxDrawdown": -0.20578391840267216,
+        "worstMonthlyMtmReturn": -0.1307789252058459,
+        "postTaxAnnReturn22pct": 0.06437742526877832,
+        "postTaxAnnReturn32pct": 0.05807179461847034,
+        "postTaxAnnReturn37pct": 0.05476854857378677
       }
     },
     {
@@ -2023,8 +2188,13 @@
         "pnlMean": 196.99580476273948,
         "pnlStd": 231.45068497354262,
         "pnlSkew": 0.28728712458193406,
-        "bootstrapCI95Lo": 0.008776779281406855,
-        "bootstrapCI95Hi": 0.02374763623485543
+        "bootstrapCI95Lo": 0.008992035455432479,
+        "bootstrapCI95Hi": 0.024007314353004183,
+        "interimMaxDrawdown": -0.056968673094480816,
+        "worstMonthlyMtmReturn": -0.032130668632544955,
+        "postTaxAnnReturn22pct": 0.011173191777779312,
+        "postTaxAnnReturn32pct": 0.00983302124159069,
+        "postTaxAnnReturn37pct": 0.00915359337995647
       }
     },
     {
@@ -2079,8 +2249,13 @@
         "pnlMean": 215.96656132426182,
         "pnlStd": 268.43062151972117,
         "pnlSkew": 0.3607674795141933,
-        "bootstrapCI95Lo": 0.009176911270352583,
-        "bootstrapCI95Hi": 0.025984309920122683
+        "bootstrapCI95Lo": 0.008796523949513357,
+        "bootstrapCI95Hi": 0.025946171493944403,
+        "interimMaxDrawdown": -0.0645484266035357,
+        "worstMonthlyMtmReturn": -0.036381484578582146,
+        "postTaxAnnReturn22pct": 0.01185905295044698,
+        "postTaxAnnReturn32pct": 0.010442343288696865,
+        "postTaxAnnReturn37pct": 0.00972354736413128
       }
     },
     {
@@ -2135,8 +2310,13 @@
         "pnlMean": 473.02467479715153,
         "pnlStd": 498.1964898570256,
         "pnlSkew": 0.10580819304415721,
-        "bootstrapCI95Lo": 0.014525251725798993,
-        "bootstrapCI95Hi": 0.036816422082725175
+        "bootstrapCI95Lo": 0.013495414460646504,
+        "bootstrapCI95Hi": 0.03758145431868276,
+        "interimMaxDrawdown": -0.1012261043465517,
+        "worstMonthlyMtmReturn": -0.054411629466551745,
+        "postTaxAnnReturn22pct": 0.017691291780330243,
+        "postTaxAnnReturn32pct": 0.015648584413167077,
+        "postTaxAnnReturn37pct": 0.014605513585008723
       }
     },
     {
@@ -2191,8 +2371,13 @@
         "pnlMean": 559.9777505109663,
         "pnlStd": 638.2507069039839,
         "pnlSkew": 0.09156700123142986,
-        "bootstrapCI95Lo": 0.01520522328828422,
-        "bootstrapCI95Hi": 0.041972017351742164
+        "bootstrapCI95Lo": 0.015425978859441969,
+        "bootstrapCI95Hi": 0.04345784134950392,
+        "interimMaxDrawdown": -0.11899484185985794,
+        "worstMonthlyMtmReturn": -0.06568391720866722,
+        "postTaxAnnReturn22pct": 0.019625920252462015,
+        "postTaxAnnReturn32pct": 0.017385042719431087,
+        "postTaxAnnReturn37pct": 0.016238467073366847
       }
     },
     {
@@ -2246,8 +2431,13 @@
         "pnlMean": 1002.8640844818904,
         "pnlStd": 655.6399061484422,
         "pnlSkew": 0.06233968662388575,
-        "bootstrapCI95Lo": 0.023575316302017146,
-        "bootstrapCI95Hi": 0.046828815753617636
+        "bootstrapCI95Lo": 0.024816139190510622,
+        "bootstrapCI95Hi": 0.046298577035768895,
+        "interimMaxDrawdown": -0.1877546267660882,
+        "worstMonthlyMtmReturn": -0.09605126309900328,
+        "postTaxAnnReturn22pct": 0.02313518197961728,
+        "postTaxAnnReturn32pct": 0.02054633071013412,
+        "postTaxAnnReturn37pct": 0.019217020719252353
       }
     },
     {
@@ -2301,8 +2491,13 @@
         "pnlMean": 1330.8253170508049,
         "pnlStd": 971.8738533197329,
         "pnlSkew": 0.6259266722447125,
-        "bootstrapCI95Lo": 0.029687603584655164,
-        "bootstrapCI95Hi": 0.05920900209750135
+        "bootstrapCI95Lo": 0.02950147515837398,
+        "bootstrapCI95Hi": 0.05926912072906387,
+        "interimMaxDrawdown": -0.2405529865337903,
+        "worstMonthlyMtmReturn": -0.13077892520584583,
+        "postTaxAnnReturn22pct": 0.02735677139419379,
+        "postTaxAnnReturn32pct": 0.02436815292169303,
+        "postTaxAnnReturn37pct": 0.022827362830600162
       }
     },
     {
@@ -2355,8 +2550,13 @@
         "pnlMean": 686.4222519603418,
         "pnlStd": 1159.8583314022037,
         "pnlSkew": -0.7610066701790049,
-        "bootstrapCI95Lo": -0.0018207590783722027,
-        "bootstrapCI95Hi": 0.05462830664643681
+        "bootstrapCI95Lo": -0.0040112886596048725,
+        "bootstrapCI95Hi": 0.054796205720205826,
+        "interimMaxDrawdown": -0.2892881829003473,
+        "worstMonthlyMtmReturn": -0.13077892520584583,
+        "postTaxAnnReturn22pct": 0.03138061104049594,
+        "postTaxAnnReturn32pct": 0.027868828271895962,
+        "postTaxAnnReturn37pct": 0.026065743158600885
       }
     },
     {
@@ -2411,8 +2611,13 @@
         "pnlMean": 559.9777505109663,
         "pnlStd": 638.2507069039839,
         "pnlSkew": 0.09156700123142986,
-        "bootstrapCI95Lo": 0.015258123902209597,
-        "bootstrapCI95Hi": 0.04309563054817023
+        "bootstrapCI95Lo": 0.014302861376226605,
+        "bootstrapCI95Hi": 0.04368671252010614,
+        "interimMaxDrawdown": -0.11899484185985794,
+        "worstMonthlyMtmReturn": -0.06568391720866722,
+        "postTaxAnnReturn22pct": 0.019625920252462015,
+        "postTaxAnnReturn32pct": 0.017385042719431087,
+        "postTaxAnnReturn37pct": 0.016238467073366847
       }
     },
     {
@@ -2468,8 +2673,13 @@
         "pnlMean": 104.73428027915917,
         "pnlStd": 957.9454125932631,
         "pnlSkew": 0.5047356493485036,
-        "bootstrapCI95Lo": -0.04463095238424031,
-        "bootstrapCI95Hi": 0.04914888521585792
+        "bootstrapCI95Lo": -0.04532742671865042,
+        "bootstrapCI95Hi": 0.04997987121754921,
+        "interimMaxDrawdown": -0.28053068602941333,
+        "worstMonthlyMtmReturn": -0.07684014864817866,
+        "postTaxAnnReturn22pct": 0.0047865979644377,
+        "postTaxAnnReturn32pct": 0.004186792175793208,
+        "postTaxAnnReturn37pct": 0.003885405075301218
       }
     },
     {
@@ -2525,8 +2735,13 @@
         "pnlMean": 345.25209189548525,
         "pnlStd": 924.9254968213547,
         "pnlSkew": 0.5838158491779023,
-        "bootstrapCI95Lo": -0.004622055028023264,
-        "bootstrapCI95Hi": 0.058936123239312854
+        "bootstrapCI95Lo": -0.0043882034668151215,
+        "bootstrapCI95Hi": 0.05815169643908091,
+        "interimMaxDrawdown": -0.22234870000436427,
+        "worstMonthlyMtmReturn": -0.047671617440051293,
+        "postTaxAnnReturn22pct": 0.02067520626271313,
+        "postTaxAnnReturn32pct": 0.018269857232388276,
+        "postTaxAnnReturn37pct": 0.017043340916491845
       }
     },
     {
@@ -2585,8 +2800,13 @@
         "pnlMean": -81.03422671390298,
         "pnlStd": 575.3531552184558,
         "pnlSkew": -0.22270501249072097,
-        "bootstrapCI95Lo": -0.06529586174799995,
-        "bootstrapCI95Hi": 0.021502466926522246
+        "bootstrapCI95Lo": -0.06770950448120594,
+        "bootstrapCI95Hi": 0.017692606074092287,
+        "interimMaxDrawdown": -0.21892497575915157,
+        "worstMonthlyMtmReturn": -0.08401634078700976,
+        "postTaxAnnReturn22pct": -0.005535127512798721,
+        "postTaxAnnReturn32pct": -0.004806459120477613,
+        "postTaxAnnReturn37pct": -0.004444297414976539
       }
     },
     {
@@ -2638,8 +2858,13 @@
         "pnlMean": 550.2428062056206,
         "pnlStd": 633.7197373692806,
         "pnlSkew": -0.1576850416927364,
-        "bootstrapCI95Lo": 0.011926248249767957,
-        "bootstrapCI95Hi": 0.055064037200940996
+        "bootstrapCI95Lo": 0.012617828810504106,
+        "bootstrapCI95Hi": 0.05825877832572024,
+        "interimMaxDrawdown": -0.11899484185985798,
+        "worstMonthlyMtmReturn": -0.06568391720866737,
+        "postTaxAnnReturn22pct": 0.02135493027489277,
+        "postTaxAnnReturn32pct": 0.018810031470345434,
+        "postTaxAnnReturn37pct": 0.01751826339318696
       }
     },
     {
@@ -2690,7 +2915,12 @@
         "pnlStd": 1102.350271123028,
         "pnlSkew": -1.7316640242543984,
         "bootstrapCI95Lo": -0.0177950569773222,
-        "bootstrapCI95Hi": 0.0483202764332189
+        "bootstrapCI95Hi": 0.0483202764332189,
+        "interimMaxDrawdown": -0.28928818290034725,
+        "worstMonthlyMtmReturn": -0.13077892520584583,
+        "postTaxAnnReturn22pct": 0.02630795367982741,
+        "postTaxAnnReturn32pct": 0.023098252373159323,
+        "postTaxAnnReturn37pct": 0.021476602879317852
       }
     },
     {
@@ -2742,7 +2972,12 @@
         "pnlStd": 724.0109739687275,
         "pnlSkew": 1.8960588752566203,
         "bootstrapCI95Lo": 0.03351162318414236,
-        "bootstrapCI95Hi": 0.0660102339792028
+        "bootstrapCI95Hi": 0.0660102339792028,
+        "interimMaxDrawdown": -0.24055298653379031,
+        "worstMonthlyMtmReturn": -0.13077892520584583,
+        "postTaxAnnReturn22pct": 0.021473257866206463,
+        "postTaxAnnReturn32pct": 0.01891527350096789,
+        "postTaxAnnReturn37pct": 0.01761676419254199
       }
     },
     {
@@ -2794,8 +3029,13 @@
         "pnlMean": -230.09256092564792,
         "pnlStd": 708.6207960220754,
         "pnlSkew": 0.09283679536319989,
-        "bootstrapCI95Lo": -0.06525550061794372,
-        "bootstrapCI95Hi": 0.015266170201432505
+        "bootstrapCI95Lo": -0.07123435693075097,
+        "bootstrapCI95Hi": 0.013014709734821217,
+        "interimMaxDrawdown": -0.19610138042052716,
+        "worstMonthlyMtmReturn": -0.06811497060954964,
+        "postTaxAnnReturn22pct": -0.020093511385910534,
+        "postTaxAnnReturn32pct": -0.017341474892654474,
+        "postTaxAnnReturn37pct": -0.015986616191007608
       }
     },
     {
@@ -2846,7 +3086,12 @@
         "pnlStd": 1479.6845901863503,
         "pnlSkew": 0.5146865985939914,
         "bootstrapCI95Lo": 0.0006276588412310602,
-        "bootstrapCI95Hi": 0.10105563760778002
+        "bootstrapCI95Hi": 0.10105563760778002,
+        "interimMaxDrawdown": -0.06850051179946573,
+        "worstMonthlyMtmReturn": -0.03407026311939544,
+        "postTaxAnnReturn22pct": 0.04950433536248422,
+        "postTaxAnnReturn32pct": 0.04364355829592936,
+        "postTaxAnnReturn37pct": 0.04066526186066621
       }
     },
     {
@@ -2898,8 +3143,13 @@
         "pnlMean": -231.74357169157796,
         "pnlStd": 699.6368336210015,
         "pnlSkew": 0.11043689249144509,
-        "bootstrapCI95Lo": -0.07263415730730516,
-        "bootstrapCI95Hi": 0.01376740847643898
+        "bootstrapCI95Lo": -0.0645876962132923,
+        "bootstrapCI95Hi": 0.012060724110601884,
+        "interimMaxDrawdown": -0.20005536479726438,
+        "worstMonthlyMtmReturn": -0.0737031448253344,
+        "postTaxAnnReturn22pct": -0.019818647072011197,
+        "postTaxAnnReturn32pct": -0.017106747600275085,
+        "postTaxAnnReturn37pct": -0.015771343816651684
       }
     },
     {
@@ -2952,7 +3202,12 @@
         "pnlStd": 1501.4663955982107,
         "pnlSkew": -0.36427995006794356,
         "bootstrapCI95Lo": -0.1145472696932095,
-        "bootstrapCI95Hi": 0.0358481045638992
+        "bootstrapCI95Hi": 0.04014256897354751,
+        "interimMaxDrawdown": -0.3447931493093373,
+        "worstMonthlyMtmReturn": -0.11223077282889624,
+        "postTaxAnnReturn22pct": -0.016684461056545974,
+        "postTaxAnnReturn32pct": -0.014425145723800159,
+        "postTaxAnnReturn37pct": -0.013309741025414157
       }
     },
     {
@@ -3007,8 +3262,13 @@
         "pnlMean": -52.7942166142976,
         "pnlStd": 1004.4051698808103,
         "pnlSkew": 0.8405390148333269,
-        "bootstrapCI95Lo": -0.08533470474846006,
-        "bootstrapCI95Hi": 0.04054703506771973
+        "bootstrapCI95Lo": -0.08709151994523479,
+        "bootstrapCI95Hi": 0.04225642032975596,
+        "interimMaxDrawdown": -0.2877456075556712,
+        "worstMonthlyMtmReturn": -0.07178369803608718,
+        "postTaxAnnReturn22pct": -0.008447410624537022,
+        "postTaxAnnReturn32pct": -0.007327634597575572,
+        "postTaxAnnReturn37pct": -0.0067719825106276055
       }
     },
     {
@@ -3059,8 +3319,13 @@
         "pnlMean": 636.5803997036502,
         "pnlStd": 1358.4232882289477,
         "pnlSkew": -0.6201391951601731,
-        "bootstrapCI95Lo": -0.01661330702980446,
-        "bootstrapCI95Hi": 0.04751426114089852
+        "bootstrapCI95Lo": -0.012381787409764922,
+        "bootstrapCI95Hi": 0.045224744795492544,
+        "interimMaxDrawdown": -0.17430281293080568,
+        "worstMonthlyMtmReturn": -0.07419888852373957,
+        "postTaxAnnReturn22pct": 0.022364682507010736,
+        "postTaxAnnReturn32pct": 0.019764504143629402,
+        "postTaxAnnReturn37pct": 0.018438490669816066
       }
     },
     {
@@ -3110,7 +3375,12 @@
         "pnlStd": 1809.6982179205036,
         "pnlSkew": 0,
         "bootstrapCI95Lo": -0.041190925143897106,
-        "bootstrapCI95Hi": 0.06049914320608796
+        "bootstrapCI95Hi": 0.06049914320608796,
+        "interimMaxDrawdown": -0.1743028129308057,
+        "worstMonthlyMtmReturn": -0.0741988885237394,
+        "postTaxAnnReturn22pct": 0.025239145562036214,
+        "postTaxAnnReturn32pct": 0.022134432381943014,
+        "postTaxAnnReturn37pct": 0.020568433793357377
       }
     },
     {
@@ -3161,8 +3431,13 @@
         "pnlMean": 1259.6131005740144,
         "pnlStd": 683.576929149723,
         "pnlSkew": -0.9389070421287324,
-        "bootstrapCI95Lo": 0.047050856234841065,
-        "bootstrapCI95Hi": 0.09335737761170027
+        "bootstrapCI95Lo": 0.04465669509931747,
+        "bootstrapCI95Hi": 0.0900379395038784,
+        "interimMaxDrawdown": -0.15905029377917074,
+        "worstMonthlyMtmReturn": -0.1307789252058459,
+        "postTaxAnnReturn22pct": 0.04498272650095059,
+        "postTaxAnnReturn32pct": 0.03972793661348106,
+        "postTaxAnnReturn37pct": 0.03705082249377134
       }
     },
     {
@@ -3203,7 +3478,12 @@
         "pnlStd": 0,
         "pnlSkew": 0,
         "bootstrapCI95Lo": null,
-        "bootstrapCI95Hi": null
+        "bootstrapCI95Hi": null,
+        "interimMaxDrawdown": null,
+        "worstMonthlyMtmReturn": null,
+        "postTaxAnnReturn22pct": null,
+        "postTaxAnnReturn32pct": null,
+        "postTaxAnnReturn37pct": null
       }
     },
     {
@@ -3255,7 +3535,12 @@
         "pnlStd": 1234.9680733866417,
         "pnlSkew": -0.9964384378050555,
         "bootstrapCI95Lo": 0.0003708038000378444,
-        "bootstrapCI95Hi": 0.05356002474068777
+        "bootstrapCI95Hi": 0.05356002474068777,
+        "interimMaxDrawdown": -0.28928818290034725,
+        "worstMonthlyMtmReturn": -0.13077892520584583,
+        "postTaxAnnReturn22pct": 0.008310703524017304,
+        "postTaxAnnReturn32pct": 0.0072754448201390876,
+        "postTaxAnnReturn37pct": 0.006754606639710614
       }
     },
     {
@@ -3308,8 +3593,13 @@
         "pnlMean": 1486.246349693868,
         "pnlStd": 2981.2611115082673,
         "pnlSkew": -0.941747860289154,
-        "bootstrapCI95Lo": -0.027058895308486597,
-        "bootstrapCI95Hi": 0.10181096211593132
+        "bootstrapCI95Lo": -0.01918282359810841,
+        "bootstrapCI95Hi": 0.09843152464460947,
+        "interimMaxDrawdown": -0.46607395736418317,
+        "worstMonthlyMtmReturn": -0.2592336123224924,
+        "postTaxAnnReturn22pct": 0.06223516646940008,
+        "postTaxAnnReturn32pct": 0.05608830722977376,
+        "postTaxAnnReturn37pct": 0.05287179737968506
       }
     },
     {
@@ -3363,8 +3653,13 @@
         "pnlMean": 3526.1089592235744,
         "pnlStd": 2983.795425207015,
         "pnlSkew": 1.255635926184309,
-        "bootstrapCI95Lo": 0.059946179599759786,
-        "bootstrapCI95Hi": 0.11093440265730492
+        "bootstrapCI95Lo": 0.05940837849270664,
+        "bootstrapCI95Hi": 0.11156449166278115,
+        "interimMaxDrawdown": -0.38309985915657446,
+        "worstMonthlyMtmReturn": -0.2592336123224924,
+        "postTaxAnnReturn22pct": 0.05449710788425044,
+        "postTaxAnnReturn32pct": 0.0493625881227866,
+        "postTaxAnnReturn37pct": 0.04665888540588825
       }
     },
     {
@@ -3415,8 +3710,13 @@
         "pnlMean": 1263.7218159489817,
         "pnlStd": 3198.8760287064774,
         "pnlSkew": -0.6453807226058227,
-        "bootstrapCI95Lo": -0.04517677965455069,
-        "bootstrapCI95Hi": 0.07949549775239895
+        "bootstrapCI95Lo": -0.05767977876782515,
+        "bootstrapCI95Hi": 0.07949549775239895,
+        "interimMaxDrawdown": -0.3235954286245805,
+        "worstMonthlyMtmReturn": -0.14459636126996303,
+        "postTaxAnnReturn22pct": 0.04350208033245617,
+        "postTaxAnnReturn32pct": 0.038871837947775933,
+        "postTaxAnnReturn37pct": 0.036474961639271664
       }
     },
     {
@@ -3471,8 +3771,13 @@
         "pnlMean": 175.7254068127653,
         "pnlStd": 4956.609264554396,
         "pnlSkew": 0.4738190974711779,
-        "bootstrapCI95Lo": -0.11540450812574132,
-        "bootstrapCI95Hi": 0.0844245550564886
+        "bootstrapCI95Lo": -0.12071624653860147,
+        "bootstrapCI95Hi": 0.08233107339081558,
+        "interimMaxDrawdown": -0.6295951328359619,
+        "worstMonthlyMtmReturn": -0.269736518650481,
+        "postTaxAnnReturn22pct": -0.008679207857037352,
+        "postTaxAnnReturn32pct": -0.007501259679543293,
+        "postTaxAnnReturn37pct": -0.006920019679390599
       }
     },
     {
@@ -3527,8 +3832,13 @@
         "pnlMean": 1320.2437660792934,
         "pnlStd": 1630.8558608292662,
         "pnlSkew": 0.12305726706109645,
-        "bootstrapCI95Lo": 0.029184558213952272,
-        "bootstrapCI95Hi": 0.08024333016853724
+        "bootstrapCI95Lo": 0.030282803885781195,
+        "bootstrapCI95Hi": 0.07965242004990403,
+        "interimMaxDrawdown": -0.20578391840267224,
+        "worstMonthlyMtmReturn": -0.13077892520584594,
+        "postTaxAnnReturn22pct": 0.0383774170405069,
+        "postTaxAnnReturn32pct": 0.03443470101160084,
+        "postTaxAnnReturn37pct": 0.032382560688885675
       }
     }
   ],
@@ -3899,8 +4209,13 @@
       "pnlMean": 3526.1089592235744,
       "pnlStd": 2983.795425207015,
       "pnlSkew": 1.255635926184309,
-      "bootstrapCI95Lo": 0.058470372020492434,
-      "bootstrapCI95Hi": 0.11014050147206333
+      "bootstrapCI95Lo": 0.06020402810428016,
+      "bootstrapCI95Hi": 0.11076002404267316,
+      "interimMaxDrawdown": -0.38309985915657446,
+      "worstMonthlyMtmReturn": -0.2592336123224924,
+      "postTaxAnnReturn22pct": 0.05449710788425044,
+      "postTaxAnnReturn32pct": 0.0493625881227866,
+      "postTaxAnnReturn37pct": 0.04665888540588825
     },
     "positions": [
       {
