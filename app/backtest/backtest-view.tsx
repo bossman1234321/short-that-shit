@@ -220,6 +220,69 @@ type PortfolioFile = {
     alphaAnnualized: number | null;
     rSquared: number | null;
   };
+  subperiods?: Array<{
+    label: string;
+    nEvents: number;
+    nTaken: number;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    winRate: number;
+  }>;
+  tailRisk?: {
+    var95: number;
+    var99: number;
+    cvar95: number;
+    cvar99: number;
+  };
+  calibration?: Array<{
+    bucket: string;
+    minScore: number;
+    maxScore: number;
+    n: number;
+    actualHitRate: number | null;
+    meanScore: number;
+  }>;
+  regimes?: Array<{
+    label: string;
+    nEvents: number;
+    nTaken: number;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    winRate: number;
+  }>;
+  ytd2026?: Array<{
+    ticker: string;
+    sector: string;
+    entryDate: string;
+    expectedExitDate: string;
+    daysOpen: number;
+    size: number;
+    realized: boolean;
+    realizedPnL: number | null;
+    unrealizedMtmPnL: number | null;
+    unrealizedMtmRet: number | null;
+    pnlAsOfToday: number;
+  }>;
+  ytd2026Total?: number;
+  ytd2026Candidates?: Array<{
+    ticker: string;
+    sector: string;
+    filed: string;
+    de: number | null;
+    yoy_t: number | null;
+    trailing6m: number | null;
+    ocfDecline2y: boolean;
+    failedFilters: string[];
+    matchesHeadline: boolean;
+  }>;
+  mlSizingVariant?: {
+    name: string;
+    description: string;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    winRate: number;
+    nTaken: number;
+  };
 };
 
 const fmtPct = (n: number | null | undefined): string => {
@@ -261,6 +324,9 @@ export function BacktestReview({
     <div className="min-h-screen bg-terminal-bg text-terminal-fg">
       <Header backtest={backtest} portfolio={portfolio} />
       <main className="mx-auto max-w-[1400px] space-y-12 px-6 pb-24">
+        {portfolio?.ytd2026Candidates && portfolio.ytd2026Candidates.length > 0 && (
+          <Ytd2026Panel portfolio={portfolio} />
+        )}
         {portfolio?.headline && (
           <HeadlineEvaluation portfolio={portfolio} />
         )}
@@ -373,6 +439,189 @@ function Header({
         </div>
       </div>
     </header>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function Ytd2026Panel({ portfolio }: { portfolio: PortfolioFile }) {
+  const candidates = portfolio.ytd2026Candidates ?? [];
+  const opened = portfolio.ytd2026 ?? [];
+  const total = portfolio.ytd2026Total ?? 0;
+  const passed = candidates.filter((c) => c.matchesHeadline);
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        2026 YTD — headline strategy P&amp;L
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        Live tally of what the headline strategy has done in calendar year
+        2026. The base screen triggered on{" "}
+        <span className="font-data text-amber-accent">{candidates.length}</span>{" "}
+        ticker(s) so far; the strict filter passed{" "}
+        <span className="font-data text-amber-accent">{passed.length}</span>{" "}
+        of them.
+      </p>
+      <div className="mt-3 grid gap-4 md:grid-cols-3">
+        <div className="rounded border border-amber-accent/40 bg-amber-accent/5 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-amber-accent">
+            2026 YTD P&amp;L (headline)
+          </div>
+          <div className="mt-1 font-data text-3xl text-amber-accent">
+            {fmtUSD(total)}
+          </div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            {opened.length === 0
+              ? "no positions opened yet — strategy in cash"
+              : `${opened.length} position${opened.length === 1 ? "" : "s"} opened`}
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Base screen triggers
+          </div>
+          <div className="mt-1 font-data text-2xl">{candidates.length}</div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            tickers that fired the rev-decline + leverage rule in 2026
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Headline-filter passes
+          </div>
+          <div className="mt-1 font-data text-2xl">{passed.length}</div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            after winning-sector + ocf2y + anti-momentum filters
+          </div>
+        </div>
+      </div>
+
+      {opened.length > 0 && (
+        <div className="mt-4 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+          <div className="px-3 pt-3 text-[10px] uppercase tracking-wider text-terminal-muted">
+            Positions opened in 2026
+          </div>
+          <table className="w-full text-xs">
+            <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+              <tr>
+                <th className="px-3 py-2 text-left">Ticker</th>
+                <th className="px-3 py-2 text-left">Sector</th>
+                <th className="px-3 py-2 text-left">Entry</th>
+                <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-right">Days open</th>
+                <th className="px-3 py-2 text-right">Size $</th>
+                <th className="px-3 py-2 text-right">P&amp;L (today)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {opened.map((y, i) => (
+                <tr
+                  key={`${y.ticker}-${y.entryDate}-${i}`}
+                  className="border-t border-terminal-border/50"
+                >
+                  <td className="px-3 py-1.5 font-data font-semibold">
+                    {y.ticker}
+                  </td>
+                  <td className="px-3 py-1.5 text-terminal-muted">
+                    {y.sector}
+                  </td>
+                  <td className="px-3 py-1.5 font-data text-[10px]">
+                    {y.entryDate}
+                  </td>
+                  <td
+                    className={`px-3 py-1.5 ${y.realized ? "text-terminal-muted" : "text-amber-accent"}`}
+                  >
+                    {y.realized ? "closed" : "OPEN"}
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-data">
+                    {y.daysOpen}
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-data">
+                    {fmtUSD(y.size)}
+                  </td>
+                  <td
+                    className={`px-3 py-1.5 text-right font-data ${y.pnlAsOfToday >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {fmtUSD(y.pnlAsOfToday)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="mt-4 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+        <div className="px-3 pt-3 text-[10px] uppercase tracking-wider text-terminal-muted">
+          All 2026 base-screen triggers (filter audit)
+        </div>
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">Ticker</th>
+              <th className="px-3 py-2 text-left">Sector</th>
+              <th className="px-3 py-2 text-left">Filed</th>
+              <th className="px-3 py-2 text-right">D/E</th>
+              <th className="px-3 py-2 text-right">YoY rev</th>
+              <th className="px-3 py-2 text-right">Trail-6m</th>
+              <th className="px-3 py-2 text-left">Filter result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {candidates.map((c, i) => (
+              <tr
+                key={`${c.ticker}-${c.filed}-${i}`}
+                className="border-t border-terminal-border/50"
+              >
+                <td className="px-3 py-1.5 font-data font-semibold">
+                  <a
+                    href={`https://finance.yahoo.com/quote/${encodeURIComponent(c.ticker)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-amber-accent hover:underline"
+                  >
+                    {c.ticker}
+                  </a>
+                </td>
+                <td className="px-3 py-1.5 text-terminal-muted">{c.sector}</td>
+                <td className="px-3 py-1.5 font-data text-[10px]">
+                  {c.filed}
+                </td>
+                <td className="px-3 py-1.5 text-right font-data">
+                  {c.de != null ? c.de.toFixed(2) : "neg"}
+                </td>
+                <td className="px-3 py-1.5 text-right font-data text-red-400">
+                  {fmtPct(c.yoy_t)}
+                </td>
+                <td
+                  className={`px-3 py-1.5 text-right font-data ${(c.trailing6m ?? 0) < 0 ? "text-emerald-400" : "text-amber-accent"}`}
+                >
+                  {fmtPct(c.trailing6m)}
+                </td>
+                <td className="px-3 py-1.5 text-[11px]">
+                  {c.matchesHeadline ? (
+                    <span className="text-emerald-400 font-semibold">
+                      ✓ PASS
+                    </span>
+                  ) : (
+                    <span className="text-amber-accent">
+                      ✗ {c.failedFilters.join(", ")}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        <span className="text-amber-accent">Honest read:</span> the strict
+        filter is doing what it&apos;s designed to do — most 2026
+        candidates either rallied recently (failing anti-momentum) or are
+        in sectors the backtest excluded. The strategy sitting in cash is
+        the correct outcome when no setup meets the bar.
+      </p>
+    </section>
   );
 }
 

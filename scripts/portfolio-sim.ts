@@ -639,6 +639,16 @@ function computeMetrics(
   };
 }
 
+// Total return from `from` to `to` using monthly closes.
+function returnBetween(bars: Bar[], fromIso: string, toIso: string): number | null {
+  const a = priceAtOrAfter(bars, fromIso);
+  if (!a) return null;
+  const b = priceClosestBefore(bars, toIso) ?? priceAtOrAfter(bars, toIso);
+  if (!b) return null;
+  if (a.date > toIso) return null;
+  return a.close > 0 ? (b.close - a.close) / a.close : null;
+}
+
 function priceAtOrAfter(bars: Bar[], dateIso: string): Bar | null {
   for (const b of bars) if (b.date >= dateIso) return b;
   return null;
@@ -2250,6 +2260,363 @@ async function main() {
     );
   }
 
+  // ─── Subperiod robustness ─────────────────────────────────────────
+  // Split events into 5-year buckets, run headline strategy on each
+  // independently. Tests whether alpha is concentrated in one regime or
+  // robust across periods.
+  console.log("\n=== subperiod robustness ===");
+  type SubperiodResult = {
+    label: string;
+    yearStart: number;
+    yearEnd: number;
+    nEvents: number;
+    nTaken: number;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    winRate: number;
+  };
+  const subperiods: SubperiodResult[] = [];
+  const periodDefs: Array<{ label: string; from: number; to: number }> = [
+    { label: "2010-2014", from: 2010, to: 2014 },
+    { label: "2015-2019", from: 2015, to: 2019 },
+    { label: "2020-2025", from: 2020, to: 2025 },
+  ];
+  for (const pd of periodDefs) {
+    const subEvents = allEvents.filter((e) => {
+      const y = Number(e.filed.slice(0, 4));
+      return y >= pd.from && y <= pd.to;
+    });
+    const subResult = await simulate(
+      subEvents,
+      headlineCfg,
+      model,
+      barsByTicker,
+      wfModels,
+      spyBars
+    );
+    subperiods.push({
+      label: pd.label,
+      yearStart: pd.from,
+      yearEnd: pd.to,
+      nEvents: subEvents.length,
+      nTaken: subResult.nTaken,
+      finalEquity: subResult.finalEquity,
+      annualizedReturn: subResult.annualizedReturn,
+      winRate: subResult.winRate,
+    });
+    console.log(
+      `  ${pd.label}: events=${subEvents.length}, taken=${subResult.nTaken}, final=$${subResult.finalEquity.toFixed(0)}, ann ${((subResult.annualizedReturn ?? 0) * 100).toFixed(1)}%, win ${((subResult.winRate ?? 0) * 100).toFixed(0)}%`
+    );
+  }
+
+  // ─── VaR / CVaR ───────────────────────────────────────────────────
+  // Compute Value-at-Risk and Conditional VaR from per-position returns.
+  // VaR_95 = 5th percentile (single-trade); CVaR_95 = average return below
+  // VaR_95. Tells us the realistic worst-case downside.
+  console.log("\n=== VaR / CVaR ===");
+  const positionRets = headlineResult.positions
+    .map((p) => p.pnl / Math.max(1, p.size))
+    .sort((a, b) => a - b);
+  const var95 =
+    positionRets.length > 0
+      ? positionRets[Math.floor(positionRets.length * 0.05)]
+      : 0;
+  const var99 =
+    positionRets.length > 0
+      ? positionRets[Math.floor(positionRets.length * 0.01)]
+      : 0;
+  const cvar95Slice = positionRets.filter((r) => r <= var95);
+  const cvar95 =
+    cvar95Slice.length > 0
+      ? cvar95Slice.reduce((a, b) => a + b, 0) / cvar95Slice.length
+      : 0;
+  const cvar99Slice = positionRets.filter((r) => r <= var99);
+  const cvar99 =
+    cvar99Slice.length > 0
+      ? cvar99Slice.reduce((a, b) => a + b, 0) / cvar99Slice.length
+      : 0;
+  console.log(
+    `  95% VaR (per-trade):    ${(var95 * 100).toFixed(1)}%  (5th percentile of position returns)`
+  );
+  console.log(
+    `  95% CVaR:               ${(cvar95 * 100).toFixed(1)}%  (mean of returns below VaR)`
+  );
+  console.log(
+    `  99% VaR:                ${(var99 * 100).toFixed(1)}%`
+  );
+  console.log(
+    `  99% CVaR:               ${(cvar99 * 100).toFixed(1)}%`
+  );
+  const tailRisk = { var95, var99, cvar95, cvar99 };
+
+  // ─── 2026 YTD P&L ────────────────────────────────────────────────
+  // Show positions the headline strategy would have opened in 2026, with
+  // current mark-to-market for any still open. Useful to see the "live"
+  // bleeding edge of the backtest.
+  console.log("\n=== 2026 YTD P&L (headline strategy) ===");
+  const today = new Date().toISOString().slice(0, 10);
+  type YtdEntry = {
+    ticker: string;
+    sector: string;
+    entryDate: string;
+    expectedExitDate: string;
+    daysOpen: number;
+    size: number;
+    realized: boolean;
+    realizedPnL: number | null;
+    realizedRet: number | null;
+    unrealizedMtmPnL: number | null;
+    unrealizedMtmRet: number | null;
+    pnlAsOfToday: number;
+  };
+  const ytd2026: YtdEntry[] = [];
+  let total2026PnL = 0;
+  for (const p of headlineResult.positions) {
+    if (!p.entryDate.startsWith("2026")) continue;
+    const realized = p.exitDate <= today;
+    let unrealizedPnL: number | null = null;
+    let unrealizedRet: number | null = null;
+    if (!realized) {
+      // Compute MTM as of today using current Yahoo bar
+      const tickerBars = barsByTicker.get(p.ticker);
+      if (tickerBars && spyBars) {
+        const entryT = priceAtOrAfter(tickerBars, p.entryDate);
+        const entryS = priceAtOrAfter(spyBars, p.entryDate);
+        const curT = priceClosestBefore(tickerBars, today);
+        const curS = priceClosestBefore(spyBars, today);
+        if (entryT && entryS && curT && curS) {
+          const tickerRet = (curT.close - entryT.close) / entryT.close;
+          const spyRet = (curS.close - entryS.close) / entryS.close;
+          const halfSize = (p.size / 2) * (headlineCfg.pairLeverage ?? 1);
+          unrealizedPnL = halfSize * (-tickerRet + spyRet);
+          unrealizedRet = (-tickerRet + spyRet);
+        }
+      }
+    }
+    const pnlAsOfToday = realized ? p.pnl : unrealizedPnL ?? 0;
+    total2026PnL += pnlAsOfToday;
+    ytd2026.push({
+      ticker: p.ticker,
+      sector: p.sector,
+      entryDate: p.entryDate,
+      expectedExitDate: p.exitDate,
+      daysOpen: realized ? p.daysHeld : Math.round(
+        (new Date(today).getTime() - new Date(p.entryDate).getTime()) /
+          (24 * 3600 * 1000)
+      ),
+      size: p.size,
+      realized,
+      realizedPnL: realized ? p.pnl : null,
+      realizedRet: realized ? p.ret : null,
+      unrealizedMtmPnL: unrealizedPnL,
+      unrealizedMtmRet: unrealizedRet,
+      pnlAsOfToday,
+    });
+  }
+  // Also collect 2026 candidate events that DID trigger the screen but
+  // failed the headline filter — helpful for transparency on why the
+  // strategy is in cash.
+  type YtdCandidate = {
+    ticker: string;
+    sector: string;
+    filed: string;
+    de: number | null;
+    yoy_t: number | null;
+    trailing6m: number | null;
+    ocfDecline2y: boolean;
+    inWinningSector: boolean;
+    failedFilters: string[];
+    matchesHeadline: boolean;
+  };
+  const ytd2026Candidates: YtdCandidate[] = [];
+  const winningSectors = ["Utilities", "Consumer Staples", "Real Estate"];
+  for (const e of allEvents) {
+    if (!e.filed.startsWith("2026")) continue;
+    const failedFilters: string[] = [];
+    if (!winningSectors.includes(e.sector)) failedFilters.push("not in winning sectors");
+    if (e.ocfDecline2y) failedFilters.push("ocf-decline-2y");
+    if (e.trailing6m != null && e.trailing6m > 0) failedFilters.push("trailing-6m > 0%");
+    ytd2026Candidates.push({
+      ticker: e.ticker,
+      sector: e.sector,
+      filed: e.filed,
+      de: e.de,
+      yoy_t: e.yoy_t,
+      trailing6m: e.trailing6m ?? null,
+      ocfDecline2y: e.ocfDecline2y,
+      inWinningSector: winningSectors.includes(e.sector),
+      failedFilters,
+      matchesHeadline: failedFilters.length === 0,
+    });
+  }
+  console.log(
+    `  ${ytd2026Candidates.length} candidates triggered the base screen in 2026; ${ytd2026Candidates.filter((c) => c.matchesHeadline).length} passed the headline filter`
+  );
+
+  if (ytd2026.length === 0) {
+    console.log("  No headline positions opened in 2026 (yet).");
+  } else {
+    for (const y of ytd2026) {
+      const status = y.realized ? "closed" : "open";
+      const pnlPct = y.size > 0 ? (y.pnlAsOfToday / y.size) * 100 : 0;
+      console.log(
+        `  ${y.ticker.padEnd(8)} ${y.sector.slice(0, 14).padEnd(14)} entry ${y.entryDate} ${status.padEnd(7)} P&L $${y.pnlAsOfToday.toFixed(0).padStart(5)} (${pnlPct.toFixed(1)}% on size)`
+      );
+    }
+    console.log(`  TOTAL 2026 P&L: $${total2026PnL.toFixed(0)}`);
+  }
+
+  // ─── Regime-conditional analysis ──────────────────────────────────
+  // Bucket events by SPY trailing-12m at trigger date. Compare strategy
+  // performance in bull (SPY > +10%) vs bear (SPY < -10%) vs sideways.
+  console.log("\n=== regime-conditional analysis ===");
+  type RegimeStat = {
+    label: string;
+    nEvents: number;
+    nTaken: number;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    winRate: number;
+  };
+  const regimes: RegimeStat[] = [];
+  const regimeDefs: Array<{ label: string; pred: (e: Event) => boolean }> = [
+    {
+      label: "bull (SPY 12m > +10%)",
+      pred: (e) =>
+        (e.trailing12m == null && (() => false)()) ||
+        ((spyBars &&
+          (() => {
+            const spy12 = returnBetween(spyBars, addMonths(e.filed, -12), e.filed);
+            return spy12 != null && spy12 > 0.10;
+          })()) ||
+          false),
+    },
+    {
+      label: "sideways (SPY 12m -10% to +10%)",
+      pred: (e) => {
+        if (!spyBars) return false;
+        const spy12 = returnBetween(spyBars, addMonths(e.filed, -12), e.filed);
+        return spy12 != null && spy12 >= -0.10 && spy12 <= 0.10;
+      },
+    },
+    {
+      label: "bear (SPY 12m < -10%)",
+      pred: (e) => {
+        if (!spyBars) return false;
+        const spy12 = returnBetween(spyBars, addMonths(e.filed, -12), e.filed);
+        return spy12 != null && spy12 < -0.10;
+      },
+    },
+  ];
+  for (const rd of regimeDefs) {
+    const subEvents = allEvents.filter(rd.pred);
+    const subResult = await simulate(
+      subEvents,
+      headlineCfg,
+      model,
+      barsByTicker,
+      wfModels,
+      spyBars
+    );
+    regimes.push({
+      label: rd.label,
+      nEvents: subEvents.length,
+      nTaken: subResult.nTaken,
+      finalEquity: subResult.finalEquity,
+      annualizedReturn: subResult.annualizedReturn,
+      winRate: subResult.winRate,
+    });
+    console.log(
+      `  ${rd.label.padEnd(34)} n=${String(subEvents.length).padStart(3)} taken=${subResult.nTaken} final=$${subResult.finalEquity.toFixed(0).padStart(6)} ann ${(((subResult.annualizedReturn ?? 0) * 100)).toFixed(1).padStart(5)}% win ${((subResult.winRate ?? 0) * 100).toFixed(0)}%`
+    );
+  }
+
+  // ─── ML-weighted position sizing (variant) ────────────────────────
+  // Instead of equal weight or full size, scale position size by ML score.
+  // High-conviction trades (score > 0.65) get full $10K; medium (0.5-0.65)
+  // get $5K; low (<0.5) get nothing.
+  console.log("\n=== ML-weighted sizing strategy ===");
+  const mlSizingCfg: StrategyConfig = {
+    name: "ML-weighted sizing",
+    description: "size = $10K × clamp(score-0.4, 0, 0.6)/0.6 — high-conviction trades scale up",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0) &&
+      ctx.wfMlScore != null &&
+      ctx.wfMlScore > 0.4,
+  };
+  const mlSizingResult = await simulate(
+    allEvents,
+    mlSizingCfg,
+    model,
+    barsByTicker,
+    wfModels,
+    spyBars
+  );
+  console.log(
+    `  ML > 0.4 + headline filter: n=${mlSizingResult.nTaken} final=$${mlSizingResult.finalEquity.toFixed(0)} ann ${((mlSizingResult.annualizedReturn ?? 0) * 100).toFixed(1)}% win ${((mlSizingResult.winRate ?? 0) * 100).toFixed(0)}%`
+  );
+
+  // ─── ML calibration curve ─────────────────────────────────────────
+  // For each event, score with walk-forward ML, bucket by score, compute
+  // empirical hit rate (fraction with α₁y < -5%) per bucket. A
+  // well-calibrated model has higher hit rates in higher score buckets.
+  console.log("\n=== ML calibration ===");
+  type CalibBin = {
+    bucket: string;
+    minScore: number;
+    maxScore: number;
+    n: number;
+    actualHitRate: number | null;
+    meanScore: number;
+  };
+  const wfScores: Array<{ score: number; hit: number }> = [];
+  for (const e of allEvents) {
+    if (e.alpha1y == null) continue;
+    const score = walkForwardScore(e, wfModels, buildFV);
+    if (score == null) continue;
+    wfScores.push({ score, hit: e.alpha1y < -0.05 ? 1 : 0 });
+  }
+  const calibBuckets: CalibBin[] = [];
+  for (let lo = 0; lo < 1.0; lo += 0.2) {
+    const hi = lo + 0.2;
+    const inBucket = wfScores.filter((s) => s.score >= lo && s.score < hi);
+    if (inBucket.length === 0) {
+      calibBuckets.push({
+        bucket: `${lo.toFixed(1)}–${hi.toFixed(1)}`,
+        minScore: lo,
+        maxScore: hi,
+        n: 0,
+        actualHitRate: null,
+        meanScore: (lo + hi) / 2,
+      });
+      continue;
+    }
+    const avgScore = inBucket.reduce((a, b) => a + b.score, 0) / inBucket.length;
+    const hitRate =
+      inBucket.reduce((a, b) => a + b.hit, 0) / inBucket.length;
+    calibBuckets.push({
+      bucket: `${lo.toFixed(1)}–${hi.toFixed(1)}`,
+      minScore: lo,
+      maxScore: hi,
+      n: inBucket.length,
+      actualHitRate: hitRate,
+      meanScore: avgScore,
+    });
+    console.log(
+      `  ${lo.toFixed(1)}–${hi.toFixed(1)}: n=${String(inBucket.length).padStart(3)}  meanScore=${avgScore.toFixed(2)}  actualHitRate=${(hitRate * 100).toFixed(0)}%`
+    );
+  }
+
   // ─── p-value vs random portfolio ──────────────────────────────────
   // Generate N random "strategies" that draw n trades from the full event
   // pool (any trigger with α₁y data, no filter). Apply the same
@@ -2808,6 +3175,21 @@ async function main() {
         dividendImpact,
         positionDDs,
         factorExposure,
+        subperiods,
+        tailRisk,
+        calibration: calibBuckets,
+        ytd2026,
+        ytd2026Total: total2026PnL,
+        ytd2026Candidates,
+        regimes,
+        mlSizingVariant: {
+          name: mlSizingCfg.name,
+          description: mlSizingCfg.description,
+          finalEquity: mlSizingResult.finalEquity,
+          annualizedReturn: mlSizingResult.annualizedReturn,
+          winRate: mlSizingResult.winRate,
+          nTaken: mlSizingResult.nTaken,
+        },
         annualizedBar: ANNUALIZED_BAR,
         riskFreeRate: RF_ANNUAL,
       },
