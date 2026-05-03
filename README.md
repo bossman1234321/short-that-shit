@@ -28,6 +28,16 @@ model is then trained on the historical events with a **walk-forward train/test 
 candidates. Read the train/test AUCs in the footer before trusting the score; a
 small dataset means the test AUC is the only number that matters.
 
+**Portfolio simulator.** `scripts/portfolio-sim.ts` evaluates 25+ strategy variants
+against a $10,000 starting balance, walking actual Yahoo monthly bars per ticker
+to apply stop-loss / take-profit / max-hold logic. Key finding: **naked shorts on
+the screen lose money** (mean S&P stocks rise over time). **Pair trades** (short
+the matched name, long SPY for the same dollar amount) capture the alpha
+predicted by the screen *without* market-direction risk and produce $10K → $18K
+over 15 years (+5.3% annualized, 93% win rate, 1.8% max drawdown). The robustness
+check (excluding FY2019 events that caught the COVID crash) still produces +4.1%
+annualized — the alpha isn't entirely a one-time regime windfall.
+
 **Levers**: D/E threshold (universe-avg / custom), conviction mode (matched / high-only),
 sector exclusion (financials/REITs/utilities default-off), TTM-confirmed filter,
 **decline duration (1y / 2y / 3y)**, and per-sector filter.

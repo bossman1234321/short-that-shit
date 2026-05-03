@@ -4,6 +4,8 @@ import { SP500_UNIVERSE, getSectorMap, type Sector } from "./universe";
 import type {
   BacktestSummary,
   MlMetadata,
+  PortfolioStrategySummary,
+  PortfolioSummary,
   ScreenResult,
   ScreenRow,
 } from "./types";
@@ -63,6 +65,53 @@ async function loadBacktestSummary(): Promise<BacktestSummary | null> {
       hitRate: overall.hitRate,
       hitRateBigMiss: overall.hitRateBigMiss,
       bySector,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Surface the headline strategies from public/data/portfolio-sim.json.
+// "bestByEquity" — highest absolute final equity. "bestRobust" — best
+// strategy whose name explicitly drops FY2019 events (the COVID-cliff
+// robustness check). "topStrategies" — the top 5 by final equity for the
+// UI table.
+async function loadPortfolioSummary(): Promise<PortfolioSummary | null> {
+  try {
+    const file = path.resolve(process.cwd(), "public/data/portfolio-sim.json");
+    const raw = await fs.readFile(file, "utf8");
+    const data = JSON.parse(raw) as {
+      generatedAt: string;
+      startingBalance: number;
+      results: Array<{
+        name: string;
+        description: string;
+        finalEquity: number;
+        totalReturn: number;
+        annualizedReturn: number | null;
+        winRate: number;
+        nTaken: number;
+        maxDrawdown: number;
+      }>;
+    };
+    const ranked = [...data.results].sort((a, b) => b.finalEquity - a.finalEquity);
+    const toSummary = (r: (typeof ranked)[number]): PortfolioStrategySummary => ({
+      name: r.name,
+      description: r.description,
+      finalEquity: r.finalEquity,
+      totalReturn: r.totalReturn,
+      annualizedReturn: r.annualizedReturn,
+      winRate: r.winRate,
+      nTaken: r.nTaken,
+      maxDrawdown: r.maxDrawdown,
+    });
+    const robust = ranked.find((r) => /EXCLUDE FY2019/i.test(r.name));
+    return {
+      generatedAt: data.generatedAt,
+      startingBalance: data.startingBalance,
+      bestByEquity: toSummary(ranked[0]),
+      bestRobust: robust ? toSummary(robust) : null,
+      topStrategies: ranked.slice(0, 5).map(toSummary),
     };
   } catch {
     return null;
@@ -135,6 +184,7 @@ export async function runScreen(
   const { tickers, includeAllSectors = false, declineYears = 2 } = options;
   const mlModel = await loadMlModel();
   const backtest = await loadBacktestSummary();
+  const portfolio = await loadPortfolioSummary();
 
   const universe = tickers
     ? tickers.map((t) => ({ ticker: t.toUpperCase(), sector: undefined as any }))
@@ -222,5 +272,6 @@ export async function runScreen(
     cacheMisses,
     backtest,
     mlModel: modelToMetadata(mlModel),
+    portfolio,
   };
 }

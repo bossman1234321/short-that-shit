@@ -143,6 +143,43 @@ ML training data downstream) and aggregate hit-rate stats by sector / year
 Re-run: `npx tsx scripts/backtest-aggregate.ts`. Takes ~30s on a warm
 cache.
 
+## Portfolio simulator
+
+`scripts/portfolio-sim.ts` evaluates 25+ trading-strategy variants against a
+$10,000 starting balance. Walks actual Yahoo monthly bars per ticker, applies
+stop-loss / take-profit / max-hold, pays 2% annualized borrow cost on the
+short notional. Outputs `public/data/portfolio-sim.json` with full per-strategy
+results. Run after retraining the ML model:
+
+```sh
+npx tsx scripts/portfolio-sim.ts
+```
+
+The screen's `runScreen` loads the file at request time and surfaces the top
+strategy + the FY2019-excluded robustness check in the UI footer.
+
+### Key finding (2026-05-03 study)
+
+Naked shorts on the screen *lose money* — markets go up over time, so even
+when matched names underperform SPY by 6% on average, the absolute return on a
+naked short can still be positive (= a loss for us). The 25-strategy sweep
+revealed:
+
+  - Baseline naked short: **−220% total return** ($10K → -$12K bankrupt)
+  - Anti-momentum + sector + tighter stops: −10% (still negative)
+  - **Pair trade** (short ticker + long SPY): +5–86% depending on filter
+
+The "kitchen sink" pair-trade variant ($5K position split 50/50, 4 max
+concurrent, winning sectors only, drop ocf-double-decline, anti-momentum
+trailing-6m ≤ 0%) produced $18,613 final equity. Excluding FY2019 events
+(which captured the COVID crash) it still produces $16,202 — alpha isn't
+purely COVID-flattered.
+
+To add a new strategy, append a `StrategyConfig` to the `STRATEGIES` array
+in `scripts/portfolio-sim.ts`. The framework supports stop-loss, take-profit,
+fixed-term hold, anti-momentum filter (trailing-6m return), ML-score
+threshold, and pair-trade structure.
+
 ## ML model
 
 `scripts/train-model.ts` reads `backtest.json`, builds feature vectors via

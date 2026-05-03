@@ -348,6 +348,7 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
           </p>
         )}
 
+        <PortfolioPanel data={data} />
         <BacktestPanel data={data} />
         <Footer data={data} />
       </main>
@@ -782,6 +783,128 @@ function mlScoreColor(s: number | null, dim: boolean): string {
   if (s >= 0.7) return "text-amber-accent";
   if (s >= 0.5) return "text-terminal-fg";
   return "text-terminal-muted";
+}
+
+function PortfolioPanel({ data }: { data: ScreenResult }) {
+  const p = data.portfolio;
+  if (!p) return null;
+  const fmtUSD = (n: number) => `$${n.toFixed(0)}`;
+  const fmtPct = (n: number | null) =>
+    n == null ? "—" : `${(n * 100).toFixed(1)}%`;
+  return (
+    <section className="mt-10 border-t border-terminal-border pt-8 text-xs text-terminal-muted">
+      <h3 className="font-display text-base text-terminal-fg">
+        Portfolio simulation — what would $
+        {p.startingBalance.toLocaleString()} have done?
+      </h3>
+      <p className="mt-2 leading-relaxed">
+        Each historical screen trigger is opened as a long-short pair (short
+        ticker + long SPY) with a fixed dollar size, held for 12 months, paying
+        2% annualized borrow on the short half. Pair trades capture the screen&apos;s
+        actual prediction — relative underperformance — without market-direction
+        risk.
+      </p>
+      <div className="mt-4 grid gap-6 md:grid-cols-2">
+        <div>
+          <h4 className="font-display text-sm text-terminal-fg">
+            Best by final equity
+          </h4>
+          <div className="mt-2 font-data text-2xl text-amber-accent">
+            {fmtUSD(p.bestByEquity.finalEquity)}
+          </div>
+          <div className="text-[11px] text-terminal-muted">
+            {fmtPct(p.bestByEquity.totalReturn)} total · annualized{" "}
+            {fmtPct(p.bestByEquity.annualizedReturn)} · win rate{" "}
+            {fmtPct(p.bestByEquity.winRate)} · max DD{" "}
+            {fmtPct(p.bestByEquity.maxDrawdown)} · n={p.bestByEquity.nTaken}
+          </div>
+          <div className="mt-2 text-[11px] leading-relaxed">
+            <span className="font-data text-amber-accent">
+              {p.bestByEquity.name}
+            </span>{" "}
+            — {p.bestByEquity.description}
+          </div>
+        </div>
+        {p.bestRobust && (
+          <div>
+            <h4 className="font-display text-sm text-terminal-fg">
+              Robustness check (excludes FY2019)
+            </h4>
+            <div className="mt-2 font-data text-2xl text-emerald-400">
+              {fmtUSD(p.bestRobust.finalEquity)}
+            </div>
+            <div className="text-[11px] text-terminal-muted">
+              {fmtPct(p.bestRobust.totalReturn)} total · annualized{" "}
+              {fmtPct(p.bestRobust.annualizedReturn)} · win rate{" "}
+              {fmtPct(p.bestRobust.winRate)} · max DD{" "}
+              {fmtPct(p.bestRobust.maxDrawdown)} · n={p.bestRobust.nTaken}
+            </div>
+            <div className="mt-2 text-[11px] leading-relaxed">
+              FY2019 events caught the COVID crash and contributed ~40% of the
+              best-strategy P&amp;L. This number is the same kitchen-sink filter
+              with those events removed — proving the alpha isn&apos;t entirely a
+              one-time regime windfall.
+            </div>
+          </div>
+        )}
+      </div>
+      <h5 className="mt-6 text-[11px] uppercase tracking-wider text-terminal-muted">
+        Top 5 strategies tested ({p.topStrategies.length} of many)
+      </h5>
+      <div className="mt-2 overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="text-left">Strategy</th>
+              <th className="text-right">Final $</th>
+              <th className="text-right">Total</th>
+              <th className="text-right">Annualized</th>
+              <th className="text-right">Win</th>
+              <th className="text-right">Max DD</th>
+              <th className="text-right">n</th>
+            </tr>
+          </thead>
+          <tbody>
+            {p.topStrategies.map((s) => (
+              <tr key={s.name}>
+                <td className="py-0.5 font-data text-[11px]">{s.name}</td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtUSD(s.finalEquity)}
+                </td>
+                <td
+                  className={`py-0.5 text-right font-data ${s.totalReturn >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                >
+                  {fmtPct(s.totalReturn)}
+                </td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtPct(s.annualizedReturn)}
+                </td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtPct(s.winRate)}
+                </td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtPct(s.maxDrawdown)}
+                </td>
+                <td className="py-0.5 text-right font-data text-terminal-muted">
+                  {s.nTaken}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 leading-relaxed">
+        <span className="text-amber-accent">Honest read:</span> the screen&apos;s
+        actual edge is in pair structure, not naked shorts. A naked-short
+        version of the same filter <em>blew up</em> ($10K → $-$8.5K). The
+        durable signal is &quot;these names underperform SPY by ~5–15% on average
+        when the screen fires&quot; — and capturing that requires a long
+        offset on the market. Strategies are selected with hindsight (filter
+        chosen after seeing data); walk-forward retesting is on the
+        roadmap.
+      </p>
+    </section>
+  );
 }
 
 function BacktestPanel({ data }: { data: ScreenResult }) {

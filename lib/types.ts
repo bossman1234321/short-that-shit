@@ -123,6 +123,25 @@ export type BacktestSummary = {
   bySector: Record<string, { count: number; meanAlpha1y: number | null; hitRate: number | null }>;
 };
 
+export type PortfolioStrategySummary = {
+  name: string;
+  description: string;
+  finalEquity: number;
+  totalReturn: number;
+  annualizedReturn: number | null;
+  winRate: number;
+  nTaken: number;
+  maxDrawdown: number;
+};
+
+export type PortfolioSummary = {
+  generatedAt: string;
+  startingBalance: number;
+  bestByEquity: PortfolioStrategySummary;
+  bestRobust: PortfolioStrategySummary | null; // excludes 2019/COVID
+  topStrategies: PortfolioStrategySummary[];
+};
+
 export type MlMetadata = {
   trainSize: number;
   testSize: number;
@@ -147,4 +166,5 @@ export type ScreenResult = {
   cacheMisses: number;
   backtest: BacktestSummary | null;
   mlModel: MlMetadata | null;
+  portfolio: PortfolioSummary | null;
 };
