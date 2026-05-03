@@ -583,17 +583,21 @@ async function main() {
   const yearlyAvg = computeYearlyAvgDE(histories, sectorMap);
   console.log(`  yearly-avg D/E (eligible) computed for ${yearlyAvg.size} years`);
 
-  // Find all triggers (skipping excluded sectors)
-  console.log("[backtest-aggregate] finding triggers…");
+  // Find all triggers across the FULL universe — sector exclusion is now an
+  // aggregation-time concern rather than a collection-time one. Threshold is
+  // still computed over eligible sectors only (so it matches what the live
+  // screen sees), but excluded-sector events are evaluated against the same
+  // threshold so we can ask: "if we DID screen banks/REITs/utilities, how
+  // would the historical hit rate look?"
+  console.log("[backtest-aggregate] finding triggers (all sectors)…");
   const triggers: Omit<TriggerEvent, keyof ReturnType<typeof zeroReturns>>[] =
     [];
   for (const [ticker, rows] of histories) {
     const sector = sectorMap[ticker];
     if (!sector) continue;
-    if (EXCLUDED_SECTORS.includes(sector)) continue;
     triggers.push(...findTriggers(ticker, rows, sector, yearlyAvg));
   }
-  console.log(`  ${triggers.length} historical triggers found`);
+  console.log(`  ${triggers.length} historical triggers found across all sectors`);
 
   // Fetch SPY benchmark prices once (unique per dataset)
   console.log("[backtest-aggregate] fetching SPY benchmark…");
@@ -664,49 +668,61 @@ async function main() {
     events.push({ ...trig, ...ret });
   }
 
-  // Aggregate
+  // Aggregate. We compute two views:
+  //   `aggregates`              — eligible sectors only (matches live screen)
+  //   `aggregatesIncludingExcluded` — full universe (informs the question
+  //                                   "should we be excluding these sectors?")
   console.log("[backtest-aggregate] aggregating…");
-  const overall = computeStat(events);
 
-  const bySector: Record<string, Stat> = {};
-  for (const s of new Set(events.map((e) => e.sector))) {
-    bySector[s] = computeStat(events.filter((e) => e.sector === s));
-  }
-  const byYear: Record<string, Stat> = {};
-  for (const y of new Set(events.map((e) => e.endYear))) {
-    byYear[y] = computeStat(events.filter((e) => e.endYear === y));
-  }
-  const byDeBucket: Record<string, Stat> = {};
-  for (const e of events) {
-    const k = deBucket(e.de, e.negEquity);
-    if (!byDeBucket[k]) byDeBucket[k] = computeStat([]);
-  }
-  for (const k of Object.keys(byDeBucket)) {
-    byDeBucket[k] = computeStat(
-      events.filter((e) => deBucket(e.de, e.negEquity) === k)
-    );
-  }
+  const eligibleEvents = events.filter(
+    (e) => !EXCLUDED_SECTORS.includes(e.sector)
+  );
+
+  const aggregateView = (subset: TriggerEvent[]) => {
+    const overall = computeStat(subset);
+    const bySector: Record<string, Stat> = {};
+    for (const s of new Set(subset.map((e) => e.sector))) {
+      bySector[s] = computeStat(subset.filter((e) => e.sector === s));
+    }
+    const byYear: Record<string, Stat> = {};
+    for (const y of new Set(subset.map((e) => e.endYear))) {
+      byYear[y] = computeStat(subset.filter((e) => e.endYear === y));
+    }
+    const byDeBucket: Record<string, Stat> = {};
+    const buckets = new Set(subset.map((e) => deBucket(e.de, e.negEquity)));
+    for (const k of buckets) {
+      byDeBucket[k] = computeStat(
+        subset.filter((e) => deBucket(e.de, e.negEquity) === k)
+      );
+    }
+    return { overall, bySector, byYear, byDeBucket };
+  };
+
+  const aggregates = aggregateView(eligibleEvents);
+  const aggregatesIncludingExcluded = aggregateView(events);
 
   const out = {
     generatedAt: new Date().toISOString(),
     universeSize: SP500_UNIVERSE.length,
     historiesLoaded: loaded,
-    triggerCount: events.length,
+    triggerCount: eligibleEvents.length,
+    triggerCountAllSectors: events.length,
     excludedSectors: EXCLUDED_SECTORS,
-    aggregates: {
-      overall,
-      bySector,
-      byYear,
-      byDeBucket,
-    },
+    aggregates,
+    aggregatesIncludingExcluded,
     events,
   };
 
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
   await fs.writeFile(OUT_PATH, JSON.stringify(out), "utf8");
   console.log(`[backtest-aggregate] wrote ${OUT_PATH}`);
+  const o = aggregates.overall;
+  const oa = aggregatesIncludingExcluded.overall;
   console.log(
-    `  overall: ${overall.count} events, mean α₁y ${overall.meanAlpha1y != null ? (overall.meanAlpha1y * 100).toFixed(1) + "%" : "—"}, hit rate (α<-5%) ${overall.hitRate != null ? (overall.hitRate * 100).toFixed(0) + "%" : "—"}`
+    `  eligible only:  ${o.count} events, mean α₁y ${o.meanAlpha1y != null ? (o.meanAlpha1y * 100).toFixed(1) + "%" : "—"}, hit rate ${o.hitRate != null ? (o.hitRate * 100).toFixed(0) + "%" : "—"}`
+  );
+  console.log(
+    `  all sectors:    ${oa.count} events, mean α₁y ${oa.meanAlpha1y != null ? (oa.meanAlpha1y * 100).toFixed(1) + "%" : "—"}, hit rate ${oa.hitRate != null ? (oa.hitRate * 100).toFixed(0) + "%" : "—"}`
   );
 }
 

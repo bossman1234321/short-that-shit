@@ -11,18 +11,23 @@
 
 import type { Sector } from "./universe";
 
-// Eligible sectors after applying EXCLUDED_SECTORS in lib/run-screen.ts.
-// The historical events that train the model are drawn from these. Order
-// is fixed and persisted into the model so feature vectors line up.
+// All sectors. After the sector-exclusion empirical study (Utilities and
+// REITs proved to be valid short setups, Financials no worse than already-
+// included sectors), the ML model trains on the full universe. Order is
+// fixed and persisted into the model so feature vectors line up; if you
+// add or reorder, the persisted model.json must be retrained.
 export const ML_SECTORS: ReadonlyArray<Sector> = [
   "Technology",
   "Communication Services",
   "Consumer Discretionary",
   "Consumer Staples",
   "Energy",
+  "Financials",
   "Health Care",
   "Industrials",
   "Materials",
+  "Real Estate",
+  "Utilities",
 ];
 
 // Numeric features in fixed order. Sector one-hot follows.

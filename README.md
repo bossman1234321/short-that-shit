@@ -6,11 +6,12 @@ A stock screener that filters S&P 500 names matching **two simultaneous conditio
 2. **Revenue declining year-over-year for two consecutive years** — strict monotonic
    `Rev_t < Rev_t-1 < Rev_t-2` across the last three reported fiscal years.
 
-**Financials, Real Estate (REITs), and Utilities are excluded by default** — D/E is
-structurally meaningless as a distress signal in those sectors (bank liabilities are
-deposits, REITs are designed to be highly levered, utility capital structures are set
-by regulator). Toggle "include excluded sectors" in the UI, or pass
-`?includeAllSectors=1` to the API, to override.
+**No sector is excluded by default.** An earlier version excluded Financials, Real
+Estate, and Utilities a priori on the grounds that D/E means something different in
+those sectors. The historical backtest didn't support the exclusion — Utilities
+(n=19, hit 63%) and REITs (n=3, hit 67%) were actually *better* short setups than
+several included sectors. The empty `EXCLUDED_SECTORS` constant remains as
+scaffolding so a future evidence-based exclusion can be re-armed if warranted.
 
 **TTM trend overlay.** The screener also pulls the most recent 10-Q to compute trailing
 12-month revenue and a partial-year YoY rate. Two informational flags:

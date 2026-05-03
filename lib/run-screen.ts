@@ -88,14 +88,15 @@ function modelToMetadata(m: ModelWeights | null): MlMetadata | null {
   };
 }
 
-// D/E is structurally meaningless as a distress signal in these sectors:
-// banks' liabilities are deposits, REITs are designed to be highly levered,
-// utilities are regulated to operate at high leverage. Excluded by default.
-export const EXCLUDED_SECTORS: ReadonlyArray<Sector> = [
-  "Financials",
-  "Real Estate",
-  "Utilities",
-];
+// Historically excluded sectors (Financials, Real Estate, Utilities) under
+// the a-priori argument that D/E is structurally high there by design (bank
+// deposits, REIT leverage, utility regulation). Empirically that didn't
+// hold: backtest showed Utilities (n=19, hit 63%) and REITs (n=3, hit 67%)
+// were *better* short setups than several included sectors, and Financials
+// (n=60) tracked the same as Industrials. Default exclusion is now empty;
+// the constant remains so the infrastructure can be re-armed if a future
+// study warrants it.
+export const EXCLUDED_SECTORS: ReadonlyArray<Sector> = [];
 
 function isIneligible(
   sector: Sector | undefined,

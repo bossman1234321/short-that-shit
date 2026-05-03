@@ -195,29 +195,44 @@ and `ttm_accelerating` (YTD at least 3pp worse than annual). The thresholds
 are the constants `TTM_RECOVERING_PCT` and `TTM_ACCELERATING_DELTA` at the
 top of `lib/screen.ts`.
 
-## Sector exclusion
+## Sector exclusion (empirically removed)
 
-`lib/run-screen.ts:EXCLUDED_SECTORS` lists sectors where D/E isn't a
-meaningful distress signal — Financials, Real Estate, Utilities. Names in
-those sectors are still fetched and rendered, but `matched=false`,
-`sectorIneligible=true`, and the `sector_ineligible` flag is added.
+`lib/run-screen.ts:EXCLUDED_SECTORS` is now an empty array. The original
+exclusion (Financials, Real Estate, Utilities) was based on the a-priori
+argument that D/E means something different in those sectors — which is
+true, but doesn't answer the empirical question of whether the screen
+*still produces useful signal there*.
 
-The universe-average D/E threshold is computed over the *eligible* subset
-only — including banks/REITs in the average produced misleadingly high
-thresholds (~6) that suppressed real industrial signals.
+Backtest study (run on 2026-05-03) said no:
 
-To toggle behavior:
-- UI: "include excluded sectors" checkbox in the filter bar
-- API: `?includeAllSectors=1`
-- Programmatic: `runScreen(threshold, { includeAllSectors: true })`
+| Sector       | n  | mean α₁y | hit rate | was excluded? |
+|--------------|----|----------|----------|---------------|
+| Utilities    | 19 | −7.3%    | 63%      | yes           |
+| Real Estate  | 3  | −14.8%   | 67%      | yes           |
+| Financials   | 60 | +0.7%    | 40%      | yes           |
+| Industrials  | 20 | +6.9%    | 40%      | no            |
+| ConsumerDisc | 19 | +10.5%   | 32%      | no            |
 
-To add or remove sectors from exclusion, edit the constant in
-`lib/run-screen.ts`. Energy is **not** excluded — D/E is a real distress
-signal there (overleveraged shale producers go bankrupt regularly).
+Utilities and REITs were *better* than every "included" sector except
+Consumer Staples. Financials tracked Industrials/Consumer Discretionary
+(no consistency argument). The exclusion was removed; ML model retrained
+on the larger 130-event dataset (was 62) — train AUC dropped 0.81 → 0.75
+(less overfitting), test AUC essentially unchanged.
 
-The hand-picked tickers in `scripts/backtest.ts` (`PRU`, `MTB`) are now in
-excluded sectors. They'll print as ineligible. Prune the list or override
-via `includeAllSectors` if you want to backtest those names.
+The constant stays in code so the infrastructure can be re-armed if a
+future study justifies it. The `sectorIneligible` row field also remains;
+it's just always false now. To re-arm:
+
+```ts
+export const EXCLUDED_SECTORS: ReadonlyArray<Sector> = [
+  // add sectors here based on backtest evidence
+];
+```
+
+`scripts/backtest-aggregate.ts` always includes all sectors in the events
+array. It produces two aggregate views — `aggregates` (filters out
+EXCLUDED_SECTORS) and `aggregatesIncludingExcluded` (the full universe).
+Useful for testing future re-armament hypotheses.
 
 ## Known limitations
 

@@ -69,68 +69,27 @@ beforeEach(() => {
 });
 
 describe("EXCLUDED_SECTORS", () => {
-  it("excludes Financials, Real Estate, Utilities", () => {
-    expect(EXCLUDED_SECTORS).toContain("Financials");
-    expect(EXCLUDED_SECTORS).toContain("Real Estate");
-    expect(EXCLUDED_SECTORS).toContain("Utilities");
-  });
-
-  it("does not exclude Energy (D/E is a real distress signal there)", () => {
-    expect(EXCLUDED_SECTORS).not.toContain("Energy");
-  });
-
-  it("does not exclude Industrials, Tech, Health Care, Consumer", () => {
-    expect(EXCLUDED_SECTORS).not.toContain("Industrials");
-    expect(EXCLUDED_SECTORS).not.toContain("Technology");
-    expect(EXCLUDED_SECTORS).not.toContain("Health Care");
-    expect(EXCLUDED_SECTORS).not.toContain("Consumer Discretionary");
+  // The historical exclusion of Financials/REITs/Utilities was removed
+  // after a backtest study (2026-05) showed Utilities and REITs were
+  // actually valid short setups (hit rates 63% and 67% respectively).
+  // The constant remains as zero-length scaffolding so the infrastructure
+  // can be re-armed if a future study justifies it.
+  it("is empty by default (no a-priori sector exclusion)", () => {
+    expect(EXCLUDED_SECTORS).toEqual([]);
   });
 });
 
-describe("runScreen sector ineligibility", () => {
-  it("marks Financials/REITs/Utilities as ineligible and suppresses match", async () => {
-    // Every ticker has the same fundamentals: declining revenue + high D/E
-    // (6.0). Eligible sectors should match; ineligible should not.
+describe("runScreen across all sectors", () => {
+  it("matches eligible sector regardless of sector — no a-priori filter", async () => {
+    // Every ticker has identical declining-revenue + high-D/E fundamentals.
+    // After removal of the sector exclusion, all five should match.
     vi.mocked(fetchFundamentals).mockImplementation(async (t: string) =>
       fund(t)
     );
 
     const result = await runScreen({ kind: "fixed", value: 2.0 });
-
     const byTicker = Object.fromEntries(result.rows.map((r) => [r.ticker, r]));
 
-    // Eligible: Industrials and Tech — both match
-    expect(byTicker.INDU.sectorIneligible).toBe(false);
-    expect(byTicker.INDU.matched).toBe(true);
-    expect(byTicker.INDU.flags).not.toContain("sector_ineligible");
-
-    expect(byTicker.TECH.sectorIneligible).toBe(false);
-    expect(byTicker.TECH.matched).toBe(true);
-
-    // Ineligible: Financials, Real Estate, Utilities — flagged, not matched
-    for (const t of ["BANK", "REIT", "UTIL"]) {
-      expect(byTicker[t].sectorIneligible).toBe(true);
-      expect(byTicker[t].matched).toBe(false);
-      expect(byTicker[t].highConvictionMatched).toBe(false);
-      expect(byTicker[t].flags).toContain("sector_ineligible");
-    }
-
-    expect(result.matchedCount).toBe(2); // INDU + TECH only
-  });
-
-  it("includeAllSectors=true reverts suppression", async () => {
-    vi.mocked(fetchFundamentals).mockImplementation(async (t: string) =>
-      fund(t)
-    );
-
-    const result = await runScreen(
-      { kind: "fixed", value: 2.0 },
-      { includeAllSectors: true }
-    );
-
-    const byTicker = Object.fromEntries(result.rows.map((r) => [r.ticker, r]));
-
-    // Now financials/REITs/utilities are NOT ineligible and DO match
     for (const t of ["INDU", "TECH", "BANK", "REIT", "UTIL"]) {
       expect(byTicker[t].sectorIneligible).toBe(false);
       expect(byTicker[t].matched).toBe(true);
@@ -139,12 +98,11 @@ describe("runScreen sector ineligibility", () => {
     expect(result.matchedCount).toBe(5);
   });
 
-  it("universe-avg threshold is computed over eligible rows only", async () => {
-    // Eligibles have D/E = 1.0; ineligibles have D/E = 100.0. If the average
-    // were computed over the full universe, it would be ~40. Over eligibles
-    // only, it's exactly 1.0.
+  it("universe-avg D/E is computed over the full universe", async () => {
+    // Mix of D/E values: 4 eligibles at 1.0, 3 ineligibles at 100.0.
+    // Full-universe avg = (4*1 + 3*100) / 7 = 304/7 ≈ 43.4.
     vi.mocked(fetchFundamentals).mockImplementation(async (t: string) => {
-      const eligible = !["BANK", "REIT", "UTIL"].includes(t);
+      const lowDE = !["BANK", "REIT", "UTIL"].includes(t);
       const fy = (val: number) => ({
         fy: 2023,
         end: "2023-12-31",
@@ -153,12 +111,14 @@ describe("runScreen sector ineligibility", () => {
         accn: `accn-${t}`,
       });
       return fund(t, {
-        liabilities: fy(eligible ? 100 : 10000),
+        liabilities: fy(lowDE ? 100 : 10000),
         stockholdersEquity: fy(100),
       });
     });
 
     const result = await runScreen({ kind: "average" });
-    expect(result.threshold.value).toBeCloseTo(1.0, 2);
+    // (2 * 1.0 + 3 * 100.0) / 5 = 60.4 — only TECH/INDU/BANK/REIT/UTIL
+    // are in the test universe (5 tickers, see vi.mock at top of file).
+    expect(result.threshold.value).toBeCloseTo(60.4, 1);
   });
 });

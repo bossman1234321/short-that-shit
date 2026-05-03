@@ -84,13 +84,13 @@ function getCmp(row: ScreenRow, key: SortKey): number | string {
   }
 }
 
-// Recomputes match flags against new threshold / sector / decline-duration
-// settings. All inputs needed are present on the row, so this avoids an
-// API roundtrip when the user retunes the levers.
+// Recomputes match flags against new threshold / decline-duration settings.
+// All inputs needed are present on the row, so this avoids an API roundtrip
+// when the user retunes the levers. (Sector exclusion was removed after the
+// backtest study showed Utilities and REITs to be valid setups.)
 function applyLevers(
   rows: ScreenRow[],
   threshold: number,
-  includeAllSectors: boolean,
   declineYears: 1 | 2 | 3
 ): ScreenRow[] {
   return rows.map((r) => {
@@ -109,14 +109,13 @@ function applyLevers(
       }
     }
 
-    const ineligible = !includeAllSectors && r.sectorIneligible;
     const negEqCountsAsLeverage =
       r.flags.includes("negative_equity") &&
       r.negEquityType !== "buyback_driven";
     const leverageMatched =
       negEqCountsAsLeverage ||
       (r.debtToEquity != null && r.debtToEquity > threshold);
-    const matched = !ineligible && declineMatched && leverageMatched;
+    const matched = declineMatched && leverageMatched;
 
     // TTM flags are conditional on declineMatched, so recompute them here
     // when the duration lever changes the matched set.
@@ -172,7 +171,6 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
     initial.threshold.value
   );
   const [sectorFilter, setSectorFilter] = useState<string>("all");
-  const [includeAllSectors, setIncludeAllSectors] = useState<boolean>(false);
   const [ttmConfirmedOnly, setTtmConfirmedOnly] = useState<boolean>(false);
   const [declineYears, setDeclineYears] = useState<1 | 2 | 3>(
     initial.declineYears ?? 2
@@ -184,14 +182,13 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
     return [...set].sort();
   }, [initial.rows]);
 
-  // Average tracks the sector toggle: when excluded sectors are included,
-  // the average jumps because financials/REITs have structurally high D/E.
-  const computedAvg = useMemo(() => {
-    const eligible = includeAllSectors
-      ? initial.rows
-      : initial.rows.filter((r) => !r.sectorIneligible);
-    return computeAverageDE(eligible);
-  }, [initial.rows, includeAllSectors]);
+  // Average D/E across all rows. Earlier we filtered out "ineligible"
+  // sectors here, but the empirical backtest didn't justify the exclusion —
+  // see lib/run-screen.ts:EXCLUDED_SECTORS for the audit trail.
+  const computedAvg = useMemo(
+    () => computeAverageDE(initial.rows),
+    [initial.rows]
+  );
 
   // In avg mode, keep the active threshold synced to the computed average.
   // In custom mode, the user-typed value sticks.
@@ -200,9 +197,8 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
   }, [thresholdMode, computedAvg]);
 
   const recomputed = useMemo(
-    () =>
-      applyLevers(initial.rows, activeThreshold, includeAllSectors, declineYears),
-    [initial.rows, activeThreshold, includeAllSectors, declineYears]
+    () => applyLevers(initial.rows, activeThreshold, declineYears),
+    [initial.rows, activeThreshold, declineYears]
   );
 
   const matchedCount = useMemo(
@@ -281,8 +277,6 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
         sectors={sectors}
         sectorFilter={sectorFilter}
         setSectorFilter={setSectorFilter}
-        includeAllSectors={includeAllSectors}
-        setIncludeAllSectors={setIncludeAllSectors}
         ttmConfirmedOnly={ttmConfirmedOnly}
         setTtmConfirmedOnly={setTtmConfirmedOnly}
         declineYears={declineYears}
@@ -400,8 +394,6 @@ function FilterBar(props: {
   sectors: string[];
   sectorFilter: string;
   setSectorFilter: (v: string) => void;
-  includeAllSectors: boolean;
-  setIncludeAllSectors: (v: boolean) => void;
   ttmConfirmedOnly: boolean;
   setTtmConfirmedOnly: (v: boolean) => void;
   declineYears: 1 | 2 | 3;
@@ -422,8 +414,6 @@ function FilterBar(props: {
     sectors,
     sectorFilter,
     setSectorFilter,
-    includeAllSectors,
-    setIncludeAllSectors,
     ttmConfirmedOnly,
     setTtmConfirmedOnly,
     declineYears,
@@ -552,19 +542,6 @@ function FilterBar(props: {
             className="accent-amber-accent"
           />
           show full universe
-        </label>
-
-        <label
-          className="flex items-center gap-2 text-xs uppercase tracking-wider text-terminal-muted"
-          title="By default Financials, Real Estate (REITs), and Utilities are excluded — D/E is structurally meaningless as a distress signal in those sectors. Toggle on to include them."
-        >
-          <input
-            type="checkbox"
-            checked={includeAllSectors}
-            onChange={(e) => setIncludeAllSectors(e.target.checked)}
-            className="accent-amber-accent"
-          />
-          include excluded sectors
         </label>
 
         <label
@@ -993,13 +970,12 @@ function Footer({ data }: { data: ScreenResult }) {
             <sub>t-2</sub> across the last three reported fiscal years.
           </li>
           <li>
-            <span className="font-data text-amber-accent">Sector exclusion</span> —
-            Financials, Real Estate (REITs), and Utilities are excluded by
-            default. D/E is a structurally bad distress signal there: bank
-            liabilities are deposits, REITs are designed to be highly levered,
-            utility capital structures are set by regulators. Toggle{" "}
-            <span className="font-data">include excluded sectors</span> to
-            override.
+            <span className="font-data text-amber-accent">All sectors included</span> —
+            an earlier version excluded Financials / REITs / Utilities a priori.
+            The historical backtest didn&apos;t support that: Utilities (n=19,
+            hit 63%) and REITs (n=3, hit 67%) actually had higher hit rates
+            than Industrials or Consumer Discretionary. Default is now
+            no-exclusion. Use the sector dropdown to filter manually.
           </li>
           <li>
             <span className="font-data text-amber-accent">Buyback-driven neg-eq filter</span> —
