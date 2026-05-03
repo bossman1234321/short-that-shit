@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T20:07:54.643Z",
+  "generatedAt": "2026-05-03T20:32:52.945Z",
   "startingBalance": 10000,
   "annualBorrowCost": 0.02,
   "results": [
@@ -552,6 +552,331 @@
       "winRate": 1,
       "meanPnLPerPos": 797.592524579536,
       "maxDrawdown": 0
+    }
+  ],
+  "bySector": [
+    {
+      "sector": "Technology",
+      "name": "[sec] Technology",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Technology only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 3,
+      "nTaken": 3,
+      "nWon": 2,
+      "finalEquity": 9918.15534872069,
+      "totalReturn": -0.008184465127931003,
+      "annualizedReturn": -0.0007605917870939782,
+      "winRate": 0.6666666666666666,
+      "meanPnLPerPos": -27.281550426436677,
+      "maxDrawdown": -0.13369501332740774,
+      "bestPos": {
+        "ticker": "HPQ",
+        "entryDate": "2024-12-13",
+        "pnl": 1038.865783161718,
+        "ret": -0.43553262401075155
+      },
+      "worstPos": {
+        "ticker": "STX",
+        "entryDate": "2017-08-04",
+        "pnl": -1370.3219478915137,
+        "ret": 0.5281424684105411
+      }
+    },
+    {
+      "sector": "Communication Services",
+      "name": "[sec] Communication Services",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Communication Services only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 1,
+      "nTaken": 0,
+      "nWon": 0,
+      "finalEquity": 10000,
+      "totalReturn": 0,
+      "annualizedReturn": 0,
+      "winRate": 0,
+      "meanPnLPerPos": 0,
+      "maxDrawdown": 0,
+      "bestPos": null,
+      "worstPos": null
+    },
+    {
+      "sector": "Consumer Discretionary",
+      "name": "[sec] Consumer Discretionary",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Consumer Discretionary only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 9,
+      "nTaken": 9,
+      "nWon": 3,
+      "finalEquity": 7580.977455417245,
+      "totalReturn": -0.2419022544582755,
+      "annualizedReturn": -0.022834905633299596,
+      "winRate": 0.3333333333333333,
+      "meanPnLPerPos": -268.78028273141723,
+      "maxDrawdown": -0.3034232516698439,
+      "bestPos": {
+        "ticker": "NCLH",
+        "entryDate": "2022-03-01",
+        "pnl": 716.1365150461507,
+        "ret": -0.3064409167645246
+      },
+      "worstPos": {
+        "ticker": "HAS",
+        "entryDate": "2025-02-27",
+        "pnl": -1158.7936884710941,
+        "ret": 0.4435311646423733
+      }
+    },
+    {
+      "sector": "Consumer Staples",
+      "name": "[sec] Consumer Staples",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Consumer Staples only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 5,
+      "nTaken": 5,
+      "nWon": 5,
+      "finalEquity": 13340.68310063961,
+      "totalReturn": 0.33406831006396087,
+      "annualizedReturn": 0.06727264899936114,
+      "winRate": 1,
+      "meanPnLPerPos": 668.1366201279218,
+      "maxDrawdown": 0,
+      "bestPos": {
+        "ticker": "CPB",
+        "entryDate": "2017-09-27",
+        "pnl": 820.0441843317908,
+        "ret": -0.34800398447878067
+      },
+      "worstPos": {
+        "ticker": "CL",
+        "entryDate": "2017-02-23",
+        "pnl": 479.5558586331863,
+        "ret": -0.21180865419933886
+      }
+    },
+    {
+      "sector": "Energy",
+      "name": "[sec] Energy",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Energy only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 0,
+      "nTaken": 0,
+      "nWon": 0,
+      "finalEquity": 10000,
+      "totalReturn": 0,
+      "annualizedReturn": 0,
+      "winRate": 0,
+      "meanPnLPerPos": 0,
+      "maxDrawdown": 0,
+      "bestPos": null,
+      "worstPos": null
+    },
+    {
+      "sector": "Financials",
+      "name": "[sec] Financials",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Financials only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 12,
+      "nTaken": 12,
+      "nWon": 5,
+      "finalEquity": 5745.457450498243,
+      "totalReturn": -0.4254542549501757,
+      "annualizedReturn": -0.06675060220119677,
+      "winRate": 0.4166666666666667,
+      "meanPnLPerPos": -354.54521245847974,
+      "maxDrawdown": -0.4511105062629551,
+      "bestPos": {
+        "ticker": "FITB",
+        "entryDate": "2019-03-01",
+        "pnl": 750.9537507394564,
+        "ret": -0.32036781104184686
+      },
+      "worstPos": {
+        "ticker": "BAC",
+        "entryDate": "2016-02-24",
+        "pnl": -1746.7508129554772,
+        "ret": 0.6787140144361264
+      }
+    },
+    {
+      "sector": "Health Care",
+      "name": "[sec] Health Care",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Health Care only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 0,
+      "nTaken": 0,
+      "nWon": 0,
+      "finalEquity": 10000,
+      "totalReturn": 0,
+      "annualizedReturn": 0,
+      "winRate": 0,
+      "meanPnLPerPos": 0,
+      "maxDrawdown": 0,
+      "bestPos": null,
+      "worstPos": null
+    },
+    {
+      "sector": "Industrials",
+      "name": "[sec] Industrials",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Industrials only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 6,
+      "nTaken": 6,
+      "nWon": 3,
+      "finalEquity": 10269.719226745297,
+      "totalReturn": 0.026971922674529823,
+      "annualizedReturn": 0.0024259137282678367,
+      "winRate": 0.5,
+      "meanPnLPerPos": 44.9532044575497,
+      "maxDrawdown": -0.053339198628705,
+      "bestPos": {
+        "ticker": "GE",
+        "entryDate": "2018-02-23",
+        "pnl": 603.9920513075557,
+        "ret": -0.2615831312690866
+      },
+      "worstPos": {
+        "ticker": "DE",
+        "entryDate": "2015-12-18",
+        "pnl": -540.816717138221,
+        "ret": 0.19634037610922403
+      }
+    },
+    {
+      "sector": "Materials",
+      "name": "[sec] Materials",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Materials only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 0,
+      "nTaken": 0,
+      "nWon": 0,
+      "finalEquity": 10000,
+      "totalReturn": 0,
+      "annualizedReturn": 0,
+      "winRate": 0,
+      "meanPnLPerPos": 0,
+      "maxDrawdown": 0,
+      "bestPos": null,
+      "worstPos": null
+    },
+    {
+      "sector": "Real Estate",
+      "name": "[sec] Real Estate",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Real Estate only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 3,
+      "nTaken": 3,
+      "nWon": 2,
+      "finalEquity": 10959.79360263438,
+      "totalReturn": 0.09597936026343795,
+      "annualizedReturn": 0.015185995499880534,
+      "winRate": 0.6666666666666666,
+      "meanPnLPerPos": 319.9312008781265,
+      "maxDrawdown": -0.02814365535195393,
+      "bestPos": {
+        "ticker": "CCI",
+        "entryDate": "2025-03-14",
+        "pnl": 919.6494491430323,
+        "ret": -0.3878460904032772
+      },
+      "worstPos": {
+        "ticker": "IRM",
+        "entryDate": "2020-02-13",
+        "pnl": -281.43655351954,
+        "ret": 0.09258831066175166
+      }
+    },
+    {
+      "sector": "Utilities",
+      "name": "[sec] Utilities",
+      "description": "pair trade, no ocf2y, anti-mom (≤0%), Utilities only",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "nFiltered": 6,
+      "nTaken": 6,
+      "nWon": 6,
+      "finalEquity": 13891.512091519127,
+      "totalReturn": 0.3891512091519127,
+      "annualizedReturn": 0.04807121878933995,
+      "winRate": 1,
+      "meanPnLPerPos": 648.5853485865211,
+      "maxDrawdown": 0,
+      "bestPos": {
+        "ticker": "CMS",
+        "entryDate": "2020-02-06",
+        "pnl": 1358.151550267259,
+        "ret": -0.563246930852968
+      },
+      "worstPos": {
+        "ticker": "FE",
+        "entryDate": "2014-02-27",
+        "pnl": 167.03534570478377,
+        "ret": -0.08680044902797784
+      }
     }
   ]
 }

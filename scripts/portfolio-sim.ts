@@ -822,6 +822,53 @@ async function main() {
       `  worst pos:       ${best.worstPos.ticker} (${best.worstPos.sector}) ${best.worstPos.entryDate} → exit ${best.worstPos.exitDate} (${best.worstPos.exitReason}), P&L ${fmtUSD(best.worstPos.pnl)}, ret ${fmtPct(best.worstPos.ret)}`
     );
 
+  // ─── Per-sector breakdown ──────────────────────────────────────────
+  // Apply the pair-trade kitchen-sink template (minus the sector filter)
+  // to each sector independently. Answers: "what would $10K do if you
+  // ONLY ran the screen on this one sector?"
+  console.log("\n=== per-sector breakdown (pair trade, kitchen sink without sector filter) ===");
+  const SECTORS_FOR_BREAKDOWN: Sector[] = [
+    "Technology",
+    "Communication Services",
+    "Consumer Discretionary",
+    "Consumer Staples",
+    "Energy",
+    "Financials",
+    "Health Care",
+    "Industrials",
+    "Materials",
+    "Real Estate",
+    "Utilities",
+  ];
+  console.log(
+    "Sector".padEnd(24) +
+      " | nFilt | nTake | final     | total   | ann   | win   | DD"
+  );
+  console.log("-".repeat(85));
+  const bySector: Array<StrategyResult & { sector: string }> = [];
+  for (const sector of SECTORS_FOR_BREAKDOWN) {
+    const cfg: StrategyConfig = {
+      name: `[sec] ${sector}`,
+      description: `pair trade, no ocf2y, anti-mom (≤0%), ${sector} only`,
+      positionSize: 5000,
+      maxConcurrent: 4,
+      holdMonths: 12,
+      stopLossPct: null,
+      takeProfitPct: null,
+      pairTrade: true,
+      filter: (e, ctx) =>
+        e.sector === sector &&
+        !e.ocfDecline2y &&
+        (ctx.trailing6m == null || ctx.trailing6m <= 0),
+    };
+    const r = await simulate(allEvents, cfg, model, barsByTicker);
+    bySector.push({ sector, ...r });
+    console.log(
+      sector.padEnd(24) +
+        ` | ${r.nFiltered.toString().padStart(5)} | ${r.nTaken.toString().padStart(5)} | ${fmtUSD(r.finalEquity).padStart(9)} | ${fmtPct(r.totalReturn).padStart(7)} | ${fmtPct(r.annualizedReturn).padStart(5)} | ${fmtPct(r.winRate).padStart(5)} | ${fmtPct(r.maxDrawdown).padStart(5)}`
+    );
+  }
+
   const outPath = path.resolve(process.cwd(), "public/data/portfolio-sim.json");
   await fs.writeFile(
     outPath,
@@ -845,6 +892,37 @@ async function main() {
           winRate: r.winRate,
           meanPnLPerPos: r.meanPnLPerPos,
           maxDrawdown: r.maxDrawdown,
+        })),
+        bySector: bySector.map((r) => ({
+          sector: r.sector,
+          name: r.name,
+          description: r.description,
+          config: r.config,
+          nFiltered: r.nFiltered,
+          nTaken: r.nTaken,
+          nWon: r.nWon,
+          finalEquity: r.finalEquity,
+          totalReturn: r.totalReturn,
+          annualizedReturn: r.annualizedReturn,
+          winRate: r.winRate,
+          meanPnLPerPos: r.meanPnLPerPos,
+          maxDrawdown: r.maxDrawdown,
+          bestPos: r.bestPos
+            ? {
+                ticker: r.bestPos.ticker,
+                entryDate: r.bestPos.entryDate,
+                pnl: r.bestPos.pnl,
+                ret: r.bestPos.ret,
+              }
+            : null,
+          worstPos: r.worstPos
+            ? {
+                ticker: r.worstPos.ticker,
+                entryDate: r.worstPos.entryDate,
+                pnl: r.worstPos.pnl,
+                ret: r.worstPos.ret,
+              }
+            : null,
         })),
       },
       null,

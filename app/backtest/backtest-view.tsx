@@ -47,32 +47,63 @@ type BacktestFile = {
   events: BacktestEvent[];
 };
 
+type PortfolioStrategyRow = {
+  name: string;
+  description: string;
+  config: {
+    positionSize: number;
+    maxConcurrent: number;
+    holdMonths: number;
+    stopLossPct: number | null;
+    takeProfitPct: number | null;
+  };
+  nFiltered: number;
+  nTaken: number;
+  nWon: number;
+  nStoppedOut: number;
+  nTakeProfit: number;
+  finalEquity: number;
+  totalReturn: number;
+  annualizedReturn: number | null;
+  winRate: number;
+  meanPnLPerPos: number;
+  maxDrawdown: number;
+};
+
+type SectorPortfolioRow = {
+  sector: string;
+  name: string;
+  description: string;
+  config: PortfolioStrategyRow["config"];
+  nFiltered: number;
+  nTaken: number;
+  nWon: number;
+  finalEquity: number;
+  totalReturn: number;
+  annualizedReturn: number | null;
+  winRate: number;
+  meanPnLPerPos: number;
+  maxDrawdown: number;
+  bestPos: {
+    ticker: string;
+    entryDate: string;
+    pnl: number;
+    ret: number;
+  } | null;
+  worstPos: {
+    ticker: string;
+    entryDate: string;
+    pnl: number;
+    ret: number;
+  } | null;
+};
+
 type PortfolioFile = {
   generatedAt: string;
   startingBalance: number;
   annualBorrowCost: number;
-  results: Array<{
-    name: string;
-    description: string;
-    config: {
-      positionSize: number;
-      maxConcurrent: number;
-      holdMonths: number;
-      stopLossPct: number | null;
-      takeProfitPct: number | null;
-    };
-    nFiltered: number;
-    nTaken: number;
-    nWon: number;
-    nStoppedOut: number;
-    nTakeProfit: number;
-    finalEquity: number;
-    totalReturn: number;
-    annualizedReturn: number | null;
-    winRate: number;
-    meanPnLPerPos: number;
-    maxDrawdown: number;
-  }>;
+  results: PortfolioStrategyRow[];
+  bySector?: SectorPortfolioRow[];
 };
 
 const fmtPct = (n: number | null | undefined): string => {
@@ -115,6 +146,9 @@ export function BacktestReview({
       <Header backtest={backtest} portfolio={portfolio} />
       <main className="mx-auto max-w-[1400px] space-y-12 px-6 pb-24">
         {portfolio && <Strategies portfolio={portfolio} />}
+        {portfolio?.bySector && portfolio.bySector.length > 0 && (
+          <PortfolioBySector portfolio={portfolio} />
+        )}
         {backtest && <Sectors backtest={backtest} />}
         {backtest && <DeBuckets backtest={backtest} />}
         {model && <ModelCoefs model={model} />}
@@ -337,6 +371,162 @@ function Strategies({ portfolio }: { portfolio: PortfolioFile }) {
           </tbody>
         </table>
       </div>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function PortfolioBySector({ portfolio }: { portfolio: PortfolioFile }) {
+  const rows = useMemo(() => {
+    const r = [...(portfolio.bySector ?? [])];
+    r.sort((a, b) => b.finalEquity - a.finalEquity);
+    return r;
+  }, [portfolio.bySector]);
+
+  const winners = rows.filter((r) => r.totalReturn > 0 && r.nTaken > 0);
+  const losers = rows.filter((r) => r.totalReturn < 0 && r.nTaken > 0);
+  const empty = rows.filter((r) => r.nTaken === 0);
+
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Returns by industry — pair-trade portfolio per sector
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        $10K starting balance, $5K per position (50/50 short / long SPY), 4 max
+        concurrent, 12-month hold, 2% borrow. Filter: drop ocfDecline2y +
+        only short stocks already in trailing-6m downtrend, then restrict to
+        one sector at a time.{" "}
+        <span className="text-amber-accent">
+          This is the most actionable per-sector view —
+        </span>{" "}
+        it tells you what $10K would have actually become if you had only
+        traded each industry in isolation.
+      </p>
+      <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">Sector</th>
+              <th className="px-3 py-2 text-right">n</th>
+              <th className="px-3 py-2 text-right">Final $</th>
+              <th className="px-3 py-2 text-right">Total return</th>
+              <th className="px-3 py-2 text-right">Annualized</th>
+              <th className="px-3 py-2 text-right">Win rate</th>
+              <th className="px-3 py-2 text-right">Max DD</th>
+              <th className="px-3 py-2 text-left">Best position</th>
+              <th className="px-3 py-2 text-left">Worst position</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const profit = r.totalReturn > 0;
+              const empty = r.nTaken === 0;
+              return (
+                <tr
+                  key={r.sector}
+                  className={`border-t border-terminal-border/50 ${empty ? "opacity-40" : ""}`}
+                >
+                  <td className="px-3 py-2 font-data">{r.sector}</td>
+                  <td className="px-3 py-2 text-right font-data text-terminal-muted">
+                    {r.nTaken}
+                  </td>
+                  <td
+                    className={`px-3 py-2 text-right font-data ${empty ? "text-terminal-muted" : profit ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {fmtUSD(r.finalEquity)}
+                  </td>
+                  <td
+                    className={`px-3 py-2 text-right font-data ${empty ? "text-terminal-muted" : profit ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {fmtPct(r.totalReturn)}
+                  </td>
+                  <td
+                    className={`px-3 py-2 text-right font-data ${empty ? "text-terminal-muted" : (r.annualizedReturn ?? 0) > 0 ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {fmtPct(r.annualizedReturn)}
+                  </td>
+                  <td className="px-3 py-2 text-right font-data">
+                    {fmtPctNoSign(r.winRate)}
+                  </td>
+                  <td
+                    className={`px-3 py-2 text-right font-data ${r.maxDrawdown < 0 ? "text-red-400" : "text-terminal-muted"}`}
+                  >
+                    {fmtPct(r.maxDrawdown)}
+                  </td>
+                  <td className="px-3 py-2 text-[10px] text-terminal-muted">
+                    {r.bestPos
+                      ? `${r.bestPos.ticker} ${r.bestPos.entryDate.slice(0, 7)} (${fmtUSD(r.bestPos.pnl)}, ${fmtPct(r.bestPos.ret)})`
+                      : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-[10px] text-terminal-muted">
+                    {r.worstPos
+                      ? `${r.worstPos.ticker} ${r.worstPos.entryDate.slice(0, 7)} (${fmtUSD(r.worstPos.pnl)}, ${fmtPct(r.worstPos.ret)})`
+                      : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-3 text-xs">
+        <div className="rounded border border-emerald-700/40 bg-emerald-950/20 p-3">
+          <div className="font-data text-[10px] uppercase tracking-wider text-emerald-400">
+            Profitable sectors ({winners.length})
+          </div>
+          <div className="mt-1 leading-relaxed">
+            {winners.length === 0
+              ? "—"
+              : winners
+                  .map(
+                    (r) =>
+                      `${r.sector} ${fmtPct(r.totalReturn)} (n=${r.nTaken})`
+                  )
+                  .join(" · ")}
+          </div>
+        </div>
+        <div className="rounded border border-red-700/40 bg-red-950/20 p-3">
+          <div className="font-data text-[10px] uppercase tracking-wider text-red-400">
+            Loss-making sectors ({losers.length})
+          </div>
+          <div className="mt-1 leading-relaxed">
+            {losers.length === 0
+              ? "—"
+              : losers
+                  .map(
+                    (r) =>
+                      `${r.sector} ${fmtPct(r.totalReturn)} (n=${r.nTaken})`
+                  )
+                  .join(" · ")}
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="font-data text-[10px] uppercase tracking-wider text-terminal-muted">
+            Insufficient data ({empty.length})
+          </div>
+          <div className="mt-1 leading-relaxed">
+            {empty.length === 0
+              ? "—"
+              : empty.map((r) => r.sector).join(" · ")}
+          </div>
+        </div>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        <span className="text-amber-accent">Honest read:</span> the strategy&apos;s
+        portfolio-level edge is concentrated in{" "}
+        <span className="font-data">Utilities</span> and{" "}
+        <span className="font-data">Consumer Staples</span> — sectors with
+        regulated or commoditized businesses where revenue declines genuinely
+        signal distress (PG&amp;E pre-bankruptcy, AES, regulated electrics
+        post-2019; staples names losing share to private label / DTC
+        competition). <span className="font-data">Financials</span> is the most
+        data-rich sector but a steady portfolio loser — even though per-event
+        mean alpha looked benign, the bank-rally years (2012, 2015, 2021,
+        2023) wipe out the post-crisis wins. <span className="font-data">Consumer Discretionary</span> is similarly cyclical and tends to mean-revert.
+        Sample sizes for individual sectors are small; treat the per-sector
+        return numbers as directional, not point estimates.
+      </p>
     </section>
   );
 }
