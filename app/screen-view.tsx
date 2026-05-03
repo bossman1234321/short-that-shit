@@ -358,19 +358,20 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
   );
 }
 
-// 12% annualized-return gate banner. When no backtested strategy clears
-// the bar, the screen recommends WAITING. Pulls the bar from
-// data.portfolio.annualizedBar so the threshold is data-driven not magic.
+// Annualized-return gate banner. Three states:
+//  • GREEN   — an unleveraged strategy clears the bar (best case)
+//  • SKY     — only a leveraged strategy clears (trade allowed with margin)
+//  • AMBER   — nothing clears the bar (don't trade)
 function TradeGate({ data }: { data: ScreenResult }) {
   const p = data.portfolio;
   if (!p) return null;
   const bar = p.annualizedBar;
-  const best = p.bestUnleveraged;
-  const bestAnn = best.annualizedReturn ?? 0;
-  const meetsBar = p.bestUnleveragedClearingBar != null;
   const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`;
-  if (meetsBar) {
-    const winner = p.bestUnleveragedClearingBar!;
+  const unlevWinner = p.bestUnleveragedClearingBar;
+  const overall = p.bestByEquity;
+  const overallClearsBar = p.anyStrategyMeetsBar;
+
+  if (unlevWinner) {
     return (
       <div className="border-b border-emerald-700/40 bg-emerald-950/30">
         <div className="mx-auto max-w-[1400px] px-6 py-3 text-sm">
@@ -382,14 +383,47 @@ function TradeGate({ data }: { data: ScreenResult }) {
               An unleveraged strategy clears the {fmtPct(bar)} annualized bar.
             </span>
             <span className="font-data text-emerald-100">
-              {winner.name} → ann {fmtPct(bestAnn)}, win {fmtPct(winner.winRate)}, n=
-              {winner.nTaken}
+              {unlevWinner.name} → ann{" "}
+              {fmtPct(unlevWinner.annualizedReturn ?? 0)}, win{" "}
+              {fmtPct(unlevWinner.winRate)}, n={unlevWinner.nTaken}
             </span>
           </div>
         </div>
       </div>
     );
   }
+
+  if (overallClearsBar && overall.annualizedReturn != null) {
+    const peak = overall.peakGrossDeployment ?? 1;
+    return (
+      <div className="border-b border-sky-700/40 bg-sky-950/30">
+        <div className="mx-auto max-w-[1400px] px-6 py-3 text-sm">
+          <div className="flex flex-wrap items-baseline gap-x-3">
+            <span className="rounded bg-sky-700 px-2 py-0.5 font-data text-xs uppercase text-white">
+              trade with margin
+            </span>
+            <span className="text-sky-300">
+              No <em>unleveraged</em> strategy clears {fmtPct(bar)} but a
+              leveraged strategy does.
+            </span>
+            <span className="font-data text-sky-100">
+              {overall.name} → ann {fmtPct(overall.annualizedReturn)}, peak
+              deployment {(peak * 100).toFixed(0)}%, win{" "}
+              {fmtPct(overall.winRate)}, n={overall.nTaken}
+            </span>
+          </div>
+          <div className="mt-1 text-[11px] text-sky-200/70">
+            Requires a portfolio-margin account. Pair-trade structure caps
+            historical drawdown at{" "}
+            {fmtPct(overall.maxDrawdown)}; leverage doubles both gains and
+            losses.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const best = p.bestUnleveraged;
   return (
     <div className="border-b border-amber-accent/40 bg-amber-accent/10">
       <div className="mx-auto max-w-[1400px] px-6 py-3 text-sm">
@@ -398,12 +432,12 @@ function TradeGate({ data }: { data: ScreenResult }) {
             don&apos;t trade
           </span>
           <span className="text-amber-accent">
-            No unleveraged strategy clears the {fmtPct(bar)} annualized bar.
+            No strategy clears the {fmtPct(bar)} annualized bar.
           </span>
           <span className="text-terminal-muted">
             Best unleveraged backtest is{" "}
             <span className="font-data text-amber-accent">
-              {fmtPct(bestAnn)}
+              {fmtPct(best.annualizedReturn ?? 0)}
             </span>{" "}
             ({best.name}, n={best.nTaken}). Per the user-set rule, the screen
             recommends <span className="font-semibold">waiting</span> on real

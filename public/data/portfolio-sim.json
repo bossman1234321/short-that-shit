@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T21:17:06.295Z",
+  "generatedAt": "2026-05-03T21:53:14.490Z",
   "startingBalance": 10000,
   "annualBorrowCost": 0.02,
   "results": [
@@ -1427,6 +1427,131 @@
       "winRate": 0.75,
       "meanPnLPerPos": 753.2476757111507,
       "maxDrawdown": -0.07896945158909914
+    },
+    {
+      "name": "[58] 2x lev + Util+CS only + compound 100% × 1",
+      "description": "leveraged single-position concentration in winning sectors",
+      "config": {
+        "positionSize": 10000,
+        "maxConcurrent": 1,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
+      "meets12PctBar": false,
+      "nFiltered": 12,
+      "nTaken": 6,
+      "nWon": 5,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 18917.478098163207,
+      "totalReturn": 0.8917478098163206,
+      "annualizedReturn": 0.057797610520561093,
+      "winRate": 0.8333333333333334,
+      "meanPnLPerPos": 1486.246349693868,
+      "maxDrawdown": -0.15793890317819848
+    },
+    {
+      "name": "[59] 2x lev + winning sectors + compound 100% × 1",
+      "description": "leveraged single-position, winning sectors (Util/CS/RE)",
+      "config": {
+        "positionSize": 10000,
+        "maxConcurrent": 1,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
+      "meets12PctBar": true,
+      "nFiltered": 15,
+      "nTaken": 7,
+      "nWon": 7,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 34682.762714565026,
+      "totalReturn": 2.4682762714565025,
+      "annualizedReturn": 0.0871532065980769,
+      "winRate": 1,
+      "meanPnLPerPos": 3526.1089592235744,
+      "maxDrawdown": 0
+    },
+    {
+      "name": "[60] 2x lev + CS only + idle cash + compound 100% × 1",
+      "description": "highest-α sector + portfolio leverage + T-bill yield on idle, fully compounded",
+      "config": {
+        "positionSize": 10000,
+        "maxConcurrent": 1,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
+      "meets12PctBar": false,
+      "nFiltered": 6,
+      "nTaken": 4,
+      "nWon": 3,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 15256.324701051943,
+      "totalReturn": 0.5256324701051943,
+      "annualizedReturn": 0.03793266660975947,
+      "winRate": 0.75,
+      "meanPnLPerPos": 1263.7218159489817,
+      "maxDrawdown": -0.15793890317819834
+    },
+    {
+      "name": "[61] 2x lev + delisted-strong-decline filter + compound 100%",
+      "description": "include all sectors but require strong revenue decline (yoy_t < -10%)",
+      "config": {
+        "positionSize": 10000,
+        "maxConcurrent": 1,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
+      "meets12PctBar": false,
+      "nFiltered": 17,
+      "nTaken": 8,
+      "nWon": 4,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 11405.803254502123,
+      "totalReturn": 0.14058032545021232,
+      "annualizedReturn": 0.008260637592548914,
+      "winRate": 0.5,
+      "meanPnLPerPos": 175.7254068127653,
+      "maxDrawdown": -0.5628365371966738
+    },
+    {
+      "name": "[62] 2x lev + winning sectors + compound 50% × 2",
+      "description": "balanced 2-position leveraged compound — moderate concentration",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 2,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
+      "meets12PctBar": false,
+      "nFiltered": 15,
+      "nTaken": 10,
+      "nWon": 9,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 23202.437660792933,
+      "totalReturn": 1.3202437660792934,
+      "annualizedReturn": 0.058182440422678505,
+      "winRate": 0.9,
+      "meanPnLPerPos": 1320.2437660792934,
+      "maxDrawdown": -0.0741973634685849
     }
   ],
   "bySector": [

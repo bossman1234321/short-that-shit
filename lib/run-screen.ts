@@ -111,7 +111,10 @@ async function loadPortfolioSummary(): Promise<PortfolioSummary | null> {
       unleveraged: r.unleveraged,
       meets12PctBar: r.meets12PctBar,
     });
-    const ANNUALIZED_BAR = 0.12;
+    // Lowered from 0.12 → 0.08 per user directive (2026-05-03). 12% wasn't
+    // achievable even with leverage on the current data window. 8% is
+    // approximately the leveraged ceiling.
+    const ANNUALIZED_BAR = 0.08;
     const robust = ranked.find((r) => /EXCLUDE FY2019/i.test(r.name));
     const bestUnleveraged =
       ranked.find((r) => r.unleveraged === true) ?? ranked[0];

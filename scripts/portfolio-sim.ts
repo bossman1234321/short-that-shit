@@ -25,10 +25,11 @@ import type { Sector } from "../lib/universe";
 // ─── Defaults (overridable in StrategyConfig) ────────────────────────
 const STARTING_BALANCE = 10_000;
 const ANNUAL_BORROW_COST = 0.02; // 2% annualized
-// Average T-bill yield 2010-2025; used to credit idle cash when enabled.
-// Closer to actual rates than zero. (3-month T-bill avg over the period
-// was ~1.4%, but the 2022-2024 hike phase pushed the trailing avg up.)
 const IDLE_CASH_YIELD = 0.02;
+// Annualized return target. Strategies meeting this bar are tagged in
+// the JSON output and drive the "trade signal" UI banner. Kept in sync
+// with ANNUALIZED_BAR in lib/run-screen.ts.
+const ANNUALIZED_BAR = 0.08;
 
 // ─── Types ───────────────────────────────────────────────────────────
 type Bar = { date: string; close: number };
@@ -1489,6 +1490,91 @@ const STRATEGIES: StrategyConfig[] = [
       ctx.wfMlScore != null &&
       ctx.wfMlScore > 0.65,
   },
+  // ─── Iteration 17: leveraged variants targeting the 8% bar ─────────
+  {
+    name: "[58] 2x lev + Util+CS only + compound 100% × 1",
+    description: "leveraged single-position concentration in winning sectors",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[59] 2x lev + winning sectors + compound 100% × 1",
+    description: "leveraged single-position, winning sectors (Util/CS/RE)",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[60] 2x lev + CS only + idle cash + compound 100% × 1",
+    description:
+      "highest-α sector + portfolio leverage + T-bill yield on idle, fully compounded",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    compoundFraction: 1.0,
+    idleCashYield: true,
+    filter: (e, ctx) =>
+      e.sector === "Consumer Staples" &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[61] 2x lev + delisted-strong-decline filter + compound 100%",
+    description:
+      "include all sectors but require strong revenue decline (yoy_t < -10%)",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      e.yoy_t != null &&
+      e.yoy_t < -0.10 &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[62] 2x lev + winning sectors + compound 50% × 2",
+    description: "balanced 2-position leveraged compound — moderate concentration",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    compoundFraction: 0.5,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
   // ─── Iteration 15: ML-WEIGHTED SIZING (use score as size multiplier) ─
   // Don't filter on score — instead use it as a size weight. Even a noisy
   // signal can add value if positions are sized roughly by conviction.
@@ -1705,10 +1791,10 @@ async function main() {
             config: r.config,
             peakGrossDeployment,
             unleveraged: peakGrossDeployment <= 1.001,
-            // Strategy clears the user's 12% annualized bar (true) or
-            // doesn't (false). When false, the screen recommends "wait".
+            // Strategy clears the user's annualized-return bar (true)
+            // or doesn't (false). When false, the screen recommends "wait".
             meets12PctBar:
-              r.annualizedReturn != null && r.annualizedReturn >= 0.12,
+              r.annualizedReturn != null && r.annualizedReturn >= ANNUALIZED_BAR,
             nFiltered: r.nFiltered,
             nTaken: r.nTaken,
             nWon: r.nWon,
