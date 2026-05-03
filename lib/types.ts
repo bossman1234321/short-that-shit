@@ -123,6 +123,23 @@ export type BacktestSummary = {
   bySector: Record<string, { count: number; meanAlpha1y: number | null; hitRate: number | null }>;
 };
 
+export type StrategyMetrics = {
+  sharpeRatio: number | null;
+  sortinoRatio: number | null;
+  calmarRatio: number | null;
+  informationRatio: number | null;
+  yearlyPnL: Record<string, number>;
+  bestYear: { year: string; pnl: number } | null;
+  worstYear: { year: string; pnl: number } | null;
+  longestWinStreak: number;
+  longestLossStreak: number;
+  pnlMean: number;
+  pnlStd: number;
+  pnlSkew: number;
+  bootstrapCI95Lo: number | null;
+  bootstrapCI95Hi: number | null;
+};
+
 export type PortfolioStrategySummary = {
   name: string;
   description: string;
@@ -132,12 +149,10 @@ export type PortfolioStrategySummary = {
   winRate: number;
   nTaken: number;
   maxDrawdown: number;
-  // Peak gross deployment / starting capital. ≤ 1.0 means unleveraged.
   peakGrossDeployment?: number;
   unleveraged?: boolean;
-  // True when annualizedReturn ≥ 12%. Used to gate trading: if no
-  // strategy meets the bar, the screen recommends not trading.
   meets12PctBar?: boolean;
+  metrics?: StrategyMetrics;
 };
 
 export type PortfolioSummary = {

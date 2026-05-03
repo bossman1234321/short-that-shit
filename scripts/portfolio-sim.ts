@@ -211,6 +211,30 @@ type StrategyCtx = {
   trailing6m: number | null;
 };
 
+type StrategyMetrics = {
+  // Risk-adjusted return ratios. Computed from a monthly equity curve where
+  // positions are held flat at entry size until close. r_f = 4% T-bill avg.
+  sharpeRatio: number | null;
+  sortinoRatio: number | null;
+  calmarRatio: number | null;
+  informationRatio: number | null; // alpha / tracking-error vs SPY
+  // Yearly portfolio P&L (calendar year of position exit).
+  yearlyPnL: Record<string, number>;
+  bestYear: { year: string; pnl: number } | null;
+  worstYear: { year: string; pnl: number } | null;
+  // Per-position outcome streaks (chronological by exitDate).
+  longestWinStreak: number;
+  longestLossStreak: number;
+  // P&L distribution stats (per-position).
+  pnlMean: number;
+  pnlStd: number;
+  pnlSkew: number;
+  // Bootstrap 95% CI on annualized return (5th/95th percentile, 1000 iters
+  // resampling positions with replacement). Wide CIs flag noisy results.
+  bootstrapCI95Lo: number | null;
+  bootstrapCI95Hi: number | null;
+};
+
 type StrategyResult = {
   name: string;
   description: string;
@@ -229,6 +253,7 @@ type StrategyResult = {
   worstPos: Position | null;
   maxDrawdown: number;
   positions: Position[];
+  metrics: StrategyMetrics;
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -249,6 +274,250 @@ function daysBetween(a: string, b: string): number {
 
 function yearsBetween(a: string, b: string): number {
   return (new Date(b).getTime() - new Date(a).getTime()) / (365.25 * 24 * 3600 * 1000);
+}
+
+// Build a monthly equity-curve snapshot from a position list. Positions
+// are held at entry size (no MTM during life) and book P&L on the exit
+// month. Returns array of (date, equity) pairs from first entry through
+// last exit, monthly resolution.
+function buildEquityCurve(
+  positions: Position[],
+  startBalance: number
+): Array<{ date: string; equity: number }> {
+  if (positions.length === 0) return [];
+  const sorted = [...positions].sort((a, b) =>
+    a.exitDate.localeCompare(b.exitDate)
+  );
+  const startMonth = sorted[0].entryDate.slice(0, 7); // "YYYY-MM"
+  const endMonth = sorted[sorted.length - 1].exitDate.slice(0, 7);
+  const out: Array<{ date: string; equity: number }> = [];
+  let equity = startBalance;
+  let pIdx = 0;
+  // Iterate months from start to end inclusive
+  let cur = new Date(`${startMonth}-01`);
+  const last = new Date(`${endMonth}-01`);
+  while (cur <= last) {
+    const ym = cur.toISOString().slice(0, 7);
+    while (pIdx < sorted.length && sorted[pIdx].exitDate.slice(0, 7) <= ym) {
+      equity += sorted[pIdx].pnl;
+      pIdx++;
+    }
+    out.push({ date: ym + "-01", equity });
+    cur = new Date(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 1);
+  }
+  return out;
+}
+
+function monthlyReturns(curve: Array<{ equity: number }>): number[] {
+  const r: number[] = [];
+  for (let i = 1; i < curve.length; i++) {
+    if (curve[i - 1].equity <= 0) {
+      r.push(0);
+      continue;
+    }
+    r.push((curve[i].equity - curve[i - 1].equity) / curve[i - 1].equity);
+  }
+  return r;
+}
+
+function mean(xs: number[]): number {
+  if (xs.length === 0) return 0;
+  return xs.reduce((a, b) => a + b, 0) / xs.length;
+}
+
+function stdDev(xs: number[]): number {
+  if (xs.length < 2) return 0;
+  const m = mean(xs);
+  const v = xs.reduce((a, b) => a + (b - m) * (b - m), 0) / (xs.length - 1);
+  return Math.sqrt(v);
+}
+
+function downsideDeviation(xs: number[], mar: number): number {
+  if (xs.length === 0) return 0;
+  const downside = xs
+    .map((x) => Math.min(0, x - mar))
+    .map((d) => d * d);
+  return Math.sqrt(downside.reduce((a, b) => a + b, 0) / xs.length);
+}
+
+function skewness(xs: number[]): number {
+  if (xs.length < 3) return 0;
+  const m = mean(xs);
+  const s = stdDev(xs);
+  if (s === 0) return 0;
+  const n = xs.length;
+  return (
+    (n / ((n - 1) * (n - 2))) *
+    xs.reduce((a, b) => a + Math.pow((b - m) / s, 3), 0)
+  );
+}
+
+const RF_ANNUAL = 0.04;
+const RF_MONTHLY = RF_ANNUAL / 12;
+
+function computeMetrics(
+  positions: Position[],
+  startBalance: number,
+  spyBars?: Bar[]
+): StrategyMetrics {
+  if (positions.length === 0) {
+    return {
+      sharpeRatio: null,
+      sortinoRatio: null,
+      calmarRatio: null,
+      informationRatio: null,
+      yearlyPnL: {},
+      bestYear: null,
+      worstYear: null,
+      longestWinStreak: 0,
+      longestLossStreak: 0,
+      pnlMean: 0,
+      pnlStd: 0,
+      pnlSkew: 0,
+      bootstrapCI95Lo: null,
+      bootstrapCI95Hi: null,
+    };
+  }
+  const curve = buildEquityCurve(positions, startBalance);
+  const rets = monthlyReturns(curve);
+  const meanR = mean(rets);
+  const stdR = stdDev(rets);
+  const sharpe =
+    stdR > 0 ? ((meanR - RF_MONTHLY) / stdR) * Math.sqrt(12) : null;
+  const downStd = downsideDeviation(rets, RF_MONTHLY);
+  const sortino =
+    downStd > 0 ? ((meanR - RF_MONTHLY) / downStd) * Math.sqrt(12) : null;
+  // Annualized return from final equity (matches what's in StrategyResult)
+  const finalEquity = curve.length > 0 ? curve[curve.length - 1].equity : startBalance;
+  const totalReturn = (finalEquity - startBalance) / startBalance;
+  const totalYears =
+    (new Date(curve[curve.length - 1].date).getTime() -
+      new Date(curve[0].date).getTime()) /
+    (365.25 * 24 * 3600 * 1000);
+  const annReturn =
+    totalYears > 0 && 1 + totalReturn > 0
+      ? Math.pow(1 + totalReturn, 1 / totalYears) - 1
+      : 0;
+  // Max drawdown for Calmar
+  let peak = startBalance;
+  let maxDD = 0;
+  for (const c of curve) {
+    if (c.equity > peak) peak = c.equity;
+    const dd = peak > 0 ? (c.equity - peak) / peak : 0;
+    if (dd < maxDD) maxDD = dd;
+  }
+  const calmar = maxDD < 0 ? annReturn / Math.abs(maxDD) : null;
+
+  // Information ratio: excess return / tracking error vs SPY benchmark.
+  let infoRatio: number | null = null;
+  if (spyBars && spyBars.length > 0) {
+    // Build monthly SPY returns aligned with our equity curve
+    const spyByMonth = new Map<string, number>();
+    for (const b of spyBars) spyByMonth.set(b.date.slice(0, 7), b.close);
+    const months = curve.map((c) => c.date.slice(0, 7));
+    const spyVals = months.map((m) => spyByMonth.get(m) ?? null);
+    const spyRets: Array<number | null> = [];
+    for (let i = 1; i < spyVals.length; i++) {
+      const a = spyVals[i - 1];
+      const b = spyVals[i];
+      spyRets.push(a != null && b != null && a !== 0 ? (b - a) / a : null);
+    }
+    const excessRets: number[] = [];
+    for (let i = 0; i < rets.length; i++) {
+      const s = spyRets[i];
+      if (s != null) excessRets.push(rets[i] - s);
+    }
+    const stdEx = stdDev(excessRets);
+    const meanEx = mean(excessRets);
+    if (stdEx > 0) {
+      infoRatio = (meanEx / stdEx) * Math.sqrt(12);
+    }
+  }
+
+  // Yearly P&L: bucket positions by exitDate year
+  const yearlyPnL: Record<string, number> = {};
+  for (const p of positions) {
+    const y = p.exitDate.slice(0, 4);
+    yearlyPnL[y] = (yearlyPnL[y] ?? 0) + p.pnl;
+  }
+  let bestYear: { year: string; pnl: number } | null = null;
+  let worstYear: { year: string; pnl: number } | null = null;
+  for (const [y, v] of Object.entries(yearlyPnL)) {
+    if (!bestYear || v > bestYear.pnl) bestYear = { year: y, pnl: v };
+    if (!worstYear || v < worstYear.pnl) worstYear = { year: y, pnl: v };
+  }
+
+  // Win/loss streaks (chronological)
+  const chrono = [...positions].sort((a, b) =>
+    a.exitDate.localeCompare(b.exitDate)
+  );
+  let longestWin = 0;
+  let longestLoss = 0;
+  let curWin = 0;
+  let curLoss = 0;
+  for (const p of chrono) {
+    if (p.pnl > 0) {
+      curWin++;
+      curLoss = 0;
+      if (curWin > longestWin) longestWin = curWin;
+    } else if (p.pnl < 0) {
+      curLoss++;
+      curWin = 0;
+      if (curLoss > longestLoss) longestLoss = curLoss;
+    } else {
+      curWin = 0;
+      curLoss = 0;
+    }
+  }
+
+  // P&L distribution
+  const pnls = positions.map((p) => p.pnl);
+  const pnlMean = mean(pnls);
+  const pnlStd = stdDev(pnls);
+  const pnlSkew = skewness(pnls);
+
+  // Bootstrap CI on annualized return (resample positions with replacement)
+  const bootstrapAnn: number[] = [];
+  const N = positions.length;
+  const ITERS = 1000;
+  for (let it = 0; it < ITERS; it++) {
+    let bootEquity = startBalance;
+    for (let i = 0; i < N; i++) {
+      const p = positions[Math.floor(Math.random() * N)];
+      bootEquity += p.pnl;
+    }
+    if (bootEquity > 0 && totalYears > 0) {
+      bootstrapAnn.push(
+        Math.pow(bootEquity / startBalance, 1 / totalYears) - 1
+      );
+    }
+  }
+  bootstrapAnn.sort((a, b) => a - b);
+  const lo =
+    bootstrapAnn.length > 0
+      ? bootstrapAnn[Math.floor(bootstrapAnn.length * 0.05)]
+      : null;
+  const hi =
+    bootstrapAnn.length > 0
+      ? bootstrapAnn[Math.floor(bootstrapAnn.length * 0.95)]
+      : null;
+
+  return {
+    sharpeRatio: sharpe,
+    sortinoRatio: sortino,
+    calmarRatio: calmar,
+    informationRatio: infoRatio,
+    yearlyPnL,
+    bestYear,
+    worstYear,
+    longestWinStreak: longestWin,
+    longestLossStreak: longestLoss,
+    pnlMean,
+    pnlStd,
+    pnlSkew,
+    bootstrapCI95Lo: lo,
+    bootstrapCI95Hi: hi,
+  };
 }
 
 function priceAtOrAfter(bars: Bar[], dateIso: string): Bar | null {
@@ -341,7 +610,8 @@ async function simulate(
   cfg: StrategyConfig,
   model: ModelWeights | null,
   barsByTicker: Map<string, Bar[]>,
-  wfModels: Map<number, ModelWeights> | null = null
+  wfModels: Map<number, ModelWeights> | null = null,
+  spyBars: Bar[] | null = null
 ): Promise<StrategyResult> {
   // Build event→features helper that uses on-disk trailing returns if
   // present (added in 2026-05-03 backtest schema), otherwise falls back to
@@ -570,6 +840,7 @@ async function simulate(
       worstPos: null,
       maxDrawdown: 0,
       positions: [],
+      metrics: computeMetrics([], STARTING_BALANCE, spyBars ?? undefined),
     };
   }
 
@@ -632,6 +903,7 @@ async function simulate(
     worstPos: sorted[sorted.length - 1],
     maxDrawdown: maxDD,
     positions,
+    metrics: computeMetrics(positions, STARTING_BALANCE, spyBars ?? undefined),
   };
 }
 
@@ -1609,6 +1881,8 @@ async function main() {
     const bars = await loadBars(t);
     if (bars) barsByTicker.set(t, bars);
   }
+  // SPY bars are needed for the Information Ratio computation in metrics.
+  const spyBars = await loadBars("SPY");
   console.log(
     `loaded bars for ${barsByTicker.size}/${tickers.length} tickers; ${allEvents.length} events`
   );
@@ -1667,7 +1941,7 @@ async function main() {
 
   const results: StrategyResult[] = [];
   for (const cfg of STRATEGIES) {
-    const r = await simulate(allEvents, cfg, model, barsByTicker, wfModels);
+    const r = await simulate(allEvents, cfg, model, barsByTicker, wfModels, spyBars);
     results.push(r);
     const stopRate = r.nTaken > 0 ? r.nStoppedOut / r.nTaken : 0;
     const tpRate = r.nTaken > 0 ? r.nTakeProfit / r.nTaken : 0;
@@ -1759,11 +2033,190 @@ async function main() {
         !e.ocfDecline2y &&
         (ctx.trailing6m == null || ctx.trailing6m <= 0),
     };
-    const r = await simulate(allEvents, cfg, model, barsByTicker, wfModels);
+    const r = await simulate(allEvents, cfg, model, barsByTicker, wfModels, spyBars);
     bySector.push({ sector, ...r });
     console.log(
       sector.padEnd(24) +
         ` | ${r.nFiltered.toString().padStart(5)} | ${r.nTaken.toString().padStart(5)} | ${fmtUSD(r.finalEquity).padStart(9)} | ${fmtPct(r.totalReturn).padStart(7)} | ${fmtPct(r.annualizedReturn).padStart(5)} | ${fmtPct(r.winRate).padStart(5)} | ${fmtPct(r.maxDrawdown).padStart(5)}`
+    );
+  }
+
+  // ─── Ablation, sensitivity, and benchmark studies ────────────────
+  // Pick the best-by-equity strategy and run targeted variations.
+  const headlineCfg = STRATEGIES.find((s) =>
+    /\[59\] 2x lev \+ winning sectors/.test(s.name)
+  ) ?? STRATEGIES[0];
+
+  console.log("\n=== ablation: drop one rule from the headline strategy ===");
+  type Ablation = {
+    name: string;
+    description: string;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    nTaken: number;
+    delta: number; // delta vs headline
+  };
+  const ablations: Ablation[] = [];
+  const headlineResult = await simulate(allEvents, headlineCfg, model, barsByTicker, wfModels, spyBars);
+  const headlineAnn = headlineResult.annualizedReturn ?? 0;
+
+  const ablationVariants: Array<{ name: string; description: string; mod: (cfg: StrategyConfig) => StrategyConfig }> = [
+    {
+      name: "drop sector filter",
+      description: "remove winning-sectors restriction",
+      mod: (c) => ({
+        ...c,
+        filter: (e, ctx) => !e.ocfDecline2y && (ctx.trailing6m == null || ctx.trailing6m <= 0),
+      }),
+    },
+    {
+      name: "drop ocf-2y filter",
+      description: "remove 'no ocfDecline2y' rule",
+      mod: (c) => ({
+        ...c,
+        filter: (e, ctx) =>
+          ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+          (ctx.trailing6m == null || ctx.trailing6m <= 0),
+      }),
+    },
+    {
+      name: "drop anti-momentum",
+      description: "remove trailing-6m ≤ 0% requirement",
+      mod: (c) => ({
+        ...c,
+        filter: (e) =>
+          ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+          !e.ocfDecline2y,
+      }),
+    },
+    {
+      name: "drop leverage (1x)",
+      description: "set pair leverage to 1",
+      mod: (c) => ({ ...c, pairLeverage: 1 }),
+    },
+    {
+      name: "drop compounding (fixed $10K)",
+      description: "remove compoundFraction; use fixed positionSize",
+      mod: (c) => ({ ...c, compoundFraction: null }),
+    },
+  ];
+  for (const v of ablationVariants) {
+    const modCfg = v.mod(headlineCfg);
+    const res = await simulate(allEvents, modCfg, model, barsByTicker, wfModels, spyBars);
+    const ann = res.annualizedReturn ?? 0;
+    ablations.push({
+      name: v.name,
+      description: v.description,
+      finalEquity: res.finalEquity,
+      annualizedReturn: ann,
+      nTaken: res.nTaken,
+      delta: ann - headlineAnn,
+    });
+    console.log(
+      `  ${v.name.padEnd(34)} → $${res.finalEquity.toFixed(0).padStart(7)}  ann ${(ann * 100).toFixed(1).padStart(5)}%  Δ ${(((ann - headlineAnn) * 100) >= 0 ? "+" : "")}${((ann - headlineAnn) * 100).toFixed(1)}pp`
+    );
+  }
+
+  // Borrow-cost sensitivity
+  console.log("\n=== borrow-cost sensitivity (headline strategy) ===");
+  type Sensitivity = {
+    annualBorrow: number;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    deltaPp: number;
+  };
+  const sensitivities: Sensitivity[] = [];
+  const baseBorrow = ANNUAL_BORROW_COST;
+  // Hack: we don't expose ANNUAL_BORROW_COST per-strategy. Recompute P&L
+  // post-hoc by adjusting borrow cost on each position's days-held.
+  for (const altBorrow of [0.005, 0.02, 0.05, 0.10, 0.20]) {
+    let adjustedFinal = STARTING_BALANCE;
+    for (const p of headlineResult.positions) {
+      const baseCostPct = baseBorrow * (p.daysHeld / 365.25);
+      const newCostPct = altBorrow * (p.daysHeld / 365.25);
+      // P&L = -size × ret − size × cost; restore the cost component, swap.
+      // For pair trades, original used halfSize × pairLev (size/2 × lev).
+      const cfg = headlineCfg;
+      const lev = cfg.pairLeverage ?? 1;
+      const shortNotional = cfg.pairTrade ? (p.size / 2) * lev : p.size;
+      const adjustedPnL =
+        p.pnl + shortNotional * baseCostPct - shortNotional * newCostPct;
+      adjustedFinal += adjustedPnL;
+    }
+    const totalReturn = (adjustedFinal - STARTING_BALANCE) / STARTING_BALANCE;
+    const firstEntry = headlineResult.positions[0]?.entryDate;
+    const lastExit = headlineResult.positions.reduce(
+      (a, p) => (p.exitDate > a ? p.exitDate : a),
+      headlineResult.positions[0]?.exitDate ?? ""
+    );
+    const yrs = firstEntry && lastExit ? yearsBetween(firstEntry, lastExit) : 0;
+    const ann =
+      1 + totalReturn > 0 && yrs > 0
+        ? Math.pow(1 + totalReturn, 1 / yrs) - 1
+        : 0;
+    sensitivities.push({
+      annualBorrow: altBorrow,
+      finalEquity: adjustedFinal,
+      annualizedReturn: ann,
+      deltaPp: ann - headlineAnn,
+    });
+    console.log(
+      `  borrow ${(altBorrow * 100).toFixed(1).padStart(4)}% → $${adjustedFinal.toFixed(0).padStart(7)}  ann ${(ann * 100).toFixed(1).padStart(5)}%`
+    );
+  }
+
+  // Benchmarks: SPY buy-and-hold and 60/40 over the same window
+  console.log("\n=== benchmarks over same window ===");
+  type Benchmark = {
+    name: string;
+    description: string;
+    finalEquity: number;
+    annualizedReturn: number;
+  };
+  const benchmarks: Benchmark[] = [];
+  if (spyBars && headlineResult.positions.length > 0) {
+    const startDate = headlineResult.positions[0].entryDate;
+    const endDate = headlineResult.positions.reduce(
+      (a, p) => (p.exitDate > a ? p.exitDate : a),
+      headlineResult.positions[0].exitDate
+    );
+    const startBar = priceAtOrAfter(spyBars, startDate);
+    const endBar = priceClosestBefore(spyBars, endDate) ?? priceAtOrAfter(spyBars, endDate);
+    if (startBar && endBar) {
+      const spyRet = (endBar.close - startBar.close) / startBar.close;
+      const yrs = yearsBetween(startDate, endDate);
+      const spyAnn = yrs > 0 ? Math.pow(1 + spyRet, 1 / yrs) - 1 : 0;
+      const spyFinal = STARTING_BALANCE * (1 + spyRet);
+      benchmarks.push({
+        name: "SPY buy-and-hold",
+        description: `100% SPY, no rebalancing, same window (${startDate.slice(0,7)}→${endDate.slice(0,7)})`,
+        finalEquity: spyFinal,
+        annualizedReturn: spyAnn,
+      });
+      // 60/40: 60% SPY + 40% T-bills @ 4% annual
+      const tbillRet = Math.pow(1 + 0.04, yrs) - 1;
+      const blendRet = 0.6 * spyRet + 0.4 * tbillRet;
+      const blendFinal = STARTING_BALANCE * (1 + blendRet);
+      const blendAnn = yrs > 0 ? Math.pow(1 + blendRet, 1 / yrs) - 1 : 0;
+      benchmarks.push({
+        name: "60/40 (SPY + T-bills)",
+        description: "60% SPY, 40% 4% T-bills, no rebalancing",
+        finalEquity: blendFinal,
+        annualizedReturn: blendAnn,
+      });
+      // Cash @ 4% T-bill
+      const cashFinal = STARTING_BALANCE * Math.pow(1 + 0.04, yrs);
+      benchmarks.push({
+        name: "T-bills only",
+        description: "100% T-bills compounding at 4% annual",
+        finalEquity: cashFinal,
+        annualizedReturn: 0.04,
+      });
+    }
+  }
+  for (const b of benchmarks) {
+    console.log(
+      `  ${b.name.padEnd(28)} → $${b.finalEquity.toFixed(0).padStart(7)}  ann ${(b.annualizedReturn * 100).toFixed(1).padStart(5)}%`
     );
   }
 
@@ -1806,6 +2259,7 @@ async function main() {
             winRate: r.winRate,
             meanPnLPerPos: r.meanPnLPerPos,
             maxDrawdown: r.maxDrawdown,
+            metrics: r.metrics,
           };
         }),
         bySector: bySector.map((r) => ({
@@ -1839,6 +2293,34 @@ async function main() {
               }
             : null,
         })),
+        // ─── New: deeper evaluation outputs ──────────────────────────
+        headline: {
+          name: headlineResult.name,
+          description: headlineResult.description,
+          finalEquity: headlineResult.finalEquity,
+          annualizedReturn: headlineResult.annualizedReturn,
+          metrics: headlineResult.metrics,
+          // Full per-trade detail for the headline strategy. Useful for
+          // post-mortems and sanity checks.
+          positions: headlineResult.positions.map((p) => ({
+            ticker: p.ticker,
+            sector: p.sector,
+            entryDate: p.entryDate,
+            exitDate: p.exitDate,
+            daysHeld: p.daysHeld,
+            size: p.size,
+            ret: p.ret,
+            pnl: p.pnl,
+            exitReason: p.exitReason,
+            mlScore: p.mlScore,
+            trailing6m: p.trailing6m,
+          })),
+        },
+        ablations,
+        sensitivities,
+        benchmarks,
+        annualizedBar: ANNUALIZED_BAR,
+        riskFreeRate: RF_ANNUAL,
       },
       null,
       2

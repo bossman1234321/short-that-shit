@@ -110,6 +110,7 @@ async function loadPortfolioSummary(): Promise<PortfolioSummary | null> {
       peakGrossDeployment: r.peakGrossDeployment,
       unleveraged: r.unleveraged,
       meets12PctBar: r.meets12PctBar,
+      metrics: (r as any).metrics,
     });
     // Lowered from 0.12 → 0.08 per user directive (2026-05-03). 12% wasn't
     // achievable even with leverage on the current data window. 8% is

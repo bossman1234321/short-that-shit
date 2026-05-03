@@ -100,12 +100,79 @@ type SectorPortfolioRow = {
   } | null;
 };
 
+type StrategyMetrics = {
+  sharpeRatio: number | null;
+  sortinoRatio: number | null;
+  calmarRatio: number | null;
+  informationRatio: number | null;
+  yearlyPnL: Record<string, number>;
+  bestYear: { year: string; pnl: number } | null;
+  worstYear: { year: string; pnl: number } | null;
+  longestWinStreak: number;
+  longestLossStreak: number;
+  pnlMean: number;
+  pnlStd: number;
+  pnlSkew: number;
+  bootstrapCI95Lo: number | null;
+  bootstrapCI95Hi: number | null;
+};
+
+type HeadlineSummary = {
+  name: string;
+  description: string;
+  finalEquity: number;
+  annualizedReturn: number | null;
+  metrics: StrategyMetrics;
+  positions: Array<{
+    ticker: string;
+    sector: string;
+    entryDate: string;
+    exitDate: string;
+    daysHeld: number;
+    size: number;
+    ret: number;
+    pnl: number;
+    exitReason: string;
+    mlScore: number | null;
+    trailing6m: number | null;
+  }>;
+};
+
+type AblationRow = {
+  name: string;
+  description: string;
+  finalEquity: number;
+  annualizedReturn: number | null;
+  nTaken: number;
+  delta: number;
+};
+
+type SensitivityRow = {
+  annualBorrow: number;
+  finalEquity: number;
+  annualizedReturn: number | null;
+  deltaPp: number;
+};
+
+type BenchmarkRow = {
+  name: string;
+  description: string;
+  finalEquity: number;
+  annualizedReturn: number;
+};
+
 type PortfolioFile = {
   generatedAt: string;
   startingBalance: number;
   annualBorrowCost: number;
+  annualizedBar?: number;
+  riskFreeRate?: number;
   results: PortfolioStrategyRow[];
   bySector?: SectorPortfolioRow[];
+  headline?: HeadlineSummary;
+  ablations?: AblationRow[];
+  sensitivities?: SensitivityRow[];
+  benchmarks?: BenchmarkRow[];
 };
 
 const fmtPct = (n: number | null | undefined): string => {
@@ -147,6 +214,21 @@ export function BacktestReview({
     <div className="min-h-screen bg-terminal-bg text-terminal-fg">
       <Header backtest={backtest} portfolio={portfolio} />
       <main className="mx-auto max-w-[1400px] space-y-12 px-6 pb-24">
+        {portfolio?.headline && (
+          <HeadlineEvaluation portfolio={portfolio} />
+        )}
+        {portfolio?.benchmarks && portfolio.benchmarks.length > 0 && (
+          <Benchmarks portfolio={portfolio} />
+        )}
+        {portfolio?.ablations && portfolio.ablations.length > 0 && (
+          <Ablations portfolio={portfolio} />
+        )}
+        {portfolio?.sensitivities && portfolio.sensitivities.length > 0 && (
+          <SensitivityTable portfolio={portfolio} />
+        )}
+        {portfolio?.headline && (
+          <PerTradeDetail portfolio={portfolio} />
+        )}
         {portfolio && <Strategies portfolio={portfolio} />}
         {portfolio?.bySector && portfolio.bySector.length > 0 && (
           <PortfolioBySector portfolio={portfolio} />
@@ -230,6 +312,499 @@ function Header({
         </div>
       </div>
     </header>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function HeadlineEvaluation({ portfolio }: { portfolio: PortfolioFile }) {
+  const h = portfolio.headline!;
+  const m = h.metrics;
+  const startBal = portfolio.startingBalance;
+  const fmtRatio = (n: number | null) => (n == null ? "—" : n.toFixed(2));
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Headline strategy: full evaluation
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        <span className="font-data text-amber-accent">{h.name}</span> — {h.description}
+      </p>
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Headline P&amp;L
+          </div>
+          <div className="mt-1 font-data text-2xl text-amber-accent">
+            {fmtUSD(h.finalEquity)}
+          </div>
+          <div className="text-[11px] text-terminal-muted">
+            from {fmtUSD(startBal)} starting · ann{" "}
+            {fmtPct(h.annualizedReturn)}
+          </div>
+          {m.bootstrapCI95Lo != null && m.bootstrapCI95Hi != null && (
+            <div className="mt-2 text-[11px] text-terminal-muted">
+              <span className="font-data text-amber-accent">95% CI</span>{" "}
+              (bootstrap, n={h.positions.length}):{" "}
+              <span className="font-data">
+                {fmtPct(m.bootstrapCI95Lo)} → {fmtPct(m.bootstrapCI95Hi)}
+              </span>
+              <div className="mt-1 text-[10px] leading-relaxed">
+                Wide CIs reflect the small sample. The point estimate
+                ({fmtPct(h.annualizedReturn)}) is fragile if your real-world
+                runs draw from the lower end of the distribution.
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Risk-adjusted return ratios
+          </div>
+          <table className="mt-1 w-full text-xs">
+            <tbody>
+              <tr>
+                <td className="py-0.5">Sharpe</td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtRatio(m.sharpeRatio)}
+                </td>
+                <td className="py-0.5 pl-2 text-[10px] text-terminal-muted">
+                  excess / vol
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0.5">Sortino</td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtRatio(m.sortinoRatio)}
+                </td>
+                <td className="py-0.5 pl-2 text-[10px] text-terminal-muted">
+                  excess / downside vol
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0.5">Calmar</td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtRatio(m.calmarRatio)}
+                </td>
+                <td className="py-0.5 pl-2 text-[10px] text-terminal-muted">
+                  ann ret / |max DD|
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0.5">Info ratio</td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtRatio(m.informationRatio)}
+                </td>
+                <td className="py-0.5 pl-2 text-[10px] text-terminal-muted">
+                  vs SPY
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div className="mt-2 text-[10px] leading-relaxed text-terminal-muted">
+            Sharpe ≥ 1 is publishable; ≥ 2 is exceptional. Rates use 4%
+            annual T-bill as risk-free baseline.
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            P&amp;L distribution + streaks
+          </div>
+          <table className="mt-1 w-full text-xs">
+            <tbody>
+              <tr>
+                <td className="py-0.5">Mean P&amp;L / pos</td>
+                <td className="py-0.5 text-right font-data">{fmtUSD(m.pnlMean)}</td>
+              </tr>
+              <tr>
+                <td className="py-0.5">Std dev</td>
+                <td className="py-0.5 text-right font-data">{fmtUSD(m.pnlStd)}</td>
+              </tr>
+              <tr>
+                <td className="py-0.5">Skewness</td>
+                <td className="py-0.5 text-right font-data">{fmtNum(m.pnlSkew)}</td>
+              </tr>
+              <tr>
+                <td className="py-0.5">Longest win streak</td>
+                <td className="py-0.5 text-right font-data">{m.longestWinStreak}</td>
+              </tr>
+              <tr>
+                <td className="py-0.5">Longest loss streak</td>
+                <td className="py-0.5 text-right font-data">{m.longestLossStreak}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {Object.keys(m.yearlyPnL).length > 0 && (
+        <div className="mt-4 rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Year-by-year P&amp;L
+          </div>
+          <table className="mt-2 w-full text-xs">
+            <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+              <tr>
+                <th className="text-left">Year</th>
+                <th className="text-right">P&amp;L</th>
+                <th className="px-3 text-left">Bar (relative)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(m.yearlyPnL)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([y, pnl]) => {
+                  const maxAbs = Math.max(
+                    ...Object.values(m.yearlyPnL).map((v) => Math.abs(v)),
+                    1
+                  );
+                  const widthPct = (Math.abs(pnl) / maxAbs) * 100;
+                  return (
+                    <tr key={y}>
+                      <td className="py-0.5 font-data">{y}</td>
+                      <td
+                        className={`py-0.5 text-right font-data ${pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                      >
+                        {fmtUSD(pnl)}
+                      </td>
+                      <td className="px-3 py-0.5">
+                        <div className="relative h-2 w-full">
+                          <div
+                            className={`absolute top-0 h-2 ${pnl >= 0 ? "left-1/2 bg-emerald-700" : "right-1/2 bg-red-700"}`}
+                            style={{ width: `${widthPct / 2}%` }}
+                          />
+                          <div className="absolute left-1/2 top-0 h-2 w-px bg-terminal-border" />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+          {m.bestYear && m.worstYear && (
+            <div className="mt-2 text-[10px] text-terminal-muted">
+              best: <span className="font-data">{m.bestYear.year}</span> ({fmtUSD(m.bestYear.pnl)})
+              {" · "}worst: <span className="font-data">{m.worstYear.year}</span> ({fmtUSD(m.worstYear.pnl)})
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function Benchmarks({ portfolio }: { portfolio: PortfolioFile }) {
+  const benches = portfolio.benchmarks!;
+  const headlineAnn = portfolio.headline?.annualizedReturn ?? 0;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Counterfactual benchmarks (same window)
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        What would $10K have done in passive alternatives over the same start
+        and end dates as the headline strategy?
+      </p>
+      <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">Strategy</th>
+              <th className="px-3 py-2 text-right">Final $</th>
+              <th className="px-3 py-2 text-right">Annualized</th>
+              <th className="px-3 py-2 text-right">Δ vs strategy</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-terminal-border bg-amber-accent/10">
+              <td className="px-3 py-2">
+                <div className="font-data text-amber-accent">
+                  {portfolio.headline?.name}
+                </div>
+                <div className="text-[10px] text-terminal-muted">our strategy</div>
+              </td>
+              <td className="px-3 py-2 text-right font-data text-amber-accent">
+                {fmtUSD(portfolio.headline?.finalEquity ?? 0)}
+              </td>
+              <td className="px-3 py-2 text-right font-data text-amber-accent">
+                {fmtPct(headlineAnn)}
+              </td>
+              <td className="px-3 py-2 text-right font-data text-terminal-muted">—</td>
+            </tr>
+            {benches.map((b) => {
+              const delta = headlineAnn - b.annualizedReturn;
+              return (
+                <tr key={b.name} className="border-t border-terminal-border/50">
+                  <td className="px-3 py-2">
+                    <div className="font-data">{b.name}</div>
+                    <div className="text-[10px] text-terminal-muted">
+                      {b.description}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-right font-data">
+                    {fmtUSD(b.finalEquity)}
+                  </td>
+                  <td className="px-3 py-2 text-right font-data">
+                    {fmtPct(b.annualizedReturn)}
+                  </td>
+                  <td
+                    className={`px-3 py-2 text-right font-data ${delta >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {delta >= 0 ? "+" : ""}
+                    {(delta * 100).toFixed(1)}pp
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        <span className="text-amber-accent">Honest read:</span> the strategy
+        underperforms passive SPY buy-and-hold over this window in absolute
+        return — but with materially less volatility (max DD ~0% vs SPY&apos;s
+        peak-to-trough drawdowns of 25-34% in 2020 and 2022). Whether this
+        trade-off is worth it depends on whether you weight risk-adjusted or
+        absolute return more.
+      </p>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function Ablations({ portfolio }: { portfolio: PortfolioFile }) {
+  const ablations = portfolio.ablations!;
+  const headlineAnn = portfolio.headline?.annualizedReturn ?? 0;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Ablation: which rules carry the alpha?
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        Disable one filter at a time, re-simulate, measure annualized return
+        delta vs. the headline. Bigger negative Δ ⇒ the rule is load-bearing;
+        Δ near zero ⇒ the rule contributes nothing.
+      </p>
+      <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">Variant</th>
+              <th className="px-3 py-2 text-right">Final $</th>
+              <th className="px-3 py-2 text-right">Annualized</th>
+              <th className="px-3 py-2 text-right">Δ ann vs headline</th>
+              <th className="px-3 py-2 text-right">n trades</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-terminal-border bg-amber-accent/10">
+              <td className="px-3 py-2">
+                <div className="font-data text-amber-accent">
+                  Headline (all rules on)
+                </div>
+              </td>
+              <td className="px-3 py-2 text-right font-data text-amber-accent">
+                {fmtUSD(portfolio.headline?.finalEquity ?? 0)}
+              </td>
+              <td className="px-3 py-2 text-right font-data text-amber-accent">
+                {fmtPct(headlineAnn)}
+              </td>
+              <td className="px-3 py-2 text-right font-data text-terminal-muted">
+                —
+              </td>
+              <td className="px-3 py-2 text-right font-data text-terminal-muted">
+                {portfolio.headline?.positions.length ?? "—"}
+              </td>
+            </tr>
+            {ablations
+              .slice()
+              .sort((a, b) => a.delta - b.delta)
+              .map((a) => (
+                <tr key={a.name} className="border-t border-terminal-border/50">
+                  <td className="px-3 py-2">
+                    <div className="font-data">{a.name}</div>
+                    <div className="text-[10px] text-terminal-muted">
+                      {a.description}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-right font-data">
+                    {fmtUSD(a.finalEquity)}
+                  </td>
+                  <td className="px-3 py-2 text-right font-data">
+                    {fmtPct(a.annualizedReturn)}
+                  </td>
+                  <td
+                    className={`px-3 py-2 text-right font-data ${a.delta < -0.005 ? "text-red-400" : a.delta > 0.005 ? "text-emerald-400" : "text-terminal-muted"}`}
+                  >
+                    {a.delta >= 0 ? "+" : ""}
+                    {(a.delta * 100).toFixed(1)}pp
+                  </td>
+                  <td className="px-3 py-2 text-right font-data text-terminal-muted">
+                    {a.nTaken}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function SensitivityTable({ portfolio }: { portfolio: PortfolioFile }) {
+  const sens = portfolio.sensitivities!;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Borrow-cost sensitivity
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        Real short-borrow rates vary by name: liquid large-caps ~0.3-2%,
+        hard-to-borrow names can be 5-50%+. The headline assumes 2% flat;
+        below shows what happens if the assumption is wrong.
+      </p>
+      <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">Annual borrow</th>
+              <th className="px-3 py-2 text-right">Final $</th>
+              <th className="px-3 py-2 text-right">Annualized</th>
+              <th className="px-3 py-2 text-right">Δ vs 2%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sens.map((s) => (
+              <tr
+                key={s.annualBorrow}
+                className={`border-t border-terminal-border/50 ${s.annualBorrow === portfolio.annualBorrowCost ? "bg-amber-accent/10" : ""}`}
+              >
+                <td className="px-3 py-2 font-data">
+                  {(s.annualBorrow * 100).toFixed(1)}%
+                  {s.annualBorrow === portfolio.annualBorrowCost && (
+                    <span className="ml-2 text-[10px] text-amber-accent">(baseline)</span>
+                  )}
+                </td>
+                <td className="px-3 py-2 text-right font-data">
+                  {fmtUSD(s.finalEquity)}
+                </td>
+                <td className="px-3 py-2 text-right font-data">
+                  {fmtPct(s.annualizedReturn)}
+                </td>
+                <td
+                  className={`px-3 py-2 text-right font-data ${s.deltaPp < -0.005 ? "text-red-400" : s.deltaPp > 0.005 ? "text-emerald-400" : "text-terminal-muted"}`}
+                >
+                  {s.deltaPp >= 0 ? "+" : ""}
+                  {(s.deltaPp * 100).toFixed(1)}pp
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        <span className="text-amber-accent">Honest read:</span> liquid Util/CS
+        large-caps borrow at ~0.5-2%. The strategy clears its annualized bar
+        even at 5% borrow. At 10%+ (illiquid / hard-to-borrow names), it
+        breaks down. Most names in the matched set are easy-to-borrow, so
+        the 2% assumption is reasonable but check actual rates before
+        deploying.
+      </p>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function PerTradeDetail({ portfolio }: { portfolio: PortfolioFile }) {
+  const positions = portfolio.headline!.positions;
+  if (positions.length === 0) return null;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Per-trade detail (headline strategy)
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        Every position the headline strategy took. Sanity-check execution
+        feasibility, look for flukes, see which trades drove returns.
+      </p>
+      <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">Ticker</th>
+              <th className="px-3 py-2 text-left">Sector</th>
+              <th className="px-3 py-2 text-left">Entry</th>
+              <th className="px-3 py-2 text-left">Exit</th>
+              <th className="px-3 py-2 text-right">Days</th>
+              <th className="px-3 py-2 text-right">Size $</th>
+              <th className="px-3 py-2 text-right">Return / α</th>
+              <th className="px-3 py-2 text-right">P&amp;L</th>
+              <th className="px-3 py-2 text-left">Exit reason</th>
+              <th className="px-3 py-2 text-right">ML score</th>
+              <th className="px-3 py-2 text-right">Trail-6m</th>
+            </tr>
+          </thead>
+          <tbody>
+            {positions
+              .slice()
+              .sort((a, b) => a.entryDate.localeCompare(b.entryDate))
+              .map((p, i) => (
+                <tr
+                  key={`${p.ticker}-${p.entryDate}-${i}`}
+                  className="border-t border-terminal-border/50"
+                >
+                  <td className="px-3 py-1.5 font-data font-semibold">
+                    <a
+                      href={`https://finance.yahoo.com/quote/${encodeURIComponent(p.ticker)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-accent hover:underline"
+                    >
+                      {p.ticker}
+                    </a>
+                  </td>
+                  <td className="px-3 py-1.5 text-terminal-muted">
+                    {p.sector}
+                  </td>
+                  <td className="px-3 py-1.5 font-data text-[10px]">
+                    {p.entryDate}
+                  </td>
+                  <td className="px-3 py-1.5 font-data text-[10px]">
+                    {p.exitDate}
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-data text-terminal-muted">
+                    {p.daysHeld}
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-data">
+                    {fmtUSD(p.size)}
+                  </td>
+                  <td
+                    className={`px-3 py-1.5 text-right font-data ${p.ret < 0 ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {fmtPct(p.ret)}
+                  </td>
+                  <td
+                    className={`px-3 py-1.5 text-right font-data ${p.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {fmtUSD(p.pnl)}
+                  </td>
+                  <td className="px-3 py-1.5 font-data text-[10px] text-terminal-muted">
+                    {p.exitReason}
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-data text-terminal-muted">
+                    {p.mlScore != null ? p.mlScore.toFixed(2) : "—"}
+                  </td>
+                  <td
+                    className={`px-3 py-1.5 text-right font-data ${(p.trailing6m ?? 0) < 0 ? "text-emerald-400" : "text-terminal-muted"}`}
+                  >
+                    {p.trailing6m != null ? fmtPct(p.trailing6m) : "—"}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

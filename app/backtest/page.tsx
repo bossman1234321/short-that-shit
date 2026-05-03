@@ -49,33 +49,7 @@ type SectorStat = {
   hitRateBigMiss: number | null;
 };
 
-type PortfolioFile = {
-  generatedAt: string;
-  startingBalance: number;
-  annualBorrowCost: number;
-  results: Array<{
-    name: string;
-    description: string;
-    config: {
-      positionSize: number;
-      maxConcurrent: number;
-      holdMonths: number;
-      stopLossPct: number | null;
-      takeProfitPct: number | null;
-    };
-    nFiltered: number;
-    nTaken: number;
-    nWon: number;
-    nStoppedOut: number;
-    nTakeProfit: number;
-    finalEquity: number;
-    totalReturn: number;
-    annualizedReturn: number | null;
-    winRate: number;
-    meanPnLPerPos: number;
-    maxDrawdown: number;
-  }>;
-};
+type PortfolioFile = any;
 
 async function loadJson<T>(rel: string): Promise<T | null> {
   try {
