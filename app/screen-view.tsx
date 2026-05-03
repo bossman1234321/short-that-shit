@@ -263,6 +263,8 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
     <div className="min-h-screen bg-terminal-bg text-terminal-fg">
       <Header data={data} />
 
+      <TradeGate data={data} />
+
       <FilterBar
         data={data}
         showAll={showAll}
@@ -352,6 +354,63 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
         <BacktestPanel data={data} />
         <Footer data={data} />
       </main>
+    </div>
+  );
+}
+
+// 12% annualized-return gate banner. When no backtested strategy clears
+// the bar, the screen recommends WAITING. Pulls the bar from
+// data.portfolio.annualizedBar so the threshold is data-driven not magic.
+function TradeGate({ data }: { data: ScreenResult }) {
+  const p = data.portfolio;
+  if (!p) return null;
+  const bar = p.annualizedBar;
+  const best = p.bestUnleveraged;
+  const bestAnn = best.annualizedReturn ?? 0;
+  const meetsBar = p.bestUnleveragedClearingBar != null;
+  const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`;
+  if (meetsBar) {
+    const winner = p.bestUnleveragedClearingBar!;
+    return (
+      <div className="border-b border-emerald-700/40 bg-emerald-950/30">
+        <div className="mx-auto max-w-[1400px] px-6 py-3 text-sm">
+          <div className="flex flex-wrap items-baseline gap-x-3">
+            <span className="rounded bg-emerald-700 px-2 py-0.5 font-data text-xs uppercase text-white">
+              trade signal
+            </span>
+            <span className="text-emerald-300">
+              An unleveraged strategy clears the {fmtPct(bar)} annualized bar.
+            </span>
+            <span className="font-data text-emerald-100">
+              {winner.name} → ann {fmtPct(bestAnn)}, win {fmtPct(winner.winRate)}, n=
+              {winner.nTaken}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="border-b border-amber-accent/40 bg-amber-accent/10">
+      <div className="mx-auto max-w-[1400px] px-6 py-3 text-sm">
+        <div className="flex flex-wrap items-baseline gap-x-3">
+          <span className="rounded bg-amber-accent px-2 py-0.5 font-data text-xs uppercase text-terminal-bg">
+            don&apos;t trade
+          </span>
+          <span className="text-amber-accent">
+            No unleveraged strategy clears the {fmtPct(bar)} annualized bar.
+          </span>
+          <span className="text-terminal-muted">
+            Best unleveraged backtest is{" "}
+            <span className="font-data text-amber-accent">
+              {fmtPct(bestAnn)}
+            </span>{" "}
+            ({best.name}, n={best.nTaken}). Per the user-set rule, the screen
+            recommends <span className="font-semibold">waiting</span> on real
+            trades until the strategy clears the threshold.
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

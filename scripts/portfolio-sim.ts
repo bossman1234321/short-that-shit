@@ -1403,6 +1403,92 @@ const STRATEGIES: StrategyConfig[] = [
       !e.ocfDecline2y &&
       (ctx.trailing6m == null || ctx.trailing6m <= 0),
   },
+  // ─── Iteration 16: tightest filters trying to clear 12% bar ────────
+  {
+    name: "[53] FULL DEPLOY: Consumer Staples only, $10K × 1, compound 100%",
+    description:
+      "highest-α sector only (CS hit 73% in backtest), full-portfolio concentration",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      e.sector === "Consumer Staples" &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[54] FULL DEPLOY: CS + sector-prior < -10%, $10K × 1",
+    description:
+      "consumer staples only, plus require historical sector α < -10%",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      e.sector === "Consumer Staples" &&
+      ctx.sectorPriorAlpha != null &&
+      ctx.sectorPriorAlpha < -0.10 &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[55] FULL DEPLOY: stronger downtrend ≤ -10%, $10K × 1",
+    description:
+      "winning sectors + only short stocks already down ≥10% in trailing 6m",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      ctx.trailing6m != null &&
+      ctx.trailing6m <= -0.1,
+  },
+  {
+    name: "[56] FULL DEPLOY: 2y hold, winning sectors, $10K × 1",
+    description:
+      "longer hold captures multi-year decline; full deployment",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 24,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[57] FULL DEPLOY: WF-ML > 0.65 + winning sectors + $10K × 1",
+    description:
+      "high-ML-conviction filter + concentration; tests if ML threshold can pick winners despite low overall AUC",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0) &&
+      ctx.wfMlScore != null &&
+      ctx.wfMlScore > 0.65,
+  },
   // ─── Iteration 15: ML-WEIGHTED SIZING (use score as size multiplier) ─
   // Don't filter on score — instead use it as a size weight. Even a noisy
   // signal can add value if positions are sized roughly by conviction.
@@ -1619,6 +1705,10 @@ async function main() {
             config: r.config,
             peakGrossDeployment,
             unleveraged: peakGrossDeployment <= 1.001,
+            // Strategy clears the user's 12% annualized bar (true) or
+            // doesn't (false). When false, the screen recommends "wait".
+            meets12PctBar:
+              r.annualizedReturn != null && r.annualizedReturn >= 0.12,
             nFiltered: r.nFiltered,
             nTaken: r.nTaken,
             nWon: r.nWon,

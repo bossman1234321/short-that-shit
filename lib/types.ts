@@ -135,15 +135,25 @@ export type PortfolioStrategySummary = {
   // Peak gross deployment / starting capital. ≤ 1.0 means unleveraged.
   peakGrossDeployment?: number;
   unleveraged?: boolean;
+  // True when annualizedReturn ≥ 12%. Used to gate trading: if no
+  // strategy meets the bar, the screen recommends not trading.
+  meets12PctBar?: boolean;
 };
 
 export type PortfolioSummary = {
   generatedAt: string;
   startingBalance: number;
+  // Threshold gate: don't trade unless some strategy clears this annualized
+  // return bar. Set per the user's directive (currently 12%).
+  annualizedBar: number;
+  // True if any strategy meets the bar. Drives the "DON'T TRADE" UI banner.
+  anyStrategyMeetsBar: boolean;
   // Best unleveraged strategy (peakGrossDeployment ≤ 1) by final equity —
   // this is the headline number, the realistic answer for a retail
   // account without margin extension.
   bestUnleveraged: PortfolioStrategySummary;
+  // Best unleveraged strategy that meets the 12% bar (or null if none do).
+  bestUnleveragedClearingBar: PortfolioStrategySummary | null;
   // Best of any strategy by final equity, including leveraged variants.
   // Shown for reference but not the recommended baseline.
   bestByEquity: PortfolioStrategySummary;

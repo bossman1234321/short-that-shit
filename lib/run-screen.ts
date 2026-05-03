@@ -94,6 +94,7 @@ async function loadPortfolioSummary(): Promise<PortfolioSummary | null> {
         maxDrawdown: number;
         peakGrossDeployment?: number;
         unleveraged?: boolean;
+        meets12PctBar?: boolean;
       }>;
     };
     const ranked = [...data.results].sort((a, b) => b.finalEquity - a.finalEquity);
@@ -108,20 +109,27 @@ async function loadPortfolioSummary(): Promise<PortfolioSummary | null> {
       maxDrawdown: r.maxDrawdown,
       peakGrossDeployment: r.peakGrossDeployment,
       unleveraged: r.unleveraged,
+      meets12PctBar: r.meets12PctBar,
     });
+    const ANNUALIZED_BAR = 0.12;
     const robust = ranked.find((r) => /EXCLUDE FY2019/i.test(r.name));
-    // Unleveraged top-of-class — the realistic recommendation. Falls back
-    // to overall best if none are tagged unleveraged (e.g. older sim
-    // outputs without the new fields).
     const bestUnleveraged =
       ranked.find((r) => r.unleveraged === true) ?? ranked[0];
-    // Top strategies — prefer unleveraged for the user-facing leaderboard.
+    const bestUnleveragedClearingBar = ranked.find(
+      (r) => r.unleveraged === true && r.meets12PctBar === true
+    );
+    const anyStrategyMeetsBar = ranked.some((r) => r.meets12PctBar === true);
     const unleveragedRanked = ranked.filter((r) => r.unleveraged === true);
     const topPool = unleveragedRanked.length >= 5 ? unleveragedRanked : ranked;
     return {
       generatedAt: data.generatedAt,
       startingBalance: data.startingBalance,
+      annualizedBar: ANNUALIZED_BAR,
+      anyStrategyMeetsBar,
       bestUnleveraged: toSummary(bestUnleveraged),
+      bestUnleveragedClearingBar: bestUnleveragedClearingBar
+        ? toSummary(bestUnleveragedClearingBar)
+        : null,
       bestByEquity: toSummary(ranked[0]),
       bestRobust: robust ? toSummary(robust) : null,
       topStrategies: topPool.slice(0, 5).map(toSummary),

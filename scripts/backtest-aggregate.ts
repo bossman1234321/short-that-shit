@@ -435,7 +435,11 @@ function computeYearlyAvgDE(
   }
   const out = new Map<number, number>();
   for (const [y, arr] of byYear.entries()) {
-    if (arr.length < 20) continue;
+    // Lowered from 20 → 5 to extend coverage to 2005+. Pre-2010 has fewer
+    // current-SP500 names with EDGAR XBRL data; 5 is the smallest sample
+    // for which a median-ish average is at least directional, while still
+    // filtering out 1-2-ticker outliers.
+    if (arr.length < 5) continue;
     out.set(y, arr.reduce((a, b) => a + b, 0) / arr.length);
   }
   return out;
