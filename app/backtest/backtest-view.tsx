@@ -68,6 +68,8 @@ type PortfolioStrategyRow = {
   winRate: number;
   meanPnLPerPos: number;
   maxDrawdown: number;
+  peakGrossDeployment?: number;
+  unleveraged?: boolean;
 };
 
 type SectorPortfolioRow = {
@@ -242,11 +244,14 @@ function Strategies({ portfolio }: { portfolio: PortfolioFile }) {
     | "maxDrawdown"
     | "nTaken"
     | "holdMonths"
-    | "positionSize";
+    | "positionSize"
+    | "peakGrossDeployment";
   const [sortKey, setSortKey] = useState<Key>("finalEquity");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [unleveragedOnly, setUnleveragedOnly] = useState<boolean>(false);
   const sorted = useMemo(() => {
-    const rows = [...portfolio.results];
+    let rows = [...portfolio.results];
+    if (unleveragedOnly) rows = rows.filter((r) => r.unleveraged === true);
     rows.sort((a, b) => {
       const av =
         sortKey === "name"
@@ -269,7 +274,7 @@ function Strategies({ portfolio }: { portfolio: PortfolioFile }) {
       return 0;
     });
     return rows;
-  }, [portfolio.results, sortKey, sortDir]);
+  }, [portfolio.results, sortKey, sortDir, unleveragedOnly]);
 
   function toggle(k: Key) {
     if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -285,12 +290,23 @@ function Strategies({ portfolio }: { portfolio: PortfolioFile }) {
         Portfolio strategies — ${portfolio.startingBalance.toLocaleString()}{" "}
         starting balance
       </h2>
-      <p className="mt-1 text-xs text-terminal-muted">
-        {portfolio.results.length} variants evaluated. Borrow cost{" "}
-        {fmtPctNoSign(portfolio.annualBorrowCost)} annualized. Pair-trade
-        strategies split position 50/50 between short ticker and long SPY.
-        Rows are sortable.
-      </p>
+      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-terminal-muted">
+        <span>
+          {portfolio.results.length} variants evaluated. Borrow cost{" "}
+          {fmtPctNoSign(portfolio.annualBorrowCost)} annualized. Pair-trade
+          strategies split position 50/50 between short ticker and long SPY.
+          Rows sortable.
+        </span>
+        <label className="flex items-center gap-2 text-xs uppercase tracking-wider text-terminal-muted">
+          <input
+            type="checkbox"
+            checked={unleveragedOnly}
+            onChange={(e) => setUnleveragedOnly(e.target.checked)}
+            className="accent-amber-accent"
+          />
+          unleveraged only (peak deployment ≤ 100%)
+        </label>
+      </div>
       <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
         <table className="w-full text-xs">
           <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
@@ -306,6 +322,9 @@ function Strategies({ portfolio }: { portfolio: PortfolioFile }) {
               </Th>
               <Th right onClick={() => toggle("nTaken")} active={sortKey === "nTaken"} dir={sortDir}>
                 n
+              </Th>
+              <Th right onClick={() => toggle("peakGrossDeployment")} active={sortKey === "peakGrossDeployment"} dir={sortDir}>
+                Peak %
               </Th>
               <Th right onClick={() => toggle("winRate")} active={sortKey === "winRate"} dir={sortDir}>
                 Win
@@ -343,6 +362,14 @@ function Strategies({ portfolio }: { portfolio: PortfolioFile }) {
                   </td>
                   <td className="px-3 py-2 text-right font-data text-terminal-muted">
                     {r.nTaken}
+                  </td>
+                  <td
+                    className={`px-3 py-2 text-right font-data ${r.unleveraged ? "text-terminal-muted" : "text-sky-400"}`}
+                    title={r.unleveraged ? "Unleveraged (≤100%)" : "Uses portfolio leverage"}
+                  >
+                    {r.peakGrossDeployment != null
+                      ? `${(r.peakGrossDeployment * 100).toFixed(0)}%`
+                      : "—"}
                   </td>
                   <td className="px-3 py-2 text-right font-data">
                     {fmtPctNoSign(r.winRate)}

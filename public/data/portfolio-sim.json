@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T20:39:43.558Z",
+  "generatedAt": "2026-05-03T20:47:13.934Z",
   "startingBalance": 10000,
   "annualBorrowCost": 0.02,
   "results": [
@@ -13,6 +13,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 161,
       "nTaken": 142,
       "nWon": 35,
@@ -35,6 +37,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": 0.5
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 161,
       "nTaken": 143,
       "nWon": 35,
@@ -57,6 +61,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
       "nFiltered": 161,
       "nTaken": 147,
       "nWon": 44,
@@ -79,6 +85,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
       "nFiltered": 161,
       "nTaken": 152,
       "nWon": 38,
@@ -101,6 +109,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 81,
       "nTaken": 79,
       "nWon": 24,
@@ -123,6 +133,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 53,
       "nTaken": 53,
       "nWon": 14,
@@ -145,6 +157,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 37,
       "nTaken": 37,
       "nWon": 12,
@@ -167,6 +181,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": 0.5
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 18,
       "nTaken": 18,
       "nWon": 7,
@@ -189,6 +205,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 36,
       "nTaken": 36,
       "nWon": 8,
@@ -211,6 +229,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 21,
       "nTaken": 21,
       "nWon": 6,
@@ -233,6 +253,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": 0.5
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 18,
       "nTaken": 18,
       "nWon": 5,
@@ -255,6 +277,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": 0.5
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 18,
       "nTaken": 18,
       "nWon": 5,
@@ -277,6 +301,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 161,
       "nTaken": 143,
       "nWon": 72,
@@ -299,6 +325,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 61,
       "nTaken": 55,
       "nWon": 35,
@@ -321,6 +349,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 81,
       "nTaken": 77,
       "nWon": 40,
@@ -343,6 +373,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 18,
       "nTaken": 17,
       "nWon": 15,
@@ -365,6 +397,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
       "nFiltered": 18,
       "nTaken": 14,
       "nWon": 13,
@@ -387,6 +421,8 @@
         "stopLossPct": 0.15,
         "takeProfitPct": 0.4
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 18,
       "nTaken": 18,
       "nWon": 6,
@@ -409,6 +445,8 @@
         "stopLossPct": 0.25,
         "takeProfitPct": 0.5
       },
+      "peakGrossDeployment": 1.5,
+      "unleveraged": false,
       "nFiltered": 9,
       "nTaken": 9,
       "nWon": 4,
@@ -431,6 +469,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.7999999999999998,
+      "unleveraged": false,
       "nFiltered": 18,
       "nTaken": 17,
       "nWon": 15,
@@ -453,6 +493,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 1.6,
+      "unleveraged": false,
       "nFiltered": 61,
       "nTaken": 48,
       "nWon": 31,
@@ -475,6 +517,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
       "nFiltered": 13,
       "nTaken": 11,
       "nWon": 11,
@@ -497,6 +541,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
       "nFiltered": 10,
       "nTaken": 7,
       "nWon": 6,
@@ -519,6 +565,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
       "nFiltered": 12,
       "nTaken": 9,
       "nWon": 9,
@@ -541,6 +589,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
       "nFiltered": 10,
       "nTaken": 10,
       "nWon": 10,
@@ -563,6 +613,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
       "nFiltered": 14,
       "nTaken": 12,
       "nWon": 11,
@@ -585,6 +637,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
       "nFiltered": 14,
       "nTaken": 12,
       "nWon": 11,
@@ -607,6 +661,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 2.8,
+      "unleveraged": false,
       "nFiltered": 14,
       "nTaken": 12,
       "nWon": 11,
@@ -629,6 +685,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 4,
+      "unleveraged": false,
       "nFiltered": 14,
       "nTaken": 12,
       "nWon": 11,
@@ -651,6 +709,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 4,
+      "unleveraged": false,
       "nFiltered": 14,
       "nTaken": 12,
       "nWon": 11,
@@ -673,6 +733,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 2,
+      "unleveraged": false,
       "nFiltered": 14,
       "nTaken": 12,
       "nWon": 11,
@@ -695,6 +757,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 4,
+      "unleveraged": false,
       "nFiltered": 14,
       "nTaken": 12,
       "nWon": 11,
@@ -717,6 +781,8 @@
         "stopLossPct": null,
         "takeProfitPct": null
       },
+      "peakGrossDeployment": 4,
+      "unleveraged": false,
       "nFiltered": 11,
       "nTaken": 10,
       "nWon": 10,
@@ -727,6 +793,198 @@
       "annualizedReturn": 0.1680520728514423,
       "winRate": 1,
       "meanPnLPerPos": 1964.2320843261782,
+      "maxDrawdown": 0
+    },
+    {
+      "name": "[34] U: $2.5K × 4 conc, winning sectors",
+      "description": "unleveraged 1x, winning sectors (Util/CS/RE), 4 max concurrent",
+      "config": {
+        "positionSize": 2500,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
+      "nFiltered": 14,
+      "nTaken": 12,
+      "nWon": 11,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 13662.248400069908,
+      "totalReturn": 0.3662248400069908,
+      "annualizedReturn": 0.0262543161074833,
+      "winRate": 0.9166666666666666,
+      "meanPnLPerPos": 305.18736667249266,
+      "maxDrawdown": -0.011243714751982306
+    },
+    {
+      "name": "[35] U: compound 25% × 4 conc, winning sectors",
+      "description": "unleveraged 1x with compounding (max 25% × 4 = 100%), winning sectors",
+      "config": {
+        "positionSize": 2500,
+        "maxConcurrent": 4,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
+      "nFiltered": 14,
+      "nTaken": 12,
+      "nWon": 11,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 14139.665602344525,
+      "totalReturn": 0.4139665602344525,
+      "annualizedReturn": 0.029185922236486972,
+      "winRate": 0.9166666666666666,
+      "meanPnLPerPos": 344.97213352871023,
+      "maxDrawdown": -0.012908261555141966
+    },
+    {
+      "name": "[36] U: $5K × 2 conc, winning sectors",
+      "description": "concentrated unleveraged: $5K/pos with only 2 max concurrent",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 2,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
+      "nFiltered": 14,
+      "nTaken": 8,
+      "nWon": 8,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 15251.109842601993,
+      "totalReturn": 0.5251109842601993,
+      "annualizedReturn": 0.03567387867180116,
+      "winRate": 1,
+      "meanPnLPerPos": 656.3887303252491,
+      "maxDrawdown": 0
+    },
+    {
+      "name": "[37] U: compound 50% × 2 conc, winning sectors",
+      "description": "unleveraged 1x with compounding (50% × 2 = 100%), winning sectors",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 2,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
+      "nFiltered": 14,
+      "nTaken": 8,
+      "nWon": 8,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 16366.169119987564,
+      "totalReturn": 0.6366169119987564,
+      "annualizedReturn": 0.041761039863772664,
+      "winRate": 1,
+      "meanPnLPerPos": 795.7711399984455,
+      "maxDrawdown": 0
+    },
+    {
+      "name": "[38] U: $10K × 1 conc, winning sectors",
+      "description": "fully concentrated unleveraged: one trade at a time",
+      "config": {
+        "positionSize": 10000,
+        "maxConcurrent": 1,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
+      "nFiltered": 14,
+      "nTaken": 6,
+      "nWon": 6,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 16826.804867403094,
+      "totalReturn": 0.6826804867403095,
+      "annualizedReturn": 0.04416525385549064,
+      "winRate": 1,
+      "meanPnLPerPos": 1137.800811233849,
+      "maxDrawdown": 0
+    },
+    {
+      "name": "[39] U: compound 100% × 1 conc, winning sectors",
+      "description": "all-in compounding: each trade is 100% of equity, 1 at a time",
+      "config": {
+        "positionSize": 10000,
+        "maxConcurrent": 1,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
+      "nFiltered": 14,
+      "nTaken": 6,
+      "nWon": 6,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 18949.588317929854,
+      "totalReturn": 0.8949588317929854,
+      "annualizedReturn": 0.05451901547780502,
+      "winRate": 1,
+      "meanPnLPerPos": 1491.5980529883084,
+      "maxDrawdown": 0
+    },
+    {
+      "name": "[40] U: compound 100% × 1 conc, Util+CS only",
+      "description": "all-in compounding, tightest sector filter",
+      "config": {
+        "positionSize": 10000,
+        "maxConcurrent": 1,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
+      "nFiltered": 11,
+      "nTaken": 4,
+      "nWon": 4,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 15038.452402296058,
+      "totalReturn": 0.5038452402296058,
+      "annualizedReturn": 0.07035322233523744,
+      "winRate": 1,
+      "meanPnLPerPos": 1259.6131005740144,
+      "maxDrawdown": 0
+    },
+    {
+      "name": "[41] U: compound 50% × 2 conc + idle cash",
+      "description": "balanced unleveraged: 2 concurrent + idle cash yield",
+      "config": {
+        "positionSize": 5000,
+        "maxConcurrent": 2,
+        "holdMonths": 12,
+        "stopLossPct": null,
+        "takeProfitPct": null
+      },
+      "peakGrossDeployment": 1,
+      "unleveraged": true,
+      "nFiltered": 14,
+      "nTaken": 8,
+      "nWon": 8,
+      "nStoppedOut": 0,
+      "nTakeProfit": 0,
+      "finalEquity": 17821.352542522094,
+      "totalReturn": 0.7821352542522094,
+      "annualizedReturn": 0.0491567990398023,
+      "winRate": 1,
+      "meanPnLPerPos": 795.7711399984455,
       "maxDrawdown": 0
     }
   ],

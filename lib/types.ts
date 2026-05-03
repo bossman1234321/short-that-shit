@@ -132,13 +132,22 @@ export type PortfolioStrategySummary = {
   winRate: number;
   nTaken: number;
   maxDrawdown: number;
+  // Peak gross deployment / starting capital. ≤ 1.0 means unleveraged.
+  peakGrossDeployment?: number;
+  unleveraged?: boolean;
 };
 
 export type PortfolioSummary = {
   generatedAt: string;
   startingBalance: number;
+  // Best unleveraged strategy (peakGrossDeployment ≤ 1) by final equity —
+  // this is the headline number, the realistic answer for a retail
+  // account without margin extension.
+  bestUnleveraged: PortfolioStrategySummary;
+  // Best of any strategy by final equity, including leveraged variants.
+  // Shown for reference but not the recommended baseline.
   bestByEquity: PortfolioStrategySummary;
-  bestRobust: PortfolioStrategySummary | null; // excludes 2019/COVID
+  bestRobust: PortfolioStrategySummary | null;
   topStrategies: PortfolioStrategySummary[];
 };
 

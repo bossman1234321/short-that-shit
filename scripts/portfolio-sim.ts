@@ -918,6 +918,127 @@ const STRATEGIES: StrategyConfig[] = [
       !e.ocfDecline2y &&
       (ctx.trailing6m == null || ctx.trailing6m <= 0),
   },
+  // ─── Iteration 12: STRICT UNLEVERAGED (no margin, no portfolio leverage) ─
+  // Constraint: peak position × max concurrent ≤ starting balance.
+  // No pairLeverage > 1. compoundFraction ≤ 1/maxConcurrent.
+  {
+    name: "[34] U: $2.5K × 4 conc, winning sectors",
+    description: "unleveraged 1x, winning sectors (Util/CS/RE), 4 max concurrent",
+    positionSize: 2500,
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[35] U: compound 25% × 4 conc, winning sectors",
+    description: "unleveraged 1x with compounding (max 25% × 4 = 100%), winning sectors",
+    positionSize: 2500,
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 0.25,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[36] U: $5K × 2 conc, winning sectors",
+    description: "concentrated unleveraged: $5K/pos with only 2 max concurrent",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[37] U: compound 50% × 2 conc, winning sectors",
+    description: "unleveraged 1x with compounding (50% × 2 = 100%), winning sectors",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 0.5,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[38] U: $10K × 1 conc, winning sectors",
+    description: "fully concentrated unleveraged: one trade at a time",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[39] U: compound 100% × 1 conc, winning sectors",
+    description: "all-in compounding: each trade is 100% of equity, 1 at a time",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[40] U: compound 100% × 1 conc, Util+CS only",
+    description: "all-in compounding, tightest sector filter",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[41] U: compound 50% × 2 conc + idle cash",
+    description: "balanced unleveraged: 2 concurrent + idle cash yield",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 0.5,
+    idleCashYield: true,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
 ];
 
 // ─── Main ────────────────────────────────────────────────────────────
@@ -1070,22 +1191,35 @@ async function main() {
         generatedAt: new Date().toISOString(),
         startingBalance: STARTING_BALANCE,
         annualBorrowCost: ANNUAL_BORROW_COST,
-        results: results.map((r) => ({
-          name: r.name,
-          description: r.description,
-          config: r.config,
-          nFiltered: r.nFiltered,
-          nTaken: r.nTaken,
-          nWon: r.nWon,
-          nStoppedOut: r.nStoppedOut,
-          nTakeProfit: r.nTakeProfit,
-          finalEquity: r.finalEquity,
-          totalReturn: r.totalReturn,
-          annualizedReturn: r.annualizedReturn,
-          winRate: r.winRate,
-          meanPnLPerPos: r.meanPnLPerPos,
-          maxDrawdown: r.maxDrawdown,
-        })),
+        results: results.map((r, i) => {
+          const cfg = STRATEGIES[i];
+          // Compute peak gross deployment as a fraction of starting capital.
+          // <=1.0 means strictly unleveraged; >1.0 implies margin/leverage.
+          const lev = cfg.pairLeverage ?? 1;
+          const sizeFrac =
+            cfg.compoundFraction != null
+              ? cfg.compoundFraction
+              : cfg.positionSize / STARTING_BALANCE;
+          const peakGrossDeployment = sizeFrac * cfg.maxConcurrent * lev;
+          return {
+            name: r.name,
+            description: r.description,
+            config: r.config,
+            peakGrossDeployment,
+            unleveraged: peakGrossDeployment <= 1.001,
+            nFiltered: r.nFiltered,
+            nTaken: r.nTaken,
+            nWon: r.nWon,
+            nStoppedOut: r.nStoppedOut,
+            nTakeProfit: r.nTakeProfit,
+            finalEquity: r.finalEquity,
+            totalReturn: r.totalReturn,
+            annualizedReturn: r.annualizedReturn,
+            winRate: r.winRate,
+            meanPnLPerPos: r.meanPnLPerPos,
+            maxDrawdown: r.maxDrawdown,
+          };
+        }),
         bySector: bySector.map((r) => ({
           sector: r.sector,
           name: r.name,

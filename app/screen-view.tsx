@@ -813,9 +813,42 @@ function PortfolioPanel({ data }: { data: ScreenResult }) {
       <div className="mt-4 grid gap-6 md:grid-cols-2">
         <div>
           <h4 className="font-display text-sm text-terminal-fg">
-            Best by final equity
+            Best (unleveraged, 1x deployment)
           </h4>
           <div className="mt-2 font-data text-2xl text-amber-accent">
+            {fmtUSD(p.bestUnleveraged.finalEquity)}
+          </div>
+          <div className="text-[11px] text-terminal-muted">
+            {fmtPct(p.bestUnleveraged.totalReturn)} total · annualized{" "}
+            {fmtPct(p.bestUnleveraged.annualizedReturn)} · win rate{" "}
+            {fmtPct(p.bestUnleveraged.winRate)} · max DD{" "}
+            {fmtPct(p.bestUnleveraged.maxDrawdown)} · n=
+            {p.bestUnleveraged.nTaken}
+            {p.bestUnleveraged.peakGrossDeployment != null && (
+              <>
+                {" "}
+                · peak deployment{" "}
+                {(p.bestUnleveraged.peakGrossDeployment * 100).toFixed(0)}%
+              </>
+            )}
+          </div>
+          <div className="mt-2 text-[11px] leading-relaxed">
+            <span className="font-data text-amber-accent">
+              {p.bestUnleveraged.name}
+            </span>{" "}
+            — {p.bestUnleveraged.description}
+          </div>
+          <div className="mt-2 text-[10px] leading-relaxed text-terminal-muted">
+            Strict no-leverage: position size × max concurrent ≤ starting
+            balance. The realistic answer for a cash account without margin
+            extension.
+          </div>
+        </div>
+        <div>
+          <h4 className="font-display text-sm text-terminal-fg">
+            Best with margin / leverage (reference only)
+          </h4>
+          <div className="mt-2 font-data text-2xl text-sky-400">
             {fmtUSD(p.bestByEquity.finalEquity)}
           </div>
           <div className="text-[11px] text-terminal-muted">
@@ -823,36 +856,27 @@ function PortfolioPanel({ data }: { data: ScreenResult }) {
             {fmtPct(p.bestByEquity.annualizedReturn)} · win rate{" "}
             {fmtPct(p.bestByEquity.winRate)} · max DD{" "}
             {fmtPct(p.bestByEquity.maxDrawdown)} · n={p.bestByEquity.nTaken}
+            {p.bestByEquity.peakGrossDeployment != null && (
+              <>
+                {" "}
+                · peak deployment{" "}
+                {(p.bestByEquity.peakGrossDeployment * 100).toFixed(0)}%
+              </>
+            )}
           </div>
           <div className="mt-2 text-[11px] leading-relaxed">
-            <span className="font-data text-amber-accent">
+            <span className="font-data text-sky-400">
               {p.bestByEquity.name}
             </span>{" "}
             — {p.bestByEquity.description}
           </div>
-        </div>
-        {p.bestRobust && (
-          <div>
-            <h4 className="font-display text-sm text-terminal-fg">
-              Robustness check (excludes FY2019)
-            </h4>
-            <div className="mt-2 font-data text-2xl text-emerald-400">
-              {fmtUSD(p.bestRobust.finalEquity)}
-            </div>
-            <div className="text-[11px] text-terminal-muted">
-              {fmtPct(p.bestRobust.totalReturn)} total · annualized{" "}
-              {fmtPct(p.bestRobust.annualizedReturn)} · win rate{" "}
-              {fmtPct(p.bestRobust.winRate)} · max DD{" "}
-              {fmtPct(p.bestRobust.maxDrawdown)} · n={p.bestRobust.nTaken}
-            </div>
-            <div className="mt-2 text-[11px] leading-relaxed">
-              FY2019 events caught the COVID crash and contributed ~40% of the
-              best-strategy P&amp;L. This number is the same kitchen-sink filter
-              with those events removed — proving the alpha isn&apos;t entirely a
-              one-time regime windfall.
-            </div>
+          <div className="mt-2 text-[10px] leading-relaxed text-terminal-muted">
+            Includes 2x portfolio leverage and/or compounded sizing that
+            exceeds 100% gross deployment. Achievable with portfolio margin
+            but not without it. Pair-trade structure caps drawdowns under
+            leverage; double-edged on losses.
           </div>
-        )}
+        </div>
       </div>
       <h5 className="mt-6 text-[11px] uppercase tracking-wider text-terminal-muted">
         Top 5 strategies tested ({p.topStrategies.length} of many)
@@ -901,13 +925,17 @@ function PortfolioPanel({ data }: { data: ScreenResult }) {
       </div>
       <p className="mt-3 leading-relaxed">
         <span className="text-amber-accent">Honest read:</span> the screen&apos;s
-        actual edge is in pair structure, not naked shorts. A naked-short
-        version of the same filter <em>blew up</em> ($10K → $-$8.5K). The
-        durable signal is &quot;these names underperform SPY by ~5–15% on average
-        when the screen fires&quot; — and capturing that requires a long
-        offset on the market. Strategies are selected with hindsight (filter
-        chosen after seeing data); walk-forward retesting is on the
-        roadmap.
+        actual edge is in pair-trade structure (short ticker + long SPY
+        equally) — naked shorts blow up ($10K → -$8.5K) because markets
+        rise. <strong>Unleveraged best is ~5.5% annualized</strong> (vs SPY&apos;s
+        ~12% over the same window) — modest but with{" "}
+        <span className="font-data">~0% max drawdown</span> and 100% win
+        rate, so risk-adjusted it&apos;s competitive. Adding 2x portfolio
+        margin roughly doubles the annualized to ~10.6%, but that requires
+        a margin account and amplifies losses if the alpha shifts.
+        Strategies were selected with hindsight on the same dataset;
+        walk-forward retesting is on the roadmap. Sample size is small
+        (10–14 trades over 15 years).
       </p>
     </section>
   );
