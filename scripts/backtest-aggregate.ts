@@ -21,6 +21,7 @@ import { resolveCIK } from "../lib/edgar";
 import { throttle } from "../lib/rate-limit";
 import { readCache, writeCache } from "../lib/cache";
 import { SP500_UNIVERSE, getSectorMap, type Sector } from "../lib/universe";
+import { DELISTED_UNIVERSE } from "../lib/delisted-universe";
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -304,7 +305,8 @@ type Bar = { date: string; close: number };
 
 async function fetchYahooMonthly(
   ticker: string,
-  fromIso: string
+  fromIso: string,
+  fallbackSymbols: string[] = []
 ): Promise<Bar[] | null> {
   const cacheKey = `yahoo-monthly-${ticker}`;
   const cached = await readCache<Bar[]>(cacheKey);
@@ -312,10 +314,18 @@ async function fetchYahooMonthly(
 
   const period1 = Math.floor(new Date(fromIso).getTime() / 1000);
   const period2 = Math.floor(Date.now() / 1000);
-  const urls = [
-    `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${period1}&period2=${period2}&interval=1mo&events=history`,
-    `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${period1}&period2=${period2}&interval=1mo&events=history`,
-  ];
+  // Try the primary symbol first, then any fallbacks (e.g. "SHLDQ" for
+  // post-bankruptcy traded shells). Each symbol gets two mirror attempts.
+  const symbols = [ticker, ...fallbackSymbols];
+  const urls: string[] = [];
+  for (const sym of symbols) {
+    urls.push(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?period1=${period1}&period2=${period2}&interval=1mo&events=history`
+    );
+    urls.push(
+      `https://query2.finance.yahoo.com/v8/finance/chart/${sym}?period1=${period1}&period2=${period2}&interval=1mo&events=history`
+    );
+  }
   for (const url of urls) {
     try {
       const res = await fetch(url, {
@@ -567,13 +577,29 @@ function deBucket(de: number | null, negEquity: boolean): string {
 // ────────────────────────────────────────────────────────────────────────
 
 async function main() {
+  // Combined universe: active SP500 + curated delisted names. Each delisted
+  // entry gets its own sector mapping merged into sectorMap and a Yahoo
+  // symbol fallback (post-bankruptcy "Q" tickers if needed).
+  const combinedUniverse = [
+    ...SP500_UNIVERSE,
+    ...DELISTED_UNIVERSE.map((d) => ({ ticker: d.ticker, sector: d.sector })),
+  ];
+  const yahooSymbolByTicker = new Map<string, string[]>();
+  for (const d of DELISTED_UNIVERSE) {
+    const fallbacks: string[] = [];
+    if (d.yahooSymbol && d.yahooSymbol !== d.ticker) fallbacks.push(d.yahooSymbol);
+    fallbacks.push(`${d.ticker}Q`); // post-BK "Q" suffix
+    yahooSymbolByTicker.set(d.ticker, fallbacks);
+  }
+
   console.log("[backtest-aggregate] loading universe histories…");
   const sectorMap = getSectorMap();
+  for (const d of DELISTED_UNIVERSE) sectorMap[d.ticker] = d.sector;
   const histories = new Map<string, FyRow[]>();
   let loaded = 0,
     cached = 0,
     fetched = 0;
-  for (const entry of SP500_UNIVERSE) {
+  for (const entry of combinedUniverse) {
     const wasCached =
       (await readCache(`companyfacts-raw-${entry.ticker}`)) !== null;
     const facts = await fetchCompanyFacts(entry.ticker);
@@ -584,12 +610,12 @@ async function main() {
     loaded++;
     if (loaded % 25 === 0) {
       process.stdout.write(
-        `  loaded ${loaded}/${SP500_UNIVERSE.length} (${cached}H/${fetched}M)\r`
+        `  loaded ${loaded}/${combinedUniverse.length} (${cached}H/${fetched}M)\r`
       );
     }
   }
   console.log(
-    `  loaded ${loaded}/${SP500_UNIVERSE.length} (${cached}H/${fetched}M)`
+    `  loaded ${loaded}/${combinedUniverse.length} (${cached}H/${fetched}M, of which ${DELISTED_UNIVERSE.length} delisted)`
   );
 
   const yearlyAvg = computeYearlyAvgDE(histories, sectorMap);
@@ -626,8 +652,20 @@ async function main() {
   let priceLoaded = 0,
     priceFailed = 0;
   const barsByTicker = new Map<string, Bar[]>();
+  // Synthetic-bars overrides for delisted tickers whose Yahoo data is
+  // unreliable (post-BK trading shells, ticker reuse for new entities).
+  const syntheticByTicker = new Map<string, Bar[]>();
+  for (const d of DELISTED_UNIVERSE) {
+    if (d.syntheticBars && d.syntheticBars.length > 0) {
+      syntheticByTicker.set(d.ticker, d.syntheticBars);
+    }
+  }
   for (const t of tickersWithTriggers) {
-    const bars = await fetchYahooMonthly(t, "1995-01-01");
+    let bars = syntheticByTicker.get(t) ?? null;
+    if (!bars) {
+      const fallbacks = yahooSymbolByTicker.get(t) ?? [];
+      bars = await fetchYahooMonthly(t, "1995-01-01", fallbacks);
+    }
     if (!bars) {
       priceFailed++;
       continue;
@@ -720,7 +758,7 @@ async function main() {
 
   const out = {
     generatedAt: new Date().toISOString(),
-    universeSize: SP500_UNIVERSE.length,
+    universeSize: combinedUniverse.length,
     historiesLoaded: loaded,
     triggerCount: eligibleEvents.length,
     triggerCountAllSectors: events.length,

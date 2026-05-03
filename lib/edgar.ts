@@ -19,8 +19,11 @@ const TICKERS_URL = "https://www.sec.gov/files/company_tickers.json";
 // Manual CIK overrides for tickers absent from the active map (de-listed,
 // de-registered, or otherwise missing). EDGAR's companyfacts endpoint still
 // serves these CIKs.
+import { delistedCikOverrides } from "./delisted-universe";
+
 const CIK_OVERRIDES: Record<string, { cik: string; entityName: string }> = {
   WBA: { cik: "0001618921", entityName: "WALGREENS BOOTS ALLIANCE, INC." },
+  ...delistedCikOverrides(),
 };
 
 type TickerMap = Record<string, { cik: string; ticker: string; title: string }>;
