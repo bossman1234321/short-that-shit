@@ -20,6 +20,10 @@ import type { Sector } from "../lib/universe";
 // ─── Defaults (overridable in StrategyConfig) ────────────────────────
 const STARTING_BALANCE = 10_000;
 const ANNUAL_BORROW_COST = 0.02; // 2% annualized
+// Average T-bill yield 2010-2025; used to credit idle cash when enabled.
+// Closer to actual rates than zero. (3-month T-bill avg over the period
+// was ~1.4%, but the 2022-2024 hike phase pushed the trailing avg up.)
+const IDLE_CASH_YIELD = 0.02;
 
 // ─── Types ───────────────────────────────────────────────────────────
 type Bar = { date: string; close: number };
@@ -60,13 +64,21 @@ type StrategyConfig = {
   positionSize: number;
   maxConcurrent: number;
   holdMonths: 6 | 12 | 24;
-  stopLossPct: number | null; // close if short loss exceeds this (e.g. 0.25 = stop when stock up 25%)
-  takeProfitPct: number | null; // close if short profit exceeds this (e.g. 0.50 = close when stock down 50%)
-  // pairTrade: if true, position is structured as $size/2 short ticker +
-  // $size/2 long SPY. P&L = $size/2 × (-alpha). Captures alpha, neutral
-  // to overall market direction. Stop-loss / take-profit don't apply
-  // (would need pair P&L tracking through bars, which is heavier).
+  stopLossPct: number | null;
+  takeProfitPct: number | null;
   pairTrade?: boolean;
+  // Compounding: when set, position size at trigger time scales with the
+  // running realized equity. e.g. 0.5 → 50% of current equity per trigger
+  // (overrides positionSize). Realized equity = starting + sum of closed
+  // P&L through that date.
+  compoundFraction?: number | null;
+  // Leverage on the pair trade: 1 = unleveraged ($size/2 short + $size/2
+  // long), 2 = $size short + $size long for $size capital (portfolio-margin
+  // style). Borrow cost scales with the short notional.
+  pairLeverage?: number;
+  // If true, accumulate IDLE_CASH_YIELD on the cash not deployed. Adds a
+  // risk-free return floor.
+  idleCashYield?: boolean;
   filter: (e: Event, ctx: StrategyCtx) => boolean;
 };
 
@@ -223,11 +235,31 @@ async function simulate(
     .sort((a, b) => a.e.filed.localeCompare(b.e.filed));
 
   const positions: Position[] = [];
-  const openExits: string[] = [];
+  const openExits: Array<{ exitDate: string; pnl: number }> = [];
+  // Realized equity = starting + sum of closed P&L. Used for compounding
+  // size and idle-cash yield computation.
+  let realizedEquity = STARTING_BALANCE;
+  const pairLev = cfg.pairLeverage ?? 1;
+
+  // Helper: position size at trigger
+  function sizeFor(): number {
+    if (cfg.compoundFraction != null) {
+      return Math.max(0, realizedEquity * cfg.compoundFraction);
+    }
+    return cfg.positionSize;
+  }
 
   for (const { e, mlScore, trailing6m, bars } of filtered) {
-    while (openExits.length > 0 && openExits[0] <= e.filed) openExits.shift();
+    // Close any positions whose exit dates have passed; their P&L lands in
+    // realizedEquity (FIFO).
+    while (openExits.length > 0 && openExits[0].exitDate <= e.filed) {
+      const closed = openExits.shift()!;
+      realizedEquity += closed.pnl;
+    }
     if (openExits.length >= cfg.maxConcurrent) continue;
+
+    const positionSize = sizeFor();
+    if (positionSize <= 0) continue;
 
     if (cfg.pairTrade) {
       // Long-short pair using precomputed alpha. Position split 50/50
@@ -244,13 +276,11 @@ async function simulate(
       //-validated alpha number in backtest.json.
       if (cfg.holdMonths !== 12 || alpha == null) continue;
 
-      const halfSize = cfg.positionSize / 2;
-      const days = 365; // fixed 1y hold for pair
+      // pairLeverage = 1 → $size/2 short + $size/2 long
+      // pairLeverage = 2 → $size short + $size long for $size capital
+      const halfSize = (positionSize / 2) * pairLev;
+      const days = 365;
       const costPct = ANNUAL_BORROW_COST * (days / 365.25);
-      // P&L = -halfSize × ret_ticker + halfSize × ret_spy
-      //     = halfSize × (ret_spy - ret_ticker)
-      //     = halfSize × (-alpha)
-      // Borrow paid on the short half only.
       const pnl = halfSize * -alpha - halfSize * costPct;
       const exitDate = addMonths(e.filed, 12);
 
@@ -260,15 +290,15 @@ async function simulate(
         entryDate: e.filed,
         exitDate,
         daysHeld: days,
-        size: cfg.positionSize,
-        ret: alpha, // store alpha as the "return" for reporting
+        size: positionSize,
+        ret: alpha,
         pnl,
         exitReason: "time",
         mlScore,
         trailing6m,
       });
-      openExits.push(exitDate);
-      openExits.sort();
+      openExits.push({ exitDate, pnl });
+      openExits.sort((a, b) => a.exitDate.localeCompare(b.exitDate));
       continue;
     }
 
@@ -285,7 +315,7 @@ async function simulate(
 
     const days = daysBetween(e.filed, realized.exitDate);
     const costPct = ANNUAL_BORROW_COST * (days / 365.25);
-    const pnl = -cfg.positionSize * realized.ret - cfg.positionSize * costPct;
+    const pnl = -positionSize * realized.ret - positionSize * costPct;
 
     positions.push({
       ticker: e.ticker,
@@ -293,15 +323,47 @@ async function simulate(
       entryDate: e.filed,
       exitDate: realized.exitDate,
       daysHeld: days,
-      size: cfg.positionSize,
+      size: positionSize,
       ret: realized.ret,
       pnl,
       exitReason: realized.reason,
       mlScore,
       trailing6m,
     });
-    openExits.push(realized.exitDate);
-    openExits.sort();
+    openExits.push({ exitDate: realized.exitDate, pnl });
+    openExits.sort((a, b) => a.exitDate.localeCompare(b.exitDate));
+  }
+
+  // Drain remaining open positions (their exit P&L lands in realizedEquity)
+  for (const c of openExits) realizedEquity += c.pnl;
+  openExits.length = 0;
+
+  // Idle-cash yield: approximation that credits IDLE_CASH_YIELD over the
+  // strategy lifetime on the average undeployed cash. With monthly-bar
+  // granularity and no continuous mark-to-market, this is reasonable.
+  if (cfg.idleCashYield && positions.length > 0) {
+    const startDate = positions[0].entryDate;
+    const endDate = positions.reduce(
+      (a, p) => (p.exitDate > a ? p.exitDate : a),
+      positions[0].exitDate
+    );
+    const yrs = yearsBetween(startDate, endDate);
+    // Average gross deployed: sum of per-position (size*days) / total days.
+    const totalSpan =
+      (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+        (1000 * 60 * 60 * 24) || 1;
+    let weightedDeployed = 0;
+    for (const p of positions) {
+      // Only the SHORT side requires capital under unleveraged margin; for
+      // pair trades that's halfSize. Approximate gross deployed = size for
+      // naked shorts, halfSize × pairLev × 2 (short + long) for pairs.
+      const gross = cfg.pairTrade ? p.size * pairLev : p.size;
+      weightedDeployed += gross * p.daysHeld;
+    }
+    const avgDeployed = weightedDeployed / totalSpan;
+    const avgIdle = Math.max(0, STARTING_BALANCE - avgDeployed);
+    const idleYield = avgIdle * IDLE_CASH_YIELD * yrs;
+    realizedEquity += idleYield;
   }
 
   // Stats
@@ -334,8 +396,9 @@ async function simulate(
   }
 
   const totalPnL = positions.reduce((a, p) => a + p.pnl, 0);
-  const finalEquity = STARTING_BALANCE + totalPnL;
-  const totalReturn = totalPnL / STARTING_BALANCE;
+  // realizedEquity already includes total P&L + idle cash yield (if enabled).
+  const finalEquity = realizedEquity;
+  const totalReturn = (finalEquity - STARTING_BALANCE) / STARTING_BALANCE;
 
   const firstEntry = positions[0].entryDate;
   const lastExit = positions.reduce(
@@ -724,6 +787,136 @@ const STRATEGIES: StrategyConfig[] = [
       !e.ocfDecline2y &&
       (ctx.trailing6m == null || ctx.trailing6m <= 0) &&
       (e.de == null || e.de <= 5),
+  },
+  // ─── Iteration 11: improving annualized returns ────────────────────
+  // Goal: beat the 5.3% annualized of the original kitchen sink. The
+  // four big levers are (a) winning-sectors-only, (b) compounding,
+  // (c) leverage, (d) idle-cash yield.
+  {
+    name: "[26] WINNING SECTORS ONLY (Util+CS+RE)",
+    description:
+      "narrow filter to per-sector portfolio winners: Utilities, Consumer Staples, Real Estate. $5K pair, 1y hold.",
+    positionSize: 5000,
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[27] WINNERS + compounding 50%",
+    description: "winning sectors only, position size = 50% of running equity",
+    positionSize: 5000, // overridden by compound
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 0.5,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[28] WINNERS + compounding 70%",
+    description: "winning sectors only, position size = 70% of running equity",
+    positionSize: 5000,
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 0.7,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[29] WINNERS + 2x leverage",
+    description: "winning sectors only, pair leverage 2 ($size short + $size long)",
+    positionSize: 5000,
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[30] WINNERS + 2x lev + compound 50%",
+    description: "leverage AND compounding, winning sectors",
+    positionSize: 5000,
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    compoundFraction: 0.5,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[31] WINNERS + idle cash @ 2%",
+    description: "winning sectors + earn 2% on undeployed cash",
+    positionSize: 5000,
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    idleCashYield: true,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[32] FULL STACK",
+    description:
+      "winning sectors + 2x leverage + compound 50% + idle cash 2%",
+    positionSize: 5000,
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    compoundFraction: 0.5,
+    idleCashYield: true,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[33] FULL STACK + Util + CS only (no RE)",
+    description: "tighter winning sectors, full stack",
+    positionSize: 5000,
+    maxConcurrent: 4,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    pairLeverage: 2,
+    compoundFraction: 0.5,
+    idleCashYield: true,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
   },
 ];
 
