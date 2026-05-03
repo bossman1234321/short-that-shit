@@ -31,13 +31,18 @@ export const ML_SECTORS: ReadonlyArray<Sector> = [
 ];
 
 // Numeric features in fixed order. Sector one-hot follows.
+// New (2026-05-03): trailing_6m and trailing_12m capture price action at
+// trigger time — the model previously had no notion of whether the stock
+// had been ripping or already collapsing pre-trigger.
 export const ML_NUMERIC_FEATURES = [
-  "log_de_or_neg",   // log(D/E+1) for positive equity, -1 for neg-eq (signed marker)
+  "log_de_or_neg",   // log(D/E+1) for positive equity, -1 for neg-eq
   "yoy_t",
   "yoy_t1",
   "ocf_yoy",
   "ocf_decline_2y", // 0/1
   "neg_eq",         // 0/1
+  "trailing_6m",    // stock total return over 6m before trigger (0 if missing)
+  "trailing_12m",   // stock total return over 12m before trigger
 ] as const;
 
 export type FeatureRow = {
@@ -47,6 +52,8 @@ export type FeatureRow = {
   ocf_yoy: number;
   ocf_decline_2y: number;
   neg_eq: number;
+  trailing_6m: number;
+  trailing_12m: number;
   sector: Sector;
 };
 
@@ -79,6 +86,8 @@ export function sigmoid(x: number): number {
 // Build the feature vector in the canonical order the model expects:
 //   [...numeric, ...sector_one_hot]
 // Returns null when any required numeric feature is missing.
+// trailing_6m / trailing_12m default to 0 when missing (training-data
+// average is ~0 over the period; treats missing as "no info" not "ripping").
 export function buildFeatureVector(f: {
   de: number | null;
   negEquity: boolean;
@@ -86,6 +95,8 @@ export function buildFeatureVector(f: {
   yoy_t1: number | null;
   ocfYoY: number | null;
   ocfDecline2y: boolean;
+  trailing6m?: number | null;
+  trailing12m?: number | null;
   sector: Sector;
 }): number[] | null {
   if (f.yoy_t == null || f.yoy_t1 == null || f.ocfYoY == null) return null;
@@ -101,6 +112,8 @@ export function buildFeatureVector(f: {
     f.ocfYoY,
     f.ocfDecline2y ? 1 : 0,
     f.negEquity ? 1 : 0,
+    f.trailing6m ?? 0,
+    f.trailing12m ?? 0,
   ];
   const oneHot = ML_SECTORS.map((s) => (s === f.sector ? 1 : 0));
   return [...numeric, ...oneHot];

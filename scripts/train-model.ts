@@ -42,6 +42,8 @@ type BacktestEvent = {
   yoy_t1: number | null;
   ocfYoY: number | null;
   ocfDecline2y: boolean;
+  trailing6m: number | null;
+  trailing12m: number | null;
   alpha1y: number | null;
 };
 

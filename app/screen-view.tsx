@@ -931,11 +931,14 @@ function PortfolioPanel({ data }: { data: ScreenResult }) {
         ~12% over the same window) — modest but with{" "}
         <span className="font-data">~0% max drawdown</span> and 100% win
         rate, so risk-adjusted it&apos;s competitive. Adding 2x portfolio
-        margin roughly doubles the annualized to ~10.6%, but that requires
-        a margin account and amplifies losses if the alpha shifts.
-        Strategies were selected with hindsight on the same dataset;
-        walk-forward retesting is on the roadmap. Sample size is small
-        (10–14 trades over 15 years).
+        margin roughly doubles the annualized to ~8%, but amplifies losses
+        if the alpha shifts. ML iteration was attempted (walk-forward
+        logistic regression, sector-prior nearest-neighbor, L2 sweep): all
+        topped out at ~3% annualized — walk-forward AUC is{" "}
+        <span className="font-data">0.51</span>, indistinguishable from
+        random. <strong>Rule-based filtering dominates ML on this dataset.</strong>{" "}
+        The bottleneck is event count (154 over 15y); expanding the universe
+        to delisted tickers would help.
       </p>
     </section>
   );

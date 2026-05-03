@@ -403,6 +403,9 @@ type TriggerEvent = {
   ocfYoY: number | null;
   ocfDecline2y: boolean;
   contemporaneousAvgDE: number;
+  // Price-action context at trigger time (Yahoo bars-derived).
+  trailing6m: number | null;
+  trailing12m: number | null;
   // Forward returns
   ret6m: number | null;
   ret1y: number | null;
@@ -438,13 +441,18 @@ function computeYearlyAvgDE(
   return out;
 }
 
+type TriggerCore = Omit<
+  TriggerEvent,
+  keyof ReturnType<typeof zeroReturns> | "trailing6m" | "trailing12m"
+>;
+
 function findTriggers(
   ticker: string,
   rows: FyRow[],
   sector: Sector,
   yearlyAvg: Map<number, number>
-): Omit<TriggerEvent, keyof ReturnType<typeof zeroReturns>>[] {
-  const events: Omit<TriggerEvent, keyof ReturnType<typeof zeroReturns>>[] = [];
+): TriggerCore[] {
+  const events: TriggerCore[] = [];
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     if (!r.decline2y) continue;
@@ -590,8 +598,7 @@ async function main() {
   // threshold so we can ask: "if we DID screen banks/REITs/utilities, how
   // would the historical hit rate look?"
   console.log("[backtest-aggregate] finding triggers (all sectors)…");
-  const triggers: Omit<TriggerEvent, keyof ReturnType<typeof zeroReturns>>[] =
-    [];
+  const triggers: TriggerCore[] = [];
   for (const [ticker, rows] of histories) {
     const sector = sectorMap[ticker];
     if (!sector) continue;
@@ -636,9 +643,15 @@ async function main() {
   for (const trig of triggers) {
     const bars = barsByTicker.get(trig.ticker);
     const ret: ReturnType<typeof zeroReturns> = zeroReturns();
+    let trailing6m: number | null = null;
+    let trailing12m: number | null = null;
     if (bars) {
       const filed = trig.filed;
       const today = new Date().toISOString().slice(0, 10);
+      // Trailing returns at trigger time — captures whether the stock was
+      // already in a downtrend or still ripping when the screen fired.
+      trailing6m = returnBetween(bars, addMonths(filed, -6), filed);
+      trailing12m = returnBetween(bars, addMonths(filed, -12), filed);
       const horizons: Array<["6m" | "1y" | "2y", string]> = [
         ["6m", addMonths(filed, 6)],
         ["1y", addMonths(filed, 12)],
@@ -665,7 +678,7 @@ async function main() {
         }
       }
     }
-    events.push({ ...trig, ...ret });
+    events.push({ ...trig, trailing6m, trailing12m, ...ret });
   }
 
   // Aggregate. We compute two views:

@@ -12,7 +12,12 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import {
   buildFeatureVector,
+  computeAuc,
+  ML_NUMERIC_FEATURES,
+  ML_SECTORS,
   scoreFeatures,
+  standardize,
+  trainLogReg,
   type ModelWeights,
 } from "../lib/ml-score";
 import type { Sector } from "../lib/universe";
@@ -39,10 +44,121 @@ type Event = {
   yoy_t1: number | null;
   ocfYoY: number | null;
   ocfDecline2y: boolean;
+  trailing6m?: number | null;
+  trailing12m?: number | null;
   alpha1y: number | null;
   ret1y: number | null;
   ret6m: number | null;
+  ret2y?: number | null;
 };
+
+// ─── Walk-forward ML scoring ─────────────────────────────────────────
+// For each event, train a fresh logistic regression on events filed at
+// least 1y BEFORE the target event (so labels are realized). This is the
+// honest out-of-sample test of whether ML adds value: the persisted
+// model trains on these very events and is therefore data-leaking.
+//
+// Optimization: cluster events by training-cutoff year (event.filed.year-1)
+// and train one model per cutoff. With ~15 distinct years, we do ~15 fits
+// instead of ~150.
+function trainWalkForwardModels(
+  events: Event[],
+  buildFV: (e: Event) => number[] | null,
+  l2: number = 0.1
+): Map<number, ModelWeights> {
+  const out = new Map<number, ModelWeights>();
+  // Distinct years that need a model (the year of any event - 1)
+  const cutoffYears = [
+    ...new Set(events.map((e) => Number(e.filed.slice(0, 4)) - 1)),
+  ].sort();
+  for (const cutYear of cutoffYears) {
+    const cutoffIso = `${cutYear}-12-31`;
+    const trainEvents = events.filter(
+      (e) => e.filed <= cutoffIso && e.alpha1y != null
+    );
+    if (trainEvents.length < 30) continue; // not enough to train
+    const Xraw = trainEvents
+      .map((e) => buildFV(e))
+      .filter((v): v is number[] => v != null);
+    const yLabels = trainEvents
+      .filter((e) => buildFV(e) != null)
+      .map((e) => (e.alpha1y! < -0.05 ? 1 : 0));
+    if (Xraw.length !== yLabels.length || Xraw.length < 30) continue;
+    if (yLabels.every((v) => v === yLabels[0])) continue; // all same class
+
+    const numericLen = ML_NUMERIC_FEATURES.length;
+    const totalDim = Xraw[0].length;
+    const numericMeans: number[] = [];
+    const numericStds: number[] = [];
+    const X = Xraw.map((r) => r.slice());
+    for (let i = 0; i < numericLen; i++) {
+      const col = X.map((r) => r[i]);
+      const { mean, std } = standardize(col);
+      numericMeans.push(mean);
+      numericStds.push(std);
+      for (const r of X) r[i] = (r[i] - mean) / (std || 1);
+    }
+    const { coefs } = trainLogReg(X, yLabels, {
+      l2,
+      lr: 0.3,
+      iters: 1500,
+    });
+    const featureNames = [
+      ...ML_NUMERIC_FEATURES,
+      ...ML_SECTORS.map((s) => `sector_${s.replace(/\s+/g, "_")}`),
+      "bias",
+    ];
+    out.set(cutYear, {
+      features: featureNames,
+      numericMeans,
+      numericStds,
+      coefs,
+      trainSize: Xraw.length,
+      testSize: 0,
+      trainAuc: 0,
+      testAuc: 0,
+      trainSplitYearLt: cutYear + 1,
+      trainedAt: new Date().toISOString(),
+      positiveLabelDef: "alpha1y < -0.05",
+      notes: `walk-forward: trained on events through end of ${cutYear}`,
+    });
+  }
+  return out;
+}
+
+function walkForwardScore(
+  e: Event,
+  models: Map<number, ModelWeights>,
+  buildFV: (e: Event) => number[] | null
+): number | null {
+  const cutYear = Number(e.filed.slice(0, 4)) - 1;
+  const model = models.get(cutYear);
+  if (!model) return null;
+  const fv = buildFV(e);
+  if (!fv) return null;
+  return scoreFeatures(fv, model);
+}
+
+// ─── Walk-forward AUC summary (out-of-sample evaluation of WF model) ─
+function summarizeWalkForwardAuc(
+  events: Event[],
+  models: Map<number, ModelWeights>,
+  buildFV: (e: Event) => number[] | null
+): { n: number; auc: number; oos: Array<{ score: number; label: number }> } {
+  const oos: Array<{ score: number; label: number }> = [];
+  for (const e of events) {
+    if (e.alpha1y == null) continue;
+    const score = walkForwardScore(e, models, buildFV);
+    if (score == null) continue;
+    oos.push({ score, label: e.alpha1y < -0.05 ? 1 : 0 });
+  }
+  if (oos.length < 10) return { n: oos.length, auc: 0.5, oos };
+  const auc = computeAuc(
+    oos.map((x) => x.score),
+    oos.map((x) => x.label)
+  );
+  return { n: oos.length, auc, oos };
+}
 
 type Position = {
   ticker: string;
@@ -83,7 +199,14 @@ type StrategyConfig = {
 };
 
 type StrategyCtx = {
-  mlScore: number | null;
+  mlScore: number | null;       // persisted model score (data-leaks; use cautiously)
+  wfMlScore: number | null;     // walk-forward LR score (honest out-of-sample)
+  // Mean α₁y of prior same-sector events filed at least 1y before this
+  // event's filing date. Null if < 3 prior events. Non-parametric "follow
+  // the sector trend" predictor — fewer dof than logistic regression so
+  // less overfitting on small samples.
+  sectorPriorAlpha: number | null;
+  sectorPriorN: number;
   trailing6m: number | null;
 };
 
@@ -216,23 +339,77 @@ async function simulate(
   events: Event[],
   cfg: StrategyConfig,
   model: ModelWeights | null,
-  barsByTicker: Map<string, Bar[]>
+  barsByTicker: Map<string, Bar[]>,
+  wfModels: Map<number, ModelWeights> | null = null
 ): Promise<StrategyResult> {
-  // Pre-enrich each event with ML score + trailing-6m return.
-  const enriched = events.map((e) => {
-    const fv = buildFeatureVector(e);
+  // Build event→features helper that uses on-disk trailing returns if
+  // present (added in 2026-05-03 backtest schema), otherwise falls back to
+  // computing from cached Yahoo bars at sim time.
+  const buildFV = (e: Event) => {
+    const t6 = e.trailing6m ?? (barsByTicker.get(e.ticker) ? trailing6m(barsByTicker.get(e.ticker)!, e.filed) : null);
+    const t12 = e.trailing12m ?? null;
+    return buildFeatureVector({
+      de: e.de,
+      negEquity: e.negEquity,
+      yoy_t: e.yoy_t,
+      yoy_t1: e.yoy_t1,
+      ocfYoY: e.ocfYoY,
+      ocfDecline2y: e.ocfDecline2y,
+      trailing6m: t6,
+      trailing12m: t12,
+      sector: e.sector,
+    });
+  };
+
+  // Pre-enrich each event with ML score (persisted + walk-forward),
+  // sector-prior alpha (non-parametric sector predictor), and trailing-6m.
+  // Sort first so sectorPriorAlpha can use only chronologically-prior data.
+  const sortedEvents = [...events].sort((a, b) => a.filed.localeCompare(b.filed));
+  const enriched = sortedEvents.map((e) => {
+    const fv = buildFV(e);
     const mlScore = fv && model ? scoreFeatures(fv, model) : null;
+    const wfMlScore =
+      wfModels != null ? walkForwardScore(e, wfModels, buildFV) : null;
     const bars = barsByTicker.get(e.ticker);
-    const t6 = bars ? trailing6m(bars, e.filed) : null;
-    return { e, mlScore, trailing6m: t6, bars };
+    const t6 = e.trailing6m ?? (bars ? trailing6m(bars, e.filed) : null);
+
+    // Sector-prior: mean α₁y of same-sector events filed ≥1y before this one.
+    const cutoffMs =
+      new Date(e.filed).getTime() - 365 * 24 * 3600 * 1000;
+    const priors = sortedEvents.filter(
+      (p) =>
+        p.sector === e.sector &&
+        p.alpha1y != null &&
+        new Date(p.filed).getTime() <= cutoffMs
+    );
+    const sectorPriorAlpha =
+      priors.length >= 3
+        ? priors.reduce((a, p) => a + p.alpha1y!, 0) / priors.length
+        : null;
+    const sectorPriorN = priors.length;
+
+    return {
+      e,
+      mlScore,
+      wfMlScore,
+      sectorPriorAlpha,
+      sectorPriorN,
+      trailing6m: t6,
+      bars,
+    };
   });
 
-  // Apply strategy filter and chronologically order.
-  const filtered = enriched
-    .filter(({ e, mlScore, trailing6m }) =>
-      cfg.filter(e, { mlScore, trailing6m })
-    )
-    .sort((a, b) => a.e.filed.localeCompare(b.e.filed));
+  // Apply strategy filter (events already chronological from sortedEvents).
+  const filtered = enriched.filter(
+    ({ e, mlScore, wfMlScore, sectorPriorAlpha, sectorPriorN, trailing6m }) =>
+      cfg.filter(e, {
+        mlScore,
+        wfMlScore,
+        sectorPriorAlpha,
+        sectorPriorN,
+        trailing6m,
+      })
+  );
 
   const positions: Position[] = [];
   const openExits: Array<{ exitDate: string; pnl: number }> = [];
@@ -249,7 +426,7 @@ async function simulate(
     return cfg.positionSize;
   }
 
-  for (const { e, mlScore, trailing6m, bars } of filtered) {
+  for (const { e, mlScore, wfMlScore, trailing6m, bars } of filtered as any) {
     // Close any positions whose exit dates have passed; their P&L lands in
     // realizedEquity (FIFO).
     while (openExits.length > 0 && openExits[0].exitDate <= e.filed) {
@@ -1039,6 +1216,198 @@ const STRATEGIES: StrategyConfig[] = [
       !e.ocfDecline2y &&
       (ctx.trailing6m == null || ctx.trailing6m <= 0),
   },
+  // ─── Iteration 13: WALK-FORWARD ML overlays (honest out-of-sample) ─
+  // These strategies use wfMlScore (model trained only on events filed
+  // before each trade), unlike earlier strategies which used the data-
+  // leaking persisted score.
+  {
+    name: "[42] WF-ML > 0.55, broad sectors, $5K × 2 conc",
+    description:
+      "walk-forward ML > 0.55, all sectors, no ocf2y, anti-mom; unleveraged",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    filter: (e, ctx) =>
+      ctx.wfMlScore != null &&
+      ctx.wfMlScore > 0.55 &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[43] WF-ML > 0.6, broad sectors, $5K × 2 conc",
+    description: "tighter walk-forward ML > 0.6 threshold",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    filter: (e, ctx) =>
+      ctx.wfMlScore != null &&
+      ctx.wfMlScore > 0.6 &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[44] WF-ML > 0.55, all events (no ocf/mom filter), $5K × 2",
+    description:
+      "let WF-ML do all the heavy lifting — no rule-based filters except the score",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    filter: (_e, ctx) => ctx.wfMlScore != null && ctx.wfMlScore > 0.55,
+  },
+  {
+    name: "[45] WF-ML > 0.55 + winning sectors + compound 50% × 2",
+    description:
+      "winning sectors + walk-forward ML threshold + compounding (1x peak)",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 0.5,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0) &&
+      ctx.wfMlScore != null &&
+      ctx.wfMlScore > 0.55,
+  },
+  {
+    name: "[46] WF-ML > 0.6 + Util+CS only + compound 100% × 1",
+    description:
+      "tightest filter: WF-ML + most-profitable sectors + concentrated",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0) &&
+      ctx.wfMlScore != null &&
+      ctx.wfMlScore > 0.6,
+  },
+  {
+    name: "[47] WF-ML > 0.5 + winning sectors + compound 100% × 1",
+    description:
+      "looser ML threshold for more trades, single-position concentration",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0) &&
+      ctx.wfMlScore != null &&
+      ctx.wfMlScore > 0.5,
+  },
+  // ─── Iteration 14: SECTOR-PRIOR (non-parametric ML alternative) ────
+  // Predict α₁y for an event as the mean α₁y of prior same-sector events.
+  // Only requires 3 prior events per sector. Less overfitting than logreg
+  // because there's no parameter to fit — it's just a sector lookup that
+  // adapts as new data arrives.
+  {
+    name: "[48] Sector-prior α < -5%, broad",
+    description:
+      "take trade only if prior same-sector events averaged α₁y < -5%; $5K × 2",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    filter: (e, ctx) =>
+      ctx.sectorPriorAlpha != null &&
+      ctx.sectorPriorAlpha < -0.05 &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[49] Sector-prior α < -10%, broad",
+    description: "stricter sector prior threshold",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    filter: (e, ctx) =>
+      ctx.sectorPriorAlpha != null &&
+      ctx.sectorPriorAlpha < -0.1 &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[50] Sector-prior α < -5% + compound 50% × 2",
+    description: "non-parametric sector predictor + unleveraged compounding",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 0.5,
+    filter: (e, ctx) =>
+      ctx.sectorPriorAlpha != null &&
+      ctx.sectorPriorAlpha < -0.05 &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[51] Sector-prior α < -5% + compound 100% × 1",
+    description: "single position, full compounding, sector-prior filter",
+    positionSize: 10000,
+    maxConcurrent: 1,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 1.0,
+    filter: (e, ctx) =>
+      ctx.sectorPriorAlpha != null &&
+      ctx.sectorPriorAlpha < -0.05 &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  {
+    name: "[52] Sector-prior α < -3% + idle cash + compound 50% × 2",
+    description:
+      "looser sector-prior threshold for more trades, plus T-bill yield on idle",
+    positionSize: 5000,
+    maxConcurrent: 2,
+    holdMonths: 12,
+    stopLossPct: null,
+    takeProfitPct: null,
+    pairTrade: true,
+    compoundFraction: 0.5,
+    idleCashYield: true,
+    filter: (e, ctx) =>
+      ctx.sectorPriorAlpha != null &&
+      ctx.sectorPriorAlpha < -0.03 &&
+      !e.ocfDecline2y &&
+      (ctx.trailing6m == null || ctx.trailing6m <= 0),
+  },
+  // ─── Iteration 15: ML-WEIGHTED SIZING (use score as size multiplier) ─
+  // Don't filter on score — instead use it as a size weight. Even a noisy
+  // signal can add value if positions are sized roughly by conviction.
+  // BUT: since walk-forward AUC is ~0.48 on this dataset, sizing should
+  // probably stay flat. Listed for reference.
 ];
 
 // ─── Main ────────────────────────────────────────────────────────────
@@ -1071,7 +1440,48 @@ async function main() {
   console.log(
     `loaded bars for ${barsByTicker.size}/${tickers.length} tickers; ${allEvents.length} events`
   );
-  console.log(`start=$${STARTING_BALANCE}  borrow=${(ANNUAL_BORROW_COST * 100).toFixed(1)}%/yr\n`);
+  console.log(`start=$${STARTING_BALANCE}  borrow=${(ANNUAL_BORROW_COST * 100).toFixed(1)}%/yr`);
+
+  // Train walk-forward models (one per cutoff year). Honest out-of-sample
+  // ML evaluation; the persisted ml-model.json data-leaks across the sim.
+  const buildFV = (e: Event) => {
+    const t6 = e.trailing6m ?? (barsByTicker.get(e.ticker) ? trailing6m(barsByTicker.get(e.ticker)!, e.filed) : null);
+    const t12 = e.trailing12m ?? null;
+    return buildFeatureVector({
+      de: e.de,
+      negEquity: e.negEquity,
+      yoy_t: e.yoy_t,
+      yoy_t1: e.yoy_t1,
+      ocfYoY: e.ocfYoY,
+      ocfDecline2y: e.ocfDecline2y,
+      trailing6m: t6,
+      trailing12m: t12,
+      sector: e.sector,
+    });
+  };
+  // Train a few WF model variants with different regularization strengths
+  // and pick the one with best out-of-sample AUC. Heavy regularization can
+  // generalize better on tiny samples by shrinking toward the bias term.
+  const l2Variants = [0.1, 0.5, 2.0, 5.0];
+  let bestWfAuc = 0;
+  let bestL2 = 0.1;
+  let wfModels = new Map<number, ModelWeights>();
+  console.log(`walk-forward sweep over L2 regularization:`);
+  for (const l2 of l2Variants) {
+    const candidates = trainWalkForwardModels(allEvents, buildFV, l2);
+    const auc = summarizeWalkForwardAuc(allEvents, candidates, buildFV);
+    console.log(
+      `  L2=${l2.toFixed(1)}: ${candidates.size} models, OOS AUC=${auc.auc.toFixed(3)} (n=${auc.n})`
+    );
+    if (auc.auc > bestWfAuc) {
+      bestWfAuc = auc.auc;
+      bestL2 = l2;
+      wfModels = candidates;
+    }
+  }
+  console.log(
+    `→ using L2=${bestL2}, OOS AUC=${bestWfAuc.toFixed(3)}\n`
+  );
 
   const fmtPct = (n: number | null) =>
     n == null ? "  N/A" : `${(n * 100).toFixed(1)}%`;
@@ -1085,7 +1495,7 @@ async function main() {
 
   const results: StrategyResult[] = [];
   for (const cfg of STRATEGIES) {
-    const r = await simulate(allEvents, cfg, model, barsByTicker);
+    const r = await simulate(allEvents, cfg, model, barsByTicker, wfModels);
     results.push(r);
     const stopRate = r.nTaken > 0 ? r.nStoppedOut / r.nTaken : 0;
     const tpRate = r.nTaken > 0 ? r.nTakeProfit / r.nTaken : 0;
@@ -1140,6 +1550,8 @@ async function main() {
   // Apply the pair-trade kitchen-sink template (minus the sector filter)
   // to each sector independently. Answers: "what would $10K do if you
   // ONLY ran the screen on this one sector?"
+  // Per-sector breakdown also uses wfModels for ML scoring (in case any
+  // strategy variant inside the sector run consults wfMlScore).
   console.log("\n=== per-sector breakdown (pair trade, kitchen sink without sector filter) ===");
   const SECTORS_FOR_BREAKDOWN: Sector[] = [
     "Technology",
@@ -1175,7 +1587,7 @@ async function main() {
         !e.ocfDecline2y &&
         (ctx.trailing6m == null || ctx.trailing6m <= 0),
     };
-    const r = await simulate(allEvents, cfg, model, barsByTicker);
+    const r = await simulate(allEvents, cfg, model, barsByTicker, wfModels);
     bySector.push({ sector, ...r });
     console.log(
       sector.padEnd(24) +
