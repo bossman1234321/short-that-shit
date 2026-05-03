@@ -30,22 +30,9 @@ const POSITIVE_LABEL_THRESHOLD = -0.05; // alpha1y < -5% → "short worked"
 const BACKTEST_PATH = path.resolve(process.cwd(), "public/data/backtest.json");
 const MODEL_PATH = path.resolve(process.cwd(), "public/data/ml-model.json");
 
-type BacktestEvent = {
-  ticker: string;
-  sector: Sector;
-  endYear: number;
-  end: string;
-  filed: string;
-  de: number | null;
-  negEquity: boolean;
-  yoy_t: number | null;
-  yoy_t1: number | null;
-  ocfYoY: number | null;
-  ocfDecline2y: boolean;
-  trailing6m: number | null;
-  trailing12m: number | null;
-  alpha1y: number | null;
-};
+// Permissive — the full event shape now has 30+ fields. buildFeatureVector
+// reads what it needs and ignores the rest.
+type BacktestEvent = any;
 
 async function main() {
   const raw = await fs.readFile(BACKTEST_PATH, "utf8");

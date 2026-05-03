@@ -52,7 +52,9 @@ describe("buildFeatureVector", () => {
     });
     expect(v).not.toBeNull();
     expect(v![0]).toBe(-1);
-    expect(v![5]).toBe(1); // neg_eq flag
+    // neg_eq is index 2 in the expanded feature order (post-2026-05-03).
+    const negEqIdx = ML_NUMERIC_FEATURES.indexOf("neg_eq");
+    expect(v![negEqIdx]).toBe(1);
   });
 
   it("emits one-hot for the matching sector only", () => {

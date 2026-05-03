@@ -2250,6 +2250,310 @@ async function main() {
     );
   }
 
+  // ─── p-value vs random portfolio ──────────────────────────────────
+  // Generate N random "strategies" that draw n trades from the full event
+  // pool (any trigger with α₁y data, no filter). Apply the same
+  // pair/leverage/compound structure. Where does our headline land in
+  // the distribution? p = fraction of random portfolios that beat us.
+  console.log("\n=== p-value test (vs random short portfolios) ===");
+  const eventsWithAlpha = allEvents.filter(
+    (e) => e.alpha1y != null && e.sector != null
+  );
+  const ourAnn = headlineResult.annualizedReturn ?? 0;
+  const headlineN = headlineResult.positions.length;
+  const RANDOM_ITERS = 5000;
+  const randomAnns: number[] = [];
+  let beatUs = 0;
+  for (let it = 0; it < RANDOM_ITERS; it++) {
+    let bootEquity = STARTING_BALANCE;
+    for (let i = 0; i < headlineN; i++) {
+      const e = eventsWithAlpha[Math.floor(Math.random() * eventsWithAlpha.length)];
+      const lev = headlineCfg.pairLeverage ?? 1;
+      const halfSize = (10000 / 2) * lev; // approximate position size
+      const costPct = ANNUAL_BORROW_COST;
+      const pnl = halfSize * -e.alpha1y! - halfSize * costPct;
+      bootEquity += pnl;
+    }
+    if (bootEquity > 0) {
+      const totalRet = (bootEquity - STARTING_BALANCE) / STARTING_BALANCE;
+      const ann =
+        Math.pow(1 + totalRet, 1 / Math.max(1, headlineN)) - 1;
+      randomAnns.push(ann);
+      if (ann >= ourAnn) beatUs++;
+    }
+  }
+  randomAnns.sort((a, b) => a - b);
+  const pValue = beatUs / Math.max(1, randomAnns.length);
+  const randomMean = randomAnns.length
+    ? randomAnns.reduce((a, b) => a + b, 0) / randomAnns.length
+    : 0;
+  const randomP05 = randomAnns.length
+    ? randomAnns[Math.floor(randomAnns.length * 0.05)]
+    : 0;
+  const randomP95 = randomAnns.length
+    ? randomAnns[Math.floor(randomAnns.length * 0.95)]
+    : 0;
+  console.log(
+    `  random ${RANDOM_ITERS} portfolios of ${headlineN} trades each:`
+  );
+  console.log(
+    `    mean ann ${(randomMean * 100).toFixed(1)}%  p5 ${(randomP05 * 100).toFixed(1)}%  p95 ${(randomP95 * 100).toFixed(1)}%`
+  );
+  console.log(
+    `    p-value (random ≥ ours): ${pValue.toFixed(3)} (${beatUs}/${randomAnns.length} random portfolios beat us)`
+  );
+  const pValueResult = {
+    iters: RANDOM_ITERS,
+    n: headlineN,
+    randomMean,
+    randomP05,
+    randomP95,
+    ourAnnualizedReturn: ourAnn,
+    pValue,
+  };
+
+  // ─── Hyperparameter sensitivity grid ──────────────────────────────
+  console.log("\n=== hyperparameter sensitivity ===");
+  type HpSweep = {
+    knob: string;
+    value: string;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    nTaken: number;
+  };
+  const hpSensitivities: HpSweep[] = [];
+  // Trailing-6m threshold sweep
+  for (const thr of [-0.2, -0.1, -0.05, 0, 0.05, 0.1, 0.2]) {
+    const cfg: StrategyConfig = {
+      ...headlineCfg,
+      filter: (e, ctx) =>
+        ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+        !e.ocfDecline2y &&
+        (ctx.trailing6m == null || ctx.trailing6m <= thr),
+    };
+    const r = await simulate(allEvents, cfg, model, barsByTicker, wfModels, spyBars);
+    hpSensitivities.push({
+      knob: "trailing6m_max",
+      value: thr.toFixed(2),
+      finalEquity: r.finalEquity,
+      annualizedReturn: r.annualizedReturn,
+      nTaken: r.nTaken,
+    });
+  }
+  // Sector-list permutations
+  const sectorCombos: Array<{ name: string; sectors: string[] }> = [
+    { name: "Util only", sectors: ["Utilities"] },
+    { name: "CS only", sectors: ["Consumer Staples"] },
+    { name: "RE only", sectors: ["Real Estate"] },
+    { name: "Util+CS", sectors: ["Utilities", "Consumer Staples"] },
+    { name: "Util+RE", sectors: ["Utilities", "Real Estate"] },
+    { name: "CS+RE", sectors: ["Consumer Staples", "Real Estate"] },
+    { name: "Util+CS+RE", sectors: ["Utilities", "Consumer Staples", "Real Estate"] },
+  ];
+  for (const sc of sectorCombos) {
+    const cfg: StrategyConfig = {
+      ...headlineCfg,
+      filter: (e, ctx) =>
+        sc.sectors.includes(e.sector) &&
+        !e.ocfDecline2y &&
+        (ctx.trailing6m == null || ctx.trailing6m <= 0),
+    };
+    const r = await simulate(allEvents, cfg, model, barsByTicker, wfModels, spyBars);
+    hpSensitivities.push({
+      knob: "sector_list",
+      value: sc.name,
+      finalEquity: r.finalEquity,
+      annualizedReturn: r.annualizedReturn,
+      nTaken: r.nTaken,
+    });
+  }
+  // Hold-period sweep
+  for (const hold of [6, 12, 24] as const) {
+    const cfg: StrategyConfig = { ...headlineCfg, holdMonths: hold };
+    const r = await simulate(allEvents, cfg, model, barsByTicker, wfModels, spyBars);
+    hpSensitivities.push({
+      knob: "hold_months",
+      value: `${hold}m`,
+      finalEquity: r.finalEquity,
+      annualizedReturn: r.annualizedReturn,
+      nTaken: r.nTaken,
+    });
+  }
+  for (const r of hpSensitivities) {
+    console.log(
+      `  ${r.knob.padEnd(18)} ${r.value.padEnd(14)} → $${r.finalEquity.toFixed(0).padStart(7)}  ann ${(((r.annualizedReturn ?? 0) * 100)).toFixed(1).padStart(5)}%  n=${r.nTaken}`
+    );
+  }
+
+  // ─── Dividend-cost modeling ───────────────────────────────────────
+  console.log("\n=== dividend-cost modeling (sector-yield approximation) ===");
+  // Approximate trailing-12m dividend yield by sector. Short pays the
+  // long's dividend, so this is incremental cost on the short notional.
+  const SECTOR_DIV_YIELD: Record<string, number> = {
+    Utilities: 0.035,
+    "Consumer Staples": 0.025,
+    "Real Estate": 0.035, // REITs distribute more
+    Financials: 0.022,
+    Industrials: 0.020,
+    "Consumer Discretionary": 0.015,
+    "Health Care": 0.015,
+    Technology: 0.010,
+    Energy: 0.030,
+    Materials: 0.020,
+    "Communication Services": 0.020,
+  };
+  let divAdjustedFinal = STARTING_BALANCE;
+  let totalDivCost = 0;
+  for (const p of headlineResult.positions) {
+    const lev = headlineCfg.pairLeverage ?? 1;
+    const shortNotional = headlineCfg.pairTrade ? (p.size / 2) * lev : p.size;
+    const yld = SECTOR_DIV_YIELD[p.sector] ?? 0.02;
+    const divCost = shortNotional * yld * (p.daysHeld / 365.25);
+    totalDivCost += divCost;
+    divAdjustedFinal += p.pnl - divCost;
+  }
+  const divTotalRet = (divAdjustedFinal - STARTING_BALANCE) / STARTING_BALANCE;
+  const firstEntryDiv = headlineResult.positions[0]?.entryDate;
+  const lastExitDiv = headlineResult.positions.reduce(
+    (a, p) => (p.exitDate > a ? p.exitDate : a),
+    headlineResult.positions[0]?.exitDate ?? ""
+  );
+  const yrsDiv =
+    firstEntryDiv && lastExitDiv ? yearsBetween(firstEntryDiv, lastExitDiv) : 0;
+  const divAdjustedAnn =
+    yrsDiv > 0 && 1 + divTotalRet > 0
+      ? Math.pow(1 + divTotalRet, 1 / yrsDiv) - 1
+      : 0;
+  const dividendImpact = {
+    totalDivCost,
+    finalEquity: divAdjustedFinal,
+    annualizedReturn: divAdjustedAnn,
+    deltaPp: divAdjustedAnn - ourAnn,
+  };
+  console.log(
+    `  total dividend cost on shorts:    $${totalDivCost.toFixed(0)}`
+  );
+  console.log(
+    `  div-adjusted final:               $${divAdjustedFinal.toFixed(0)}  ann ${(divAdjustedAnn * 100).toFixed(1)}%  Δ ${(((divAdjustedAnn - ourAnn) * 100)).toFixed(1)}pp`
+  );
+
+  // ─── Single-position blowup stress ────────────────────────────────
+  // For each headline position, walk monthly bars from entry to exit and
+  // compute the worst MTM drawdown ON THAT ONE POSITION (in isolation).
+  console.log("\n=== single-position blowup stress ===");
+  type PositionDD = {
+    ticker: string;
+    sector: string;
+    entryDate: string;
+    worstMtmRet: number; // most-negative monthly MTM return on the position
+    finalRet: number;
+  };
+  const positionDDs: PositionDD[] = [];
+  for (const p of headlineResult.positions) {
+    const tickerBars = barsByTicker.get(p.ticker);
+    if (!tickerBars || !spyBars) continue;
+    const entryT = priceAtOrAfter(tickerBars, p.entryDate);
+    const entryS = priceAtOrAfter(spyBars, p.entryDate);
+    if (!entryT || !entryS) continue;
+    let worstMtm = 0;
+    let cur = new Date(p.entryDate);
+    const last = new Date(p.exitDate);
+    while (cur <= last) {
+      const ymd = cur.toISOString().slice(0, 10);
+      const tBar = priceClosestBefore(tickerBars, ymd);
+      const sBar = priceClosestBefore(spyBars, ymd);
+      if (tBar && sBar) {
+        const tickerRet = (tBar.close - entryT.close) / entryT.close;
+        const spyRet = (sBar.close - entryS.close) / entryS.close;
+        // Pair P&L on this single position, in % of position size
+        const lev = headlineCfg.pairLeverage ?? 1;
+        const pairRet = (-tickerRet + spyRet) * (lev / 2);
+        if (pairRet < worstMtm) worstMtm = pairRet;
+      }
+      cur = new Date(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 1);
+    }
+    positionDDs.push({
+      ticker: p.ticker,
+      sector: p.sector,
+      entryDate: p.entryDate,
+      worstMtmRet: worstMtm,
+      finalRet: p.pnl / p.size,
+    });
+  }
+  positionDDs.sort((a, b) => a.worstMtmRet - b.worstMtmRet);
+  console.log(`  Worst single-position interim MTM (on the position itself):`);
+  for (const d of positionDDs.slice(0, 5)) {
+    console.log(
+      `    ${d.ticker.padEnd(8)} ${d.sector.slice(0, 18).padEnd(18)} ${d.entryDate} → worst ${(d.worstMtmRet * 100).toFixed(1)}%  final ${(d.finalRet * 100).toFixed(1)}%`
+    );
+  }
+
+  // ─── Market-beta regression (factor exposure, simplest version) ───
+  console.log("\n=== market-beta regression vs SPY ===");
+  let beta: number | null = null;
+  let alphaAnn: number | null = null;
+  let rSquared: number | null = null;
+  if (headlineResult.positions.length > 0 && spyBars) {
+    const curve = buildEquityCurve(headlineResult.positions, STARTING_BALANCE);
+    const portRets = monthlyReturns(curve);
+    const spyByMonth = new Map<string, number>();
+    for (const b of spyBars) spyByMonth.set(b.date.slice(0, 7), b.close);
+    const months = curve.map((c) => c.date.slice(0, 7));
+    const spyVals = months.map((m) => spyByMonth.get(m) ?? null);
+    const spyRets: Array<number | null> = [];
+    for (let i = 1; i < spyVals.length; i++) {
+      const a = spyVals[i - 1];
+      const b = spyVals[i];
+      spyRets.push(a != null && b != null && a !== 0 ? (b - a) / a : null);
+    }
+    // OLS: portRet = alpha + beta * spyRet
+    const xys: Array<[number, number]> = [];
+    for (let i = 0; i < portRets.length; i++) {
+      const s = spyRets[i];
+      if (s != null && Number.isFinite(s) && Number.isFinite(portRets[i])) {
+        xys.push([s, portRets[i]]);
+      }
+    }
+    if (xys.length >= 12) {
+      const xMean = xys.reduce((a, [x]) => a + x, 0) / xys.length;
+      const yMean = xys.reduce((a, [, y]) => a + y, 0) / xys.length;
+      let numer = 0,
+        denom = 0,
+        ssTot = 0;
+      for (const [x, y] of xys) {
+        numer += (x - xMean) * (y - yMean);
+        denom += (x - xMean) * (x - xMean);
+        ssTot += (y - yMean) * (y - yMean);
+      }
+      beta = denom > 0 ? numer / denom : null;
+      const alphaMonthly = beta != null ? yMean - beta * xMean : null;
+      alphaAnn = alphaMonthly != null ? alphaMonthly * 12 : null;
+      // R^2
+      let ssRes = 0;
+      if (beta != null && alphaMonthly != null) {
+        for (const [x, y] of xys) {
+          const yhat = alphaMonthly + beta * x;
+          ssRes += (y - yhat) * (y - yhat);
+        }
+        rSquared = ssTot > 0 ? 1 - ssRes / ssTot : null;
+      }
+    }
+  }
+  const factorExposure = {
+    marketBeta: beta,
+    alphaAnnualized: alphaAnn,
+    rSquared,
+  };
+  console.log(
+    `  market beta:           ${beta != null ? beta.toFixed(3) : "—"} (pair trades should be ~0)`
+  );
+  console.log(
+    `  alpha (annualized):    ${alphaAnn != null ? (alphaAnn * 100).toFixed(1) + "%" : "—"}`
+  );
+  console.log(
+    `  R²:                    ${rSquared != null ? rSquared.toFixed(3) : "—"}`
+  );
+
   // Transaction-cost sensitivity. Real round-trip costs:
   //   liquid SP500 bid-ask: 1-5bps
   //   slippage on market orders: 5-15bps
@@ -2499,6 +2803,11 @@ async function main() {
         sensitivities,
         txnSensitivities,
         benchmarks,
+        pValueResult,
+        hpSensitivities,
+        dividendImpact,
+        positionDDs,
+        factorExposure,
         annualizedBar: ANNUALIZED_BAR,
         riskFreeRate: RF_ANNUAL,
       },

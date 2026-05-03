@@ -31,18 +31,49 @@ export const ML_SECTORS: ReadonlyArray<Sector> = [
 ];
 
 // Numeric features in fixed order. Sector one-hot follows.
-// New (2026-05-03): trailing_6m and trailing_12m capture price action at
-// trigger time — the model previously had no notion of whether the stock
-// had been ripping or already collapsing pre-trigger.
+// 2026-05-03 expansion: per user directive "every possible data point".
+// Goes from 8 features to 30+. Heavy regularization handles the
+// dimensionality on small samples; expect feature-importance ranking to
+// surface 5-10 carrying meaningful signal.
 export const ML_NUMERIC_FEATURES = [
-  "log_de_or_neg",   // log(D/E+1) for positive equity, -1 for neg-eq
+  // ── Leverage / balance sheet ──
+  "log_de_or_neg",       // log(D/E+1) for positive equity, -1 for neg-eq
+  "de_relative_to_avg",  // de / contemporaneous-avg D/E (within-year cohort)
+  "neg_eq",              // 0/1
+  "liab_growth_yoy",
+  "equity_growth_yoy",
+  "log_cum_buybacks",    // log(1 + cumulative 5y repurchases)
+  // ── Revenue ──
   "yoy_t",
   "yoy_t1",
+  "yoy_t2",
+  "rev_3y_cagr",
+  "log_rev_t",           // size proxy via log of recent revenue
+  // ── OCF ──
   "ocf_yoy",
-  "ocf_decline_2y", // 0/1
-  "neg_eq",         // 0/1
-  "trailing_6m",    // stock total return over 6m before trigger (0 if missing)
-  "trailing_12m",   // stock total return over 12m before trigger
+  "ocf_decline_2y",      // 0/1
+  "ocf_per_rev",         // cash conversion
+  // ── Price action ──
+  "trailing_1m",
+  "trailing_3m",
+  "trailing_6m",
+  "trailing_12m",
+  "trailing_24m",
+  "realized_vol_6m",
+  "realized_vol_12m",
+  "pct_from_52w_high",
+  "pct_from_52w_low",
+  // ── Macro / regime ──
+  "spy_trailing_6m",
+  "spy_trailing_12m",
+  "year_centered",       // (year - 2015) / 10  for regime
+  // ── Cross-sectional ranks ──
+  "yoy_t_pctile",
+  "de_pctile",
+  // ── Interaction features ──
+  "yoy_x_neg_eq",        // yoy_t × neg_eq
+  "de_x_yoy",            // log_de × yoy_t
+  "trailing6_x_yoy",     // trailing_6m × yoy_t
 ] as const;
 
 export type FeatureRow = {
@@ -85,18 +116,39 @@ export function sigmoid(x: number): number {
 
 // Build the feature vector in the canonical order the model expects:
 //   [...numeric, ...sector_one_hot]
-// Returns null when any required numeric feature is missing.
-// trailing_6m / trailing_12m default to 0 when missing (training-data
-// average is ~0 over the period; treats missing as "no info" not "ripping").
+// Returns null only when the absolute minimum (yoy_t, yoy_t1, ocf_yoy)
+// is missing; everything else defaults to 0 for "no info" — the model
+// learns to weight those as null-equivalent through the missing-data
+// indicators (neg_eq, ocf_decline_2y).
 export function buildFeatureVector(f: {
   de: number | null;
   negEquity: boolean;
   yoy_t: number | null;
   yoy_t1: number | null;
+  yoy_t2?: number | null;
+  rev_t?: number | null;
+  rev3yCagr?: number | null;
   ocfYoY: number | null;
   ocfDecline2y: boolean;
+  ocfPerRev?: number | null;
+  liabGrowthYoY?: number | null;
+  equityGrowthYoY?: number | null;
+  cumRepurchases5y?: number | null;
+  deRelativeToAvg?: number | null;
+  trailing1m?: number | null;
+  trailing3m?: number | null;
   trailing6m?: number | null;
   trailing12m?: number | null;
+  trailing24m?: number | null;
+  realizedVol6m?: number | null;
+  realizedVol12m?: number | null;
+  pctFrom52wHigh?: number | null;
+  pctFrom52wLow?: number | null;
+  spyTrailing6m?: number | null;
+  spyTrailing12m?: number | null;
+  yearOfTrigger?: number | null;
+  yoy_t_pctile?: number | null;
+  de_pctile?: number | null;
   sector: Sector;
 }): number[] | null {
   if (f.yoy_t == null || f.yoy_t1 == null || f.ocfYoY == null) return null;
@@ -105,15 +157,56 @@ export function buildFeatureVector(f: {
     : f.de != null && f.de > 0
       ? Math.log(f.de + 1)
       : 0;
+  const log_rev_t =
+    f.rev_t != null && f.rev_t > 0 ? Math.log(f.rev_t) : 0;
+  const log_cum_buybacks =
+    f.cumRepurchases5y != null && f.cumRepurchases5y > 0
+      ? Math.log(1 + f.cumRepurchases5y)
+      : 0;
+  const yearCentered =
+    f.yearOfTrigger != null ? (f.yearOfTrigger - 2015) / 10 : 0;
+  const yoy = f.yoy_t;
+  const negEqFlag = f.negEquity ? 1 : 0;
+
   const numeric = [
+    // Leverage / balance sheet
     log_de_or_neg,
-    f.yoy_t,
+    f.deRelativeToAvg ?? 0,
+    negEqFlag,
+    f.liabGrowthYoY ?? 0,
+    f.equityGrowthYoY ?? 0,
+    log_cum_buybacks,
+    // Revenue
+    yoy,
     f.yoy_t1,
+    f.yoy_t2 ?? 0,
+    f.rev3yCagr ?? 0,
+    log_rev_t,
+    // OCF
     f.ocfYoY,
     f.ocfDecline2y ? 1 : 0,
-    f.negEquity ? 1 : 0,
+    f.ocfPerRev ?? 0,
+    // Price action
+    f.trailing1m ?? 0,
+    f.trailing3m ?? 0,
     f.trailing6m ?? 0,
     f.trailing12m ?? 0,
+    f.trailing24m ?? 0,
+    f.realizedVol6m ?? 0,
+    f.realizedVol12m ?? 0,
+    f.pctFrom52wHigh ?? 0,
+    f.pctFrom52wLow ?? 0,
+    // Macro
+    f.spyTrailing6m ?? 0,
+    f.spyTrailing12m ?? 0,
+    yearCentered,
+    // Cross-sectional ranks
+    f.yoy_t_pctile ?? 0.5,
+    f.de_pctile ?? 0.5,
+    // Interactions
+    yoy * negEqFlag,
+    log_de_or_neg * yoy,
+    (f.trailing6m ?? 0) * yoy,
   ];
   const oneHot = ML_SECTORS.map((s) => (s === f.sector ? 1 : 0));
   return [...numeric, ...oneHot];

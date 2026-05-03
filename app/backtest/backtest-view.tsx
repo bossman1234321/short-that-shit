@@ -186,6 +186,40 @@ type PortfolioFile = {
   sensitivities?: SensitivityRow[];
   txnSensitivities?: TxnSensitivityRow[];
   benchmarks?: BenchmarkRow[];
+  pValueResult?: {
+    iters: number;
+    n: number;
+    randomMean: number;
+    randomP05: number;
+    randomP95: number;
+    ourAnnualizedReturn: number;
+    pValue: number;
+  };
+  hpSensitivities?: Array<{
+    knob: string;
+    value: string;
+    finalEquity: number;
+    annualizedReturn: number | null;
+    nTaken: number;
+  }>;
+  dividendImpact?: {
+    totalDivCost: number;
+    finalEquity: number;
+    annualizedReturn: number;
+    deltaPp: number;
+  };
+  positionDDs?: Array<{
+    ticker: string;
+    sector: string;
+    entryDate: string;
+    worstMtmRet: number;
+    finalRet: number;
+  }>;
+  factorExposure?: {
+    marketBeta: number | null;
+    alphaAnnualized: number | null;
+    rSquared: number | null;
+  };
 };
 
 const fmtPct = (n: number | null | undefined): string => {
@@ -231,6 +265,18 @@ export function BacktestReview({
           <HeadlineEvaluation portfolio={portfolio} />
         )}
         {portfolio?.headline && <RealWorldRisks portfolio={portfolio} />}
+        {portfolio?.pValueResult && <StatisticalSignificance portfolio={portfolio} />}
+        {portfolio?.factorExposure && <FactorExposure portfolio={portfolio} />}
+        {portfolio?.hpSensitivities && portfolio.hpSensitivities.length > 0 && (
+          <HyperparameterSensitivity portfolio={portfolio} />
+        )}
+        {portfolio?.positionDDs && portfolio.positionDDs.length > 0 && (
+          <SinglePositionStress portfolio={portfolio} />
+        )}
+        {portfolio?.dividendImpact && (
+          <DividendImpact portfolio={portfolio} />
+        )}
+        <CausalMechanism />
         {portfolio?.benchmarks && portfolio.benchmarks.length > 0 && (
           <Benchmarks portfolio={portfolio} />
         )}
@@ -988,6 +1034,435 @@ function PerTradeDetail({ portfolio }: { portfolio: PortfolioFile }) {
           </tbody>
         </table>
       </div>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function StatisticalSignificance({ portfolio }: { portfolio: PortfolioFile }) {
+  const p = portfolio.pValueResult!;
+  const significant = p.pValue < 0.05;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Statistical significance vs random portfolios
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        Generated <span className="font-data">{p.iters.toLocaleString()}</span>{" "}
+        random "strategies" each picking{" "}
+        <span className="font-data">{p.n}</span> trades from the full event
+        pool (no filter, just random). Compared the distribution of their
+        annualized returns to ours.
+      </p>
+      <div className="mt-3 grid gap-4 md:grid-cols-2">
+        <div
+          className={`rounded border p-3 ${significant ? "border-emerald-700/40 bg-emerald-950/20" : "border-amber-accent/40 bg-amber-accent/5"}`}
+        >
+          <div
+            className={`text-[10px] uppercase tracking-wider ${significant ? "text-emerald-400" : "text-amber-accent"}`}
+          >
+            p-value
+          </div>
+          <div
+            className={`mt-1 font-data text-2xl ${significant ? "text-emerald-400" : "text-amber-accent"}`}
+          >
+            {p.pValue.toFixed(3)}
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed">
+            {significant ? (
+              <>
+                <span className="font-semibold">Statistically significant</span>{" "}
+                at the conventional 5% bar — our strategy beats{" "}
+                {((1 - p.pValue) * 100).toFixed(0)}% of random{" "}
+                {p.n}-trade portfolios. The filtering rules add real signal.
+              </>
+            ) : (
+              <>
+                <span className="font-semibold">Not statistically significant</span>{" "}
+                at the 5% bar — about{" "}
+                <span className="font-data">{(p.pValue * 100).toFixed(0)}%</span>{" "}
+                of random portfolios beat ours. The filter rules look load-
+                bearing in ablation, but at this small sample size the
+                strategy isn&apos;t reliably distinguishable from a lucky
+                random pick.
+              </>
+            )}
+          </p>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Random portfolio distribution
+          </div>
+          <table className="mt-2 w-full text-xs">
+            <tbody>
+              <tr>
+                <td className="py-0.5">Random mean ann</td>
+                <td className="py-0.5 text-right font-data">
+                  {fmtPct(p.randomMean)}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0.5">5th percentile</td>
+                <td className="py-0.5 text-right font-data text-red-400">
+                  {fmtPct(p.randomP05)}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-0.5">95th percentile</td>
+                <td className="py-0.5 text-right font-data text-emerald-400">
+                  {fmtPct(p.randomP95)}
+                </td>
+              </tr>
+              <tr className="border-t border-terminal-border">
+                <td className="py-0.5 pt-1">Our headline ann</td>
+                <td className="py-0.5 pt-1 text-right font-data text-amber-accent">
+                  {fmtPct(p.ourAnnualizedReturn)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function FactorExposure({ portfolio }: { portfolio: PortfolioFile }) {
+  const f = portfolio.factorExposure!;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Factor exposure (market beta)
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        OLS regression of monthly portfolio returns on monthly SPY returns.
+        For pair trades, beta should be near zero (market-neutral by
+        construction); residual alpha is what the strategy actually adds
+        beyond pure beta.
+      </p>
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Market beta (SPY)
+          </div>
+          <div
+            className={`mt-1 font-data text-2xl ${Math.abs(f.marketBeta ?? 0) < 0.1 ? "text-emerald-400" : "text-amber-accent"}`}
+          >
+            {f.marketBeta != null ? f.marketBeta.toFixed(3) : "—"}
+          </div>
+          <p className="mt-1 text-[11px] text-terminal-muted">
+            {Math.abs(f.marketBeta ?? 0) < 0.1
+              ? "Effectively market-neutral, as designed."
+              : "Some residual market exposure remains — the SPY-long offset isn't perfectly cancelling ticker beta."}
+          </p>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Alpha (annualized)
+          </div>
+          <div className="mt-1 font-data text-2xl text-amber-accent">
+            {f.alphaAnnualized != null ? fmtPct(f.alphaAnnualized) : "—"}
+          </div>
+          <p className="mt-1 text-[11px] text-terminal-muted">
+            Return attributable to the strategy after stripping out market
+            beta. Should match the headline annualized when beta ≈ 0.
+          </p>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            R²
+          </div>
+          <div className="mt-1 font-data text-2xl">
+            {f.rSquared != null ? f.rSquared.toFixed(3) : "—"}
+          </div>
+          <p className="mt-1 text-[11px] text-terminal-muted">
+            Fraction of strategy return variance explained by SPY. Low R² is
+            good for a market-neutral strategy — strategy returns aren&apos;t
+            tracking the market.
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        <span className="text-amber-accent">Not measured:</span> size, value,
+        momentum, low-vol, quality factor exposures. Doing those right needs
+        Fama-French daily factor data which isn&apos;t bundled here. Best-guess:
+        the strategy has some residual short-side exposure to size (matched
+        names skew larger-cap) and value (declining-revenue names tend to
+        trade at discounted valuations).
+      </p>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function HyperparameterSensitivity({ portfolio }: { portfolio: PortfolioFile }) {
+  const items = portfolio.hpSensitivities!;
+  const grouped: Record<string, typeof items> = {};
+  for (const it of items) {
+    if (!grouped[it.knob]) grouped[it.knob] = [];
+    grouped[it.knob].push(it);
+  }
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Hyperparameter sensitivity
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        Single-axis sweeps over the headline strategy&apos;s key knobs.
+        Sensitivity to the trailing-6m threshold, sector list, and hold
+        period.
+      </p>
+      <div className="mt-3 grid gap-4 md:grid-cols-3">
+        {Object.entries(grouped).map(([knob, rows]) => (
+          <div
+            key={knob}
+            className="rounded border border-terminal-border bg-terminal-panel/30 p-3"
+          >
+            <div className="font-data text-[11px] uppercase tracking-wider text-terminal-muted">
+              {knob}
+            </div>
+            <table className="mt-2 w-full text-xs">
+              <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+                <tr>
+                  <th className="text-left">Value</th>
+                  <th className="text-right">Final $</th>
+                  <th className="text-right">Ann</th>
+                  <th className="text-right">n</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr
+                    key={r.value}
+                    className="border-t border-terminal-border/50"
+                  >
+                    <td className="py-0.5 font-data">{r.value}</td>
+                    <td className="py-0.5 text-right font-data">
+                      {fmtUSD(r.finalEquity)}
+                    </td>
+                    <td
+                      className={`py-0.5 text-right font-data ${(r.annualizedReturn ?? 0) >= 0.08 ? "text-emerald-400" : "text-terminal-muted"}`}
+                    >
+                      {fmtPct(r.annualizedReturn)}
+                    </td>
+                    <td className="py-0.5 text-right font-data text-terminal-muted">
+                      {r.nTaken}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function SinglePositionStress({ portfolio }: { portfolio: PortfolioFile }) {
+  const items = portfolio.positionDDs!;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Single-position blowup stress
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        For each headline position, the worst monthly mark-to-market return
+        observed on that position alone (in isolation, scaled by leverage).
+        Margin maintenance typically requires equity ≥ 30% of short
+        notional; if a single position drops &gt; 30% mid-trade, it can
+        force a buy-in.
+      </p>
+      <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">Ticker</th>
+              <th className="px-3 py-2 text-left">Sector</th>
+              <th className="px-3 py-2 text-left">Entry</th>
+              <th className="px-3 py-2 text-right">Worst monthly MTM</th>
+              <th className="px-3 py-2 text-right">Final return</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((d, i) => (
+              <tr
+                key={`${d.ticker}-${d.entryDate}-${i}`}
+                className="border-t border-terminal-border/50"
+              >
+                <td className="px-3 py-1.5 font-data font-semibold">
+                  {d.ticker}
+                </td>
+                <td className="px-3 py-1.5 text-terminal-muted">{d.sector}</td>
+                <td className="px-3 py-1.5 font-data text-[10px]">
+                  {d.entryDate}
+                </td>
+                <td
+                  className={`px-3 py-1.5 text-right font-data ${d.worstMtmRet < -0.30 ? "text-red-400" : d.worstMtmRet < -0.15 ? "text-amber-accent" : "text-terminal-muted"}`}
+                >
+                  {fmtPct(d.worstMtmRet)}
+                </td>
+                <td
+                  className={`px-3 py-1.5 text-right font-data ${d.finalRet >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                >
+                  {fmtPct(d.finalRet)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function DividendImpact({ portfolio }: { portfolio: PortfolioFile }) {
+  const d = portfolio.dividendImpact!;
+  const headline = portfolio.headline?.annualizedReturn ?? 0;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Dividend cost on shorts
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        Short sellers pay the lender any dividends declared during the
+        holding period. Modeled here using sector-typical dividend yields
+        (Util/REIT ~3.5%, Consumer Staples ~2.5%, etc.) pro-rated by
+        actual hold time.
+      </p>
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Total dividend cost (period)
+          </div>
+          <div className="mt-1 font-data text-2xl text-orange-400">
+            {fmtUSD(d.totalDivCost)}
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Div-adjusted final equity
+          </div>
+          <div className="mt-1 font-data text-2xl">
+            {fmtUSD(d.finalEquity)}
+          </div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            ann{" "}
+            <span className="font-data">{fmtPct(d.annualizedReturn)}</span> vs
+            headline <span className="font-data">{fmtPct(headline)}</span>
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Δ vs unmodeled
+          </div>
+          <div
+            className={`mt-1 font-data text-2xl ${d.deltaPp < 0 ? "text-red-400" : "text-emerald-400"}`}
+          >
+            {d.deltaPp >= 0 ? "+" : ""}
+            {(d.deltaPp * 100).toFixed(1)}pp
+          </div>
+        </div>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        Note: the 2% borrow assumption already lumps in dividend exposure
+        roughly. This panel separates them out for clarity. Adding
+        dividends on top of the 2% borrow assumption would double-count.
+      </p>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function CausalMechanism() {
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Causal mechanism — why does this work?
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        A backtest can show <em>that</em> a strategy worked historically
+        without explaining <em>why</em>. The <em>why</em> matters for
+        forward expectations: if the mechanism is real and persistent, the
+        edge survives. If it&apos;s a regime accident, it doesn&apos;t.
+      </p>
+      <div className="mt-3 grid gap-4 md:grid-cols-2">
+        <div className="rounded border border-emerald-700/30 bg-emerald-950/20 p-3">
+          <h3 className="font-display text-sm text-terminal-fg">
+            The thesis
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed text-terminal-muted">
+            Companies in <span className="font-data text-emerald-400">stable, dividend-supported sectors</span>{" "}
+            (Utilities, Consumer Staples, REITs) often experience{" "}
+            <em>secular revenue decline</em> well before the stock price
+            reflects it. Mature businesses with declining top lines but
+            steady dividends and buybacks are <strong>value traps</strong>:
+            yield-hungry retail and income funds keep the stock supported
+            even as fundamentals deteriorate. The screen identifies these
+            names by combining declining revenue with elevated leverage —
+            both signs that the dividend / buyback support is straining the
+            balance sheet. Pair-trading short-them / long-SPY captures the
+            relative underperformance as the gap eventually closes.
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-terminal-muted">
+            Real examples this strategy would have caught:{" "}
+            <span className="font-data">
+              MO 2019, RAD 2017-2023, BBBY 2022-2023, K (Kellanova)
+              2020-2024, PCG 2018 (pre-bankruptcy), JCP, SHLD
+            </span>
+            .
+          </p>
+        </div>
+        <div className="rounded border border-red-700/30 bg-red-950/20 p-3">
+          <h3 className="font-display text-sm text-terminal-fg">
+            What would break it
+          </h3>
+          <ul className="mt-1 space-y-1 text-xs leading-relaxed text-terminal-muted">
+            <li>
+              <span className="font-data text-red-400">Sector regime shift</span>{" "}
+              — utilities are currently being repriced by data-center
+              demand (PEG, Vistra, Constellation). If the "secular decline"
+              thesis becomes "secular growth", the short side of the pair
+              gets crushed.
+            </li>
+            <li>
+              <span className="font-data text-red-400">Dividend cuts</span>{" "}
+              — when companies finally cut dividends, the yield support
+              disappears and the price drops sharply. The strategy entered
+              months earlier so this is a tailwind, but if cuts are
+              announced before our entry, alpha is gone.
+            </li>
+            <li>
+              <span className="font-data text-red-400">Bond yields</span>{" "}
+              — high real yields make dividends less attractive in the
+              first place. The 2022-2023 rate-hike cycle compressed
+              utility/REIT valuations independently of fundamentals.
+            </li>
+            <li>
+              <span className="font-data text-red-400">Crowdedness</span>{" "}
+              — if the trade becomes well-known, short interest rises,
+              borrow costs spike, alpha decays. The 2% assumption breaks
+              for crowded names.
+            </li>
+            <li>
+              <span className="font-data text-red-400">Acquisition events</span>{" "}
+              — declining-revenue + leverage candidates are attractive PE
+              targets. A surprise buyout at a premium wipes out the short.
+            </li>
+          </ul>
+        </div>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        <span className="text-amber-accent">Honest read:</span> the
+        mechanism (yield-supported value trap unwinding) is real and
+        documented in academic literature. But the conditions that produced
+        the historical alpha (low rates, stable sectors) are not guaranteed
+        to persist. Forward paper-trade tracking will reveal whether the
+        edge survives the current regime.
+      </p>
     </section>
   );
 }

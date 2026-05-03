@@ -167,6 +167,7 @@ type FyRow = {
   ocf: number | null;
   liabilities: number | null;
   equity: number | null;
+  repurchases: number | null; // payments for stock repurchases (positive)
   de: number | null;
   negEquity: boolean;
   decline2y: boolean;
@@ -201,6 +202,11 @@ function earliestFilingPerYear(
   return out;
 }
 
+const REPURCHASE_TAGS_LOCAL = [
+  "PaymentsForRepurchaseOfCommonStock",
+  "PaymentsForRepurchaseOfEquity",
+];
+
 function buildHistory(facts: CompanyFacts): FyRow[] {
   const gaap = facts.facts["us-gaap"];
   const revs = bestPerEndYear(gaap, REVENUE_TAGS, "USD", true);
@@ -208,6 +214,7 @@ function buildHistory(facts: CompanyFacts): FyRow[] {
   const liabs = bestPerEndYear(gaap, [LIABILITIES_TAG]);
   const assets = bestPerEndYear(gaap, TOTAL_ASSETS_TAGS);
   const equity = bestPerEndYear(gaap, EQUITY_TAGS);
+  const repurchases = bestPerEndYear(gaap, REPURCHASE_TAGS_LOCAL, "USD", true);
   const earliestFiled = earliestFilingPerYear(gaap);
 
   const years = new Set<number>([
@@ -257,6 +264,7 @@ function buildHistory(facts: CompanyFacts): FyRow[] {
       ocf: o?.val ?? null,
       liabilities: liabValue,
       equity: eqValue,
+      repurchases: repurchases.get(y)?.val ?? null,
       de,
       negEquity,
       decline2y: false,
@@ -405,18 +413,43 @@ type TriggerEvent = {
   endYear: number;
   end: string;
   filed: string;
-  // Features at trigger time
+  // ── Fundamentals at trigger time ──
   de: number | null;
   negEquity: boolean;
-  yoy_t: number | null;
-  yoy_t1: number | null;
+  yoy_t: number | null;       // most-recent annual revenue YoY
+  yoy_t1: number | null;      // prior year YoY
+  yoy_t2: number | null;      // 3rd-most-recent YoY (for 4y trend)
+  rev_t: number | null;       // raw revenue level (t)
+  rev_t1: number | null;
+  rev_t2: number | null;
+  rev_t3: number | null;
+  rev3yCagr: number | null;   // 3-year revenue CAGR
   ocfYoY: number | null;
   ocfDecline2y: boolean;
+  ocfPerRev: number | null;   // OCF / revenue (cash-conversion proxy)
+  liabGrowthYoY: number | null;
+  equityGrowthYoY: number | null;
+  cumRepurchases5y: number | null; // sum of last 5y stock repurchases ($)
   contemporaneousAvgDE: number;
-  // Price-action context at trigger time (Yahoo bars-derived).
+  deRelativeToAvg: number | null;  // de / contemporaneousAvgDE
+  // Cross-sectional rank (within same year, eligible sectors)
+  yoy_t_pctile: number | null;     // 0–1; lower = worse decline vs peers
+  de_pctile: number | null;        // 0–1; higher = more leveraged vs peers
+  // ── Price-action context at trigger time ──
+  trailing1m: number | null;
+  trailing3m: number | null;
   trailing6m: number | null;
   trailing12m: number | null;
-  // Forward returns
+  trailing24m: number | null;
+  realizedVol6m: number | null;    // monthly stdev × √12 (annualized)
+  realizedVol12m: number | null;
+  pctFrom52wHigh: number | null;   // (price - 52w_high) / 52w_high
+  pctFrom52wLow: number | null;
+  // ── Macro / regime ──
+  spyTrailing12m: number | null;   // SPY trailing 12m return at filing
+  spyTrailing6m: number | null;
+  yearOfTrigger: number;
+  // ── Forward returns ──
   ret6m: number | null;
   ret1y: number | null;
   ret2y: number | null;
@@ -455,9 +488,24 @@ function computeYearlyAvgDE(
   return out;
 }
 
+// TriggerCore = fundamentals-derived fields only. Price-action and macro
+// fields come from a second pass that uses Yahoo bars.
 type TriggerCore = Omit<
   TriggerEvent,
-  keyof ReturnType<typeof zeroReturns> | "trailing6m" | "trailing12m"
+  | keyof ReturnType<typeof zeroReturns>
+  | "trailing1m"
+  | "trailing3m"
+  | "trailing6m"
+  | "trailing12m"
+  | "trailing24m"
+  | "realizedVol6m"
+  | "realizedVol12m"
+  | "pctFrom52wHigh"
+  | "pctFrom52wLow"
+  | "spyTrailing12m"
+  | "spyTrailing6m"
+  | "yoy_t_pctile"
+  | "de_pctile"
 >;
 
 function findTriggers(
@@ -475,19 +523,54 @@ function findTriggers(
     const lev = r.negEquity || (r.de != null && r.de > threshold);
     if (!lev) continue;
 
-    // Compute features
+    // Revenue history
     const r0 = r.revenue;
-    const r1 = rows[i - 1]?.revenue;
-    const r2 = rows[i - 2]?.revenue;
+    const r1 = rows[i - 1]?.revenue ?? null;
+    const r2 = rows[i - 2]?.revenue ?? null;
+    const r3 = rows[i - 3]?.revenue ?? null;
     const yoy_t = r1 != null && r0 != null && r1 !== 0 ? (r0 - r1) / r1 : null;
     const yoy_t1 =
       r2 != null && r1 != null && r2 !== 0 ? (r1 - r2) / r2 : null;
+    const yoy_t2 =
+      r3 != null && r2 != null && r3 !== 0 ? (r2 - r3) / r3 : null;
+    // 3-year revenue CAGR (rev_t / rev_t-3)^(1/3) − 1
+    const rev3yCagr =
+      r0 != null && r3 != null && r3 > 0 ? Math.pow(r0 / r3, 1 / 3) - 1 : null;
+
+    // OCF
     const o0 = r.ocf;
-    const o1 = rows[i - 1]?.ocf;
-    const o2 = rows[i - 2]?.ocf;
+    const o1 = rows[i - 1]?.ocf ?? null;
+    const o2 = rows[i - 2]?.ocf ?? null;
     const ocfYoY = o1 != null && o0 != null && o1 !== 0 ? (o0 - o1) / o1 : null;
     const ocfDecline2y =
       o2 != null && o1 != null && o0 != null && o0 < o1 && o1 < o2;
+    const ocfPerRev = r0 != null && r0 > 0 && o0 != null ? o0 / r0 : null;
+
+    // Liabilities + equity growth (year-over-year)
+    const liabPrev = rows[i - 1]?.liabilities ?? null;
+    const liabGrowthYoY =
+      r.liabilities != null && liabPrev != null && liabPrev !== 0
+        ? (r.liabilities - liabPrev) / liabPrev
+        : null;
+    const eqPrev = rows[i - 1]?.equity ?? null;
+    const equityGrowthYoY =
+      r.equity != null && eqPrev != null && eqPrev !== 0
+        ? (r.equity - eqPrev) / eqPrev
+        : null;
+
+    // Cumulative repurchases (last 5 years)
+    let cumBuybacks = 0;
+    let buybackYears = 0;
+    for (let j = Math.max(0, i - 4); j <= i; j++) {
+      if (rows[j].repurchases != null) {
+        cumBuybacks += rows[j].repurchases!;
+        buybackYears++;
+      }
+    }
+    const cumRepurchases5y = buybackYears > 0 ? cumBuybacks : null;
+
+    const deRelativeToAvg =
+      r.de != null && threshold > 0 ? r.de / threshold : null;
 
     events.push({
       ticker,
@@ -499,9 +582,21 @@ function findTriggers(
       negEquity: r.negEquity,
       yoy_t,
       yoy_t1,
+      yoy_t2,
+      rev_t: r0,
+      rev_t1: r1,
+      rev_t2: r2,
+      rev_t3: r3,
+      rev3yCagr,
       ocfYoY,
       ocfDecline2y,
+      ocfPerRev,
+      liabGrowthYoY,
+      equityGrowthYoY,
+      cumRepurchases5y,
       contemporaneousAvgDE: threshold,
+      deRelativeToAvg,
+      yearOfTrigger: r.endYear,
     });
   }
   return events;
@@ -682,18 +777,65 @@ async function main() {
     `  prices ${priceLoaded}/${tickersWithTriggers.length} (${priceFailed} failed)`
   );
 
+  // Helper to compute realized monthly volatility (annualized) over a
+  // trailing window of monthly closes.
+  function realizedVolAnn(bars: Bar[], dateIso: string, months: number): number | null {
+    const cutoff = addMonths(dateIso, -months);
+    const window = bars.filter((b) => b.date >= cutoff && b.date <= dateIso);
+    if (window.length < 4) return null;
+    const rets: number[] = [];
+    for (let i = 1; i < window.length; i++) {
+      if (window[i - 1].close > 0) {
+        rets.push((window[i].close - window[i - 1].close) / window[i - 1].close);
+      }
+    }
+    if (rets.length < 3) return null;
+    const m = rets.reduce((a, b) => a + b, 0) / rets.length;
+    const v = rets.reduce((a, b) => a + (b - m) * (b - m), 0) / (rets.length - 1);
+    return Math.sqrt(v) * Math.sqrt(12);
+  }
+  function pctFromExtreme(bars: Bar[], dateIso: string, months: number, mode: "high" | "low"): number | null {
+    const cutoff = addMonths(dateIso, -months);
+    const window = bars.filter((b) => b.date >= cutoff && b.date <= dateIso);
+    if (window.length === 0) return null;
+    const cur = priceClosestBefore(bars, dateIso);
+    if (!cur) return null;
+    const closes = window.map((b) => b.close);
+    const extreme = mode === "high" ? Math.max(...closes) : Math.min(...closes);
+    if (extreme === 0) return null;
+    return (cur.close - extreme) / extreme;
+  }
+
   for (const trig of triggers) {
     const bars = barsByTicker.get(trig.ticker);
     const ret: ReturnType<typeof zeroReturns> = zeroReturns();
+    let trailing1m: number | null = null;
+    let trailing3m: number | null = null;
     let trailing6m: number | null = null;
     let trailing12m: number | null = null;
+    let trailing24m: number | null = null;
+    let realizedVol6m: number | null = null;
+    let realizedVol12m: number | null = null;
+    let pctFrom52wHigh: number | null = null;
+    let pctFrom52wLow: number | null = null;
+    let spyTrailing6m: number | null = null;
+    let spyTrailing12m: number | null = null;
     if (bars) {
       const filed = trig.filed;
       const today = new Date().toISOString().slice(0, 10);
-      // Trailing returns at trigger time — captures whether the stock was
-      // already in a downtrend or still ripping when the screen fired.
+      // Multi-horizon trailing returns at trigger time
+      trailing1m = returnBetween(bars, addMonths(filed, -1), filed);
+      trailing3m = returnBetween(bars, addMonths(filed, -3), filed);
       trailing6m = returnBetween(bars, addMonths(filed, -6), filed);
       trailing12m = returnBetween(bars, addMonths(filed, -12), filed);
+      trailing24m = returnBetween(bars, addMonths(filed, -24), filed);
+      realizedVol6m = realizedVolAnn(bars, filed, 6);
+      realizedVol12m = realizedVolAnn(bars, filed, 12);
+      pctFrom52wHigh = pctFromExtreme(bars, filed, 12, "high");
+      pctFrom52wLow = pctFromExtreme(bars, filed, 12, "low");
+      // SPY trailing returns (regime indicator)
+      spyTrailing6m = returnBetween(spyBars, addMonths(filed, -6), filed);
+      spyTrailing12m = returnBetween(spyBars, addMonths(filed, -12), filed);
       const horizons: Array<["6m" | "1y" | "2y", string]> = [
         ["6m", addMonths(filed, 6)],
         ["1y", addMonths(filed, 12)],
@@ -720,7 +862,53 @@ async function main() {
         }
       }
     }
-    events.push({ ...trig, trailing6m, trailing12m, ...ret });
+    events.push({
+      ...trig,
+      trailing1m,
+      trailing3m,
+      trailing6m,
+      trailing12m,
+      trailing24m,
+      realizedVol6m,
+      realizedVol12m,
+      pctFrom52wHigh,
+      pctFrom52wLow,
+      spyTrailing6m,
+      spyTrailing12m,
+      yoy_t_pctile: null,
+      de_pctile: null,
+      ...ret,
+    });
+  }
+
+  // ─── Cross-sectional ranking (within same year, eligible sectors) ──
+  // For each event, compute its rank vs. peers in the same year on D/E and
+  // yoy_t. Higher de_pctile = more leveraged vs cohort; lower yoy_t_pctile
+  // = worse decline vs cohort.
+  const eventsByYear = new Map<number, TriggerEvent[]>();
+  for (const e of events) {
+    if (!eventsByYear.has(e.endYear)) eventsByYear.set(e.endYear, []);
+    eventsByYear.get(e.endYear)!.push(e);
+  }
+  for (const [, yearEvents] of eventsByYear) {
+    const deVals = yearEvents
+      .map((e) => e.de)
+      .filter((v): v is number => v != null && Number.isFinite(v))
+      .sort((a, b) => a - b);
+    const yoyVals = yearEvents
+      .map((e) => e.yoy_t)
+      .filter((v): v is number => v != null && Number.isFinite(v))
+      .sort((a, b) => a - b);
+    for (const e of yearEvents) {
+      if (e.de != null && deVals.length > 0) {
+        const idx = deVals.findIndex((v) => v >= e.de!);
+        e.de_pctile = idx >= 0 ? idx / deVals.length : 1;
+      }
+      if (e.yoy_t != null && yoyVals.length > 0) {
+        const idx = yoyVals.findIndex((v) => v >= e.yoy_t!);
+        e.yoy_t_pctile = idx >= 0 ? idx / yoyVals.length : 1;
+      }
+    }
   }
 
   // Aggregate. We compute two views:
