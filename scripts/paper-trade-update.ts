@@ -19,7 +19,10 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { readCache } from "../lib/cache";
+import { notify } from "../lib/notify";
 import type { ScreenResult } from "../lib/types";
+
+const SITE_URL = process.env.SITE_URL ?? "https://short-that-shit.vercel.app";
 
 type Bar = { date: string; close: number };
 
@@ -108,6 +111,7 @@ async function main() {
   // Step 1: add new matches not already in tracker
   const matched = screen.rows.filter((r) => r.matched);
   let added = 0;
+  const newTradesForNotify: Array<{ ticker: string; sector: string; matchesHeadline: boolean; de: number | null; yoy: number | null }> = [];
   for (const r of matched) {
     if (existingOpenByTicker.has(r.ticker)) continue;
     const matchesHeadline = !!r.matched && !r.regimeExcluded && !r.sectorIneligible;
@@ -133,11 +137,19 @@ async function main() {
       notes: `Surfaced ${today} from screen.`,
     });
     added++;
+    newTradesForNotify.push({
+      ticker: r.ticker,
+      sector: r.sector ?? "Unknown",
+      matchesHeadline,
+      de: r.debtToEquity,
+      yoy: r.yoy_t,
+    });
   }
 
   // Step 2: mark open trades to market + auto-close at expected exit
   let marked = 0;
   let closed = 0;
+  const closedForNotify: Array<{ ticker: string; sector: string; pnl: number; ret: number; entry: string; exit: string }> = [];
   for (const t of paper.trades) {
     if (t.status !== "open") continue;
     const bars = await loadBars(t.ticker);
@@ -160,6 +172,14 @@ async function main() {
       t.realizedReturn = ret;
       t.currentMtmPnL = null;
       closed++;
+      closedForNotify.push({
+        ticker: t.ticker,
+        sector: t.sector,
+        pnl: mtmPnL,
+        ret,
+        entry: t.entryDate,
+        exit: today,
+      });
     } else {
       t.currentMtmPnL = mtmPnL;
       marked++;
@@ -178,6 +198,28 @@ async function main() {
   console.log(
     `  closed: ${paper.trades.filter((t) => t.status === "closed").length}`
   );
+
+  // Telegram notifications: one message per new trigger (high-signal),
+  // one message per closed trade (realized P&L). Keep these terse.
+  for (const n of newTradesForNotify) {
+    const dePart = n.de != null ? ` D/E ${n.de.toFixed(1)}` : "";
+    const yoyPart = n.yoy != null ? `, YoY ${(n.yoy * 100).toFixed(1)}%` : "";
+    const tag = n.matchesHeadline ? "🎯 *HEADLINE*" : "📋 base-screen";
+    const url = `${SITE_URL}`;
+    const msg =
+      `${tag} new short trigger\n` +
+      `*${n.ticker}* (${n.sector})${dePart}${yoyPart}\n` +
+      `[Open dashboard](${url}) · [Yahoo](https://finance.yahoo.com/quote/${encodeURIComponent(n.ticker)})`;
+    await notify(msg);
+  }
+  for (const c of closedForNotify) {
+    const sign = c.pnl >= 0 ? "✅" : "❌";
+    const msg =
+      `${sign} paper trade closed: *${c.ticker}* (${c.sector})\n` +
+      `entry ${c.entry} → exit ${c.exit}\n` +
+      `realized P&L *$${c.pnl.toFixed(0)}* (${(c.ret * 100).toFixed(1)}% stock move)`;
+    await notify(msg);
+  }
 }
 
 main().catch((e) => {

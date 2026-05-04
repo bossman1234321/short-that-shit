@@ -116,6 +116,36 @@ scripts/
   debug-ticker.ts     introspect raw GAAP tags for a ticker
 ```
 
+## Telegram notifications
+
+Three event types are wired up via `lib/notify.ts`:
+
+1. **🎯 New trigger surfaced** — emitted by `scripts/paper-trade-update.ts` when the
+   monthly screen finds a name not already in the tracker.
+2. **🔄 Monthly refresh summary** — emitted by `scripts/monthly-summary.ts` after a
+   full backtest+train+bake cycle. Includes universe Δ, matched Δ, AUC Δ,
+   headline-equity Δ.
+3. **✅/❌ Paper trade closed** — emitted by `paper-trade-update.ts` when a 12mo
+   trade auto-closes with realized P&L.
+
+Setup (one-time):
+
+```bash
+# 1. Telegram → @BotFather → /newbot → save token
+# 2. Send any message to your new bot once
+# 3. curl https://api.telegram.org/bot<TOKEN>/getUpdates → get chat id
+# 4. Add to .env.local:
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+# 5. Smoke test:
+npx tsx scripts/notify-test.ts
+```
+
+For the remote monthly cron (Anthropic routine), set the same vars in the
+routine's environment or hardcode them in the routine prompt; the agent
+inherits the env when it runs `npx tsx scripts/...`. Without the vars set,
+the helper silently no-ops — local dev and CI keep working.
+
 ## Caveats (also surfaced in the UI footer)
 
 - **Filing lag.** EDGAR data is whatever has been filed; 10-Ks lag fiscal year-end
