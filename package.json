@@ -12,6 +12,7 @@
     "notify:test": "tsx --env-file-if-exists=.env.local scripts/notify-test.ts",
     "paper:update": "tsx --env-file-if-exists=.env.local scripts/paper-trade-update.ts",
     "monthly:summary": "tsx --env-file-if-exists=.env.local scripts/monthly-summary.ts",
+    "daily:summary": "tsx --env-file-if-exists=.env.local scripts/daily-summary.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
