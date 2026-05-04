@@ -268,6 +268,19 @@ function addMonths(iso: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Snap a calendar date to the previous business day if it lands on a
+// Saturday or Sunday. Markets are closed on weekends, so any "exit" or
+// "entry" date that hits a weekend gets pulled back to the prior Friday.
+// This affects display only — price lookups already snap to actual bars
+// via priceClosestBefore.
+function snapToBusinessDay(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  const dow = d.getUTCDay(); // 0=Sun, 6=Sat
+  if (dow === 0) d.setUTCDate(d.getUTCDate() - 2);
+  else if (dow === 6) d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function daysBetween(a: string, b: string): number {
   return Math.max(
     0,
@@ -888,7 +901,7 @@ async function simulate(
       const days = 365;
       const costPct = ANNUAL_BORROW_COST * (days / 365.25);
       const pnl = halfSize * -alpha - halfSize * costPct;
-      const exitDate = addMonths(e.filed, 12);
+      const exitDate = snapToBusinessDay(addMonths(e.filed, 12));
 
       positions.push({
         ticker: e.ticker,

@@ -1,14 +1,14 @@
 {
   "_doc": "Live forward paper-trade tracker. Populated/updated by scripts/paper-trade-update.ts (run via the monthly routine). Each entry records entry date, ticker, sector, headline-filter status, and gets marked-to-market over time. After 12 months a trade closes and realized P&L is recorded.",
-  "trackingSince": "2026-05-03",
-  "lastUpdated": "2026-05-04",
+  "trackingSince": "2026-05-01",
+  "lastUpdated": "2026-05-01",
   "trades": [
     {
       "ticker": "PRU",
       "entityName": "PRUDENTIAL FINANCIAL INC",
       "sector": "Financials",
-      "entryDate": "2026-05-03",
-      "expectedExitDate": "2027-05-03",
+      "entryDate": "2026-05-01",
+      "expectedExitDate": "2027-04-30",
       "matchesHeadline": false,
       "matchedFilter": "base-screen",
       "matchExclusions": [
@@ -21,14 +21,14 @@
       "realizedPnL": null,
       "realizedReturn": null,
       "exitDate": null,
-      "notes": "Surfaced 2026-05-03 in base screen; ttm_accelerating flag (YTD α -22%); excluded from headline because Financials not in winning-sectors list."
+      "notes": "Surfaced 2026-05-01 in base screen; ttm_accelerating flag (YTD α -22%); excluded from headline because Financials not in winning-sectors list."
     },
     {
       "ticker": "MMM",
       "entityName": "3M CO",
       "sector": "Industrials",
-      "entryDate": "2026-05-03",
-      "expectedExitDate": "2027-05-03",
+      "entryDate": "2026-05-01",
+      "expectedExitDate": "2027-04-30",
       "matchesHeadline": false,
       "matchedFilter": "base-screen",
       "matchExclusions": [
@@ -41,14 +41,14 @@
       "realizedPnL": null,
       "realizedReturn": null,
       "exitDate": null,
-      "notes": "Surfaced 2026-05-03; ttm_recovering flag; high D/E + 2y revenue decline."
+      "notes": "Surfaced 2026-05-01; ttm_recovering flag; high D/E + 2y revenue decline."
     },
     {
       "ticker": "MTB",
       "entityName": "M&T BANK CORP",
       "sector": "Financials",
-      "entryDate": "2026-05-03",
-      "expectedExitDate": "2027-05-03",
+      "entryDate": "2026-05-01",
+      "expectedExitDate": "2027-04-30",
       "matchesHeadline": false,
       "matchedFilter": "base-screen",
       "matchExclusions": [
@@ -61,14 +61,14 @@
       "realizedPnL": null,
       "realizedReturn": null,
       "exitDate": null,
-      "notes": "Surfaced 2026-05-03; ttm_recovering flag."
+      "notes": "Surfaced 2026-05-01; ttm_recovering flag."
     },
     {
       "ticker": "HPQ",
       "entityName": "HP INC",
       "sector": "Technology",
-      "entryDate": "2026-05-03",
-      "expectedExitDate": "2027-05-03",
+      "entryDate": "2026-05-01",
+      "expectedExitDate": "2027-04-30",
       "matchesHeadline": false,
       "matchedFilter": "base-screen",
       "matchExclusions": [
@@ -81,7 +81,7 @@
       "realizedPnL": null,
       "realizedReturn": null,
       "exitDate": null,
-      "notes": "Surfaced 2026-05-03; high-conviction base match (ocf declining + buyback wind-down + negative equity). Loosen-filter analysis suggests Tech may belong in headline strategy."
+      "notes": "Surfaced 2026-05-01; high-conviction base match (ocf declining + buyback wind-down + negative equity). Loosen-filter analysis suggests Tech may belong in headline strategy."
     }
   ]
 }

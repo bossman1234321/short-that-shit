@@ -59,6 +59,16 @@ function addMonths(iso: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Markets are closed on weekends — pull weekend dates back to the prior
+// Friday so paper-trade entry/exit dates always match a real trading day.
+function snapToBusinessDay(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  const dow = d.getUTCDay();
+  if (dow === 0) d.setUTCDate(d.getUTCDate() - 2);
+  else if (dow === 6) d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 async function loadBars(ticker: string): Promise<Bar[] | null> {
   try {
     const cached = await readCache<Bar[]>(`yahoo-monthly-${ticker}`);
@@ -82,7 +92,8 @@ function priceAtOrAfter(bars: Bar[], iso: string): Bar | null {
 }
 
 async function main() {
-  const today = new Date().toISOString().slice(0, 10);
+  const todayRaw = new Date().toISOString().slice(0, 10);
+  const today = snapToBusinessDay(todayRaw);
 
   const screenRaw = await fs.readFile(SCREEN_PATH, "utf8");
   const screen = JSON.parse(screenRaw) as ScreenResult;
@@ -108,7 +119,7 @@ async function main() {
       entityName: r.entityName,
       sector: r.sector ?? "Unknown",
       entryDate: today,
-      expectedExitDate: addMonths(today, 12),
+      expectedExitDate: snapToBusinessDay(addMonths(today, 12)),
       matchesHeadline,
       matchedFilter: matchesHeadline ? "headline" : "base-screen",
       matchExclusions: exclusions,

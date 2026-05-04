@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T02:18:03.231Z",
+  "generatedAt": "2026-05-04T02:30:15.438Z",
   "startingBalance": 10000,
   "annualBorrowCost": 0.02,
   "results": [
@@ -64,8 +64,8 @@
         "pnlMean": -110.81088662343971,
         "pnlStd": 215.12773020688488,
         "pnlSkew": 0.7580782060251462,
-        "bootstrapCI95Lo": -0.26203995668886904,
-        "bootstrapCI95Hi": -0.08141585045480981,
+        "bootstrapCI95Lo": -0.26444812020574626,
+        "bootstrapCI95Hi": -0.06574781687501008,
         "interimMaxDrawdown": -1.2873647409238602,
         "worstMonthlyMtmReturn": -7.214988013795122,
         "postTaxAnnReturn22pct": null,
@@ -1116,8 +1116,8 @@
         "pnlMean": -108.50494028006587,
         "pnlStd": 219.0659130265701,
         "pnlSkew": 0.7585496292638917,
-        "bootstrapCI95Lo": -0.2751826084491843,
-        "bootstrapCI95Hi": -0.06981949219979766,
+        "bootstrapCI95Lo": -0.2559883063831715,
+        "bootstrapCI95Hi": -0.07876040268659434,
         "interimMaxDrawdown": -1.273375317153002,
         "worstMonthlyMtmReturn": -2.935378171021403,
         "postTaxAnnReturn22pct": -0.33511549746553115,
@@ -2167,8 +2167,8 @@
         "pnlMean": -66.02715924828567,
         "pnlStd": 158.3784220411721,
         "pnlSkew": -1.4101362829175181,
-        "bootstrapCI95Lo": -0.21358360462693315,
-        "bootstrapCI95Hi": -0.050852156224409195,
+        "bootstrapCI95Lo": -0.212598943133689,
+        "bootstrapCI95Hi": -0.049319314203245423,
         "interimMaxDrawdown": -0.91171758639787,
         "worstMonthlyMtmReturn": -0.3216599349263301,
         "postTaxAnnReturn22pct": -0.06770958054566178,
@@ -3219,8 +3219,8 @@
         "pnlMean": -56.974127012099764,
         "pnlStd": 104.26647772391715,
         "pnlSkew": 0.7038823303819378,
-        "bootstrapCI95Lo": -0.18185706129524737,
-        "bootstrapCI95Hi": -0.056363168770490635,
+        "bootstrapCI95Lo": -0.18406847756657696,
+        "bootstrapCI95Hi": -0.05553647856466637,
         "interimMaxDrawdown": -0.840359096010649,
         "worstMonthlyMtmReturn": -0.18122910122787378,
         "postTaxAnnReturn22pct": -0.06023816445055685,
@@ -4270,8 +4270,8 @@
         "pnlMean": -93.08756503439935,
         "pnlStd": 211.85048868258275,
         "pnlSkew": 0.5213479509424446,
-        "bootstrapCI95Lo": -0.19051133156841127,
-        "bootstrapCI95Hi": -0.03648468197699439,
+        "bootstrapCI95Lo": -0.18508856472645763,
+        "bootstrapCI95Hi": -0.03430969657309113,
         "interimMaxDrawdown": -0.8047832203036301,
         "worstMonthlyMtmReturn": -0.21285933925122066,
         "postTaxAnnReturn22pct": -0.05523412839099695,
@@ -5318,8 +5318,8 @@
         "pnlMean": -103.05517602076695,
         "pnlStd": 227.79665691914914,
         "pnlSkew": 0.4510114946093209,
-        "bootstrapCI95Lo": -0.15910933996400933,
-        "bootstrapCI95Hi": -0.02725303489708253,
+        "bootstrapCI95Lo": -0.15023892420925256,
+        "bootstrapCI95Hi": -0.02815310964532325,
         "interimMaxDrawdown": -0.7037908700991944,
         "worstMonthlyMtmReturn": -0.21595778794043918,
         "postTaxAnnReturn22pct": -0.04424745206081293,
@@ -6306,8 +6306,8 @@
         "pnlMean": -59.81874519359045,
         "pnlStd": 195.8617554513037,
         "pnlSkew": 0.26697883534689804,
-        "bootstrapCI95Lo": -0.04199492308312469,
-        "bootstrapCI95Hi": -0.0037907433081025843,
+        "bootstrapCI95Lo": -0.041633031586666536,
+        "bootstrapCI95Hi": -0.004511686226777334,
         "interimMaxDrawdown": -0.3665186639374587,
         "worstMonthlyMtmReturn": -0.06870577382321658,
         "postTaxAnnReturn22pct": -0.015341030560929503,
@@ -7292,8 +7292,8 @@
         "pnlMean": -46.16444802130657,
         "pnlStd": 198.14720668623212,
         "pnlSkew": 0.45474171525019613,
-        "bootstrapCI95Lo": -0.02194546734936864,
-        "bootstrapCI95Hi": 0.0029215179147368264,
+        "bootstrapCI95Lo": -0.021761836806171275,
+        "bootstrapCI95Hi": 0.0036608235374533393,
         "interimMaxDrawdown": -0.21367974451972876,
         "worstMonthlyMtmReturn": -0.044060247749049875,
         "postTaxAnnReturn22pct": -0.006544519500328749,
@@ -8158,8 +8158,8 @@
         "pnlMean": -116.87198025340867,
         "pnlStd": 204.40143610740745,
         "pnlSkew": 0.4935916789995681,
-        "bootstrapCI95Lo": -0.2609634506003221,
-        "bootstrapCI95Hi": -0.06721872714563137,
+        "bootstrapCI95Lo": -0.2764517817966782,
+        "bootstrapCI95Hi": -0.06697252233858741,
         "interimMaxDrawdown": -1.2408974139727742,
         "worstMonthlyMtmReturn": -1.5014886805272651,
         "postTaxAnnReturn22pct": -0.2039739145716445,
@@ -9209,8 +9209,8 @@
         "pnlMean": -88.62767827934186,
         "pnlStd": 212.26955055967926,
         "pnlSkew": 0.592410917894873,
-        "bootstrapCI95Lo": -0.15287557822003528,
-        "bootstrapCI95Hi": -0.027884643475305837,
+        "bootstrapCI95Lo": -0.15941746402470702,
+        "bootstrapCI95Hi": -0.030259378329950848,
         "interimMaxDrawdown": -0.7279371407148439,
         "worstMonthlyMtmReturn": -0.19925693991185858,
         "postTaxAnnReturn22pct": -0.04657973672627824,
@@ -10255,8 +10255,8 @@
         "pnlMean": -58.7353517841355,
         "pnlStd": 167.62872864537425,
         "pnlSkew": 0.06844099080372892,
-        "bootstrapCI95Lo": -0.023477615827223963,
-        "bootstrapCI95Hi": -0.0005184892345672099,
+        "bootstrapCI95Lo": -0.02336650034217913,
+        "bootstrapCI95Hi": -0.00023947278184688336,
         "interimMaxDrawdown": -0.1888599970690543,
         "worstMonthlyMtmReturn": -0.03625889255525754,
         "postTaxAnnReturn22pct": -0.008421250789828694,
@@ -11115,8 +11115,8 @@
         "pnlMean": -73.46186423264194,
         "pnlStd": 238.12343334817294,
         "pnlSkew": 0.8008957564282297,
-        "bootstrapCI95Lo": -0.030779392766203117,
-        "bootstrapCI95Hi": 0.0025626110293814897,
+        "bootstrapCI95Lo": -0.030061103171533876,
+        "bootstrapCI95Hi": 0.0007336366733365907,
         "interimMaxDrawdown": -0.2867064417817752,
         "worstMonthlyMtmReturn": -0.05956835667985482,
         "postTaxAnnReturn22pct": -0.010676220851692397,
@@ -11939,17 +11939,17 @@
       "nWon": 83,
       "nStoppedOut": 0,
       "nTakeProfit": 0,
-      "finalEquity": 12214.078076433461,
-      "totalReturn": 0.22140780764334614,
-      "annualizedReturn": 0.012501221270301732,
+      "finalEquity": 12218.516756440973,
+      "totalReturn": 0.2218516756440973,
+      "annualizedReturn": 0.012524073448376694,
       "winRate": 0.5608108108108109,
-      "meanPnLPerPos": 14.959987002928806,
+      "meanPnLPerPos": 14.989978084060635,
       "maxDrawdown": -0.11468538197150197,
       "metrics": {
-        "sharpeRatio": -0.5992315204839941,
-        "sortinoRatio": -0.803780701883302,
-        "calmarRatio": 0.11939700859371473,
-        "informationRatio": -0.8231286963996096,
+        "sharpeRatio": -0.6051739636948643,
+        "sortinoRatio": -0.812746741558661,
+        "calmarRatio": 0.11961526765244455,
+        "informationRatio": -0.8258347986510363,
         "yearlyPnL": {
           "2011": 417.3314189938926,
           "2012": 684.2101332054008,
@@ -11958,7 +11958,7 @@
           "2015": 388.6412156662916,
           "2016": 76.63277261614749,
           "2017": -984.0202869044747,
-          "2018": 283.48670683478997,
+          "2018": 287.9253868423007,
           "2019": 768.7809263447741,
           "2020": 541.2951790748278,
           "2021": 379.02694237360015,
@@ -11978,16 +11978,16 @@
         },
         "longestWinStreak": 10,
         "longestLossStreak": 7,
-        "pnlMean": 14.959987002928806,
-        "pnlStd": 142.25607428645594,
-        "pnlSkew": 0.24267775506737957,
-        "bootstrapCI95Lo": -0.0038450147847810534,
-        "bootstrapCI95Hi": 0.025547763793703604,
-        "interimMaxDrawdown": -0.11606408768840899,
+        "pnlMean": 14.989978084060635,
+        "pnlStd": 142.2337836546703,
+        "pnlSkew": 0.24250246997946623,
+        "bootstrapCI95Lo": -0.0027006776310335434,
+        "bootstrapCI95Hi": 0.025599012446613,
+        "interimMaxDrawdown": -0.1153667966117491,
         "worstMonthlyMtmReturn": -0.03978381480717892,
-        "postTaxAnnReturn22pct": 0.009958478558157458,
-        "postTaxAnnReturn32pct": 0.008761767262532416,
-        "postTaxAnnReturn37pct": 0.008155289819812728,
+        "postTaxAnnReturn22pct": 0.00997702283087154,
+        "postTaxAnnReturn32pct": 0.008778225899636505,
+        "postTaxAnnReturn37pct": 0.008170677270851856,
         "equityCurve": [
           {
             "date": "2010-02",
@@ -12231,13 +12231,13 @@
           },
           {
             "date": "2014-02",
-            "equity": 10311.095018009533,
-            "monthlyPnL": -358.0922392609082
+            "equity": 10371.566431744111,
+            "monthlyPnL": -297.62082552633
           },
           {
             "date": "2014-03",
             "equity": 10456.330017965762,
-            "monthlyPnL": 145.23499995622842
+            "monthlyPnL": 84.76358622165026
           },
           {
             "date": "2014-04",
@@ -12471,492 +12471,492 @@
           },
           {
             "date": "2018-02",
-            "equity": 10065.288338494021,
-            "monthlyPnL": 127.70461915029591
+            "equity": 10069.727018501533,
+            "monthlyPnL": 132.14329915780763
           },
           {
             "date": "2018-03",
-            "equity": 10057.061589312154,
+            "equity": 10061.500269319666,
             "monthlyPnL": -8.22674918186749
           },
           {
             "date": "2018-04",
-            "equity": 10057.061589312154,
+            "equity": 10061.500269319666,
             "monthlyPnL": 0
           },
           {
             "date": "2018-05",
-            "equity": 10057.061589312154,
+            "equity": 10061.500269319666,
             "monthlyPnL": 0
           },
           {
             "date": "2018-06",
-            "equity": 10057.061589312154,
+            "equity": 10061.500269319666,
             "monthlyPnL": 0
           },
           {
             "date": "2018-07",
-            "equity": 10057.061589312154,
+            "equity": 10061.500269319666,
             "monthlyPnL": 0
           },
           {
             "date": "2018-08",
-            "equity": 10057.061589312154,
+            "equity": 10061.500269319666,
             "monthlyPnL": 0
           },
           {
             "date": "2018-09",
-            "equity": 10221.070426178512,
+            "equity": 10225.509106186024,
             "monthlyPnL": 164.00883686635825
           },
           {
             "date": "2018-10",
-            "equity": 10221.070426178512,
+            "equity": 10225.509106186024,
             "monthlyPnL": 0
           },
           {
             "date": "2018-11",
-            "equity": 10221.070426178512,
+            "equity": 10225.509106186024,
             "monthlyPnL": 0
           },
           {
             "date": "2018-12",
-            "equity": 10221.070426178512,
+            "equity": 10225.509106186024,
             "monthlyPnL": 0
           },
           {
             "date": "2019-01",
-            "equity": 10221.070426178512,
+            "equity": 10225.509106186024,
             "monthlyPnL": 0
           },
           {
             "date": "2019-02",
-            "equity": 10498.55514735305,
+            "equity": 10502.993827360562,
             "monthlyPnL": 277.4847211745382
           },
           {
             "date": "2019-03",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 491.2962051702398
           },
           {
             "date": "2019-04",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2019-05",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2019-06",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2019-07",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2019-08",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2019-09",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2019-10",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2019-11",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2019-12",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2020-01",
-            "equity": 10989.85135252329,
+            "equity": 10994.290032530802,
             "monthlyPnL": 0
           },
           {
             "date": "2020-02",
-            "equity": 11154.477316246508,
-            "monthlyPnL": 164.62596372321786
+            "equity": 11309.10674640191,
+            "monthlyPnL": 314.81671387110873
           },
           {
             "date": "2020-03",
-            "equity": 11531.146531598117,
-            "monthlyPnL": 376.6692153516087
+            "equity": 11535.585211605629,
+            "monthlyPnL": 226.47846520371786
           },
           {
             "date": "2020-04",
-            "equity": 11531.146531598117,
+            "equity": 11535.585211605629,
             "monthlyPnL": 0
           },
           {
             "date": "2020-05",
-            "equity": 11531.146531598117,
+            "equity": 11535.585211605629,
             "monthlyPnL": 0
           },
           {
             "date": "2020-06",
-            "equity": 11531.146531598117,
+            "equity": 11535.585211605629,
             "monthlyPnL": 0
           },
           {
             "date": "2020-07",
-            "equity": 11531.146531598117,
+            "equity": 11535.585211605629,
             "monthlyPnL": 0
           },
           {
             "date": "2020-08",
-            "equity": 11531.146531598117,
+            "equity": 11535.585211605629,
             "monthlyPnL": 0
           },
           {
             "date": "2020-09",
-            "equity": 11531.146531598117,
+            "equity": 11535.585211605629,
             "monthlyPnL": 0
           },
           {
             "date": "2020-10",
-            "equity": 11531.146531598117,
+            "equity": 11535.585211605629,
             "monthlyPnL": 0
           },
           {
             "date": "2020-11",
-            "equity": 11531.146531598117,
+            "equity": 11535.585211605629,
             "monthlyPnL": 0
           },
           {
             "date": "2020-12",
-            "equity": 11531.146531598117,
+            "equity": 11535.585211605629,
             "monthlyPnL": 0
           },
           {
             "date": "2021-01",
-            "equity": 11329.984293565494,
+            "equity": 11334.422973573006,
             "monthlyPnL": -201.16223803262255
           },
           {
             "date": "2021-02",
-            "equity": 11400.259791345372,
+            "equity": 11404.698471352884,
             "monthlyPnL": 70.2754977798777
           },
           {
             "date": "2021-03",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 509.91368262634387
           },
           {
             "date": "2021-04",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2021-05",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2021-06",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2021-07",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2021-08",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2021-09",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2021-10",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2021-11",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2021-12",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2022-01",
-            "equity": 11910.173473971716,
+            "equity": 11914.612153979228,
             "monthlyPnL": 0
           },
           {
             "date": "2022-02",
-            "equity": 12085.21904994178,
+            "equity": 12089.657729949291,
             "monthlyPnL": 175.0455759700635
           },
           {
             "date": "2022-03",
-            "equity": 12085.21904994178,
+            "equity": 12089.657729949291,
             "monthlyPnL": 0
           },
           {
             "date": "2022-04",
-            "equity": 12085.21904994178,
+            "equity": 12089.657729949291,
             "monthlyPnL": 0
           },
           {
             "date": "2022-05",
-            "equity": 12085.21904994178,
+            "equity": 12089.657729949291,
             "monthlyPnL": 0
           },
           {
             "date": "2022-06",
-            "equity": 12085.21904994178,
+            "equity": 12089.657729949291,
             "monthlyPnL": 0
           },
           {
             "date": "2022-07",
-            "equity": 12085.21904994178,
+            "equity": 12089.657729949291,
             "monthlyPnL": 0
           },
           {
             "date": "2022-08",
-            "equity": 12006.24959835268,
+            "equity": 12010.688278360192,
             "monthlyPnL": -78.96945158909875
           },
           {
             "date": "2022-09",
-            "equity": 12006.24959835268,
+            "equity": 12010.688278360192,
             "monthlyPnL": 0
           },
           {
             "date": "2022-10",
-            "equity": 12006.24959835268,
+            "equity": 12010.688278360192,
             "monthlyPnL": 0
           },
           {
             "date": "2022-11",
-            "equity": 12006.24959835268,
+            "equity": 12010.688278360192,
             "monthlyPnL": 0
           },
           {
             "date": "2022-12",
-            "equity": 12006.24959835268,
+            "equity": 12010.688278360192,
             "monthlyPnL": 0
           },
           {
             "date": "2023-01",
-            "equity": 12006.24959835268,
+            "equity": 12010.688278360192,
             "monthlyPnL": 0
           },
           {
             "date": "2023-02",
-            "equity": 11567.550086404712,
+            "equity": 11571.988766412223,
             "monthlyPnL": -438.69951194796886
           },
           {
             "date": "2023-03",
-            "equity": 11710.777389413943,
+            "equity": 11715.216069421454,
             "monthlyPnL": 143.22730300923104
           },
           {
             "date": "2023-04",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 173.67918124125572
           },
           {
             "date": "2023-05",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 0
           },
           {
             "date": "2023-06",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 0
           },
           {
             "date": "2023-07",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 0
           },
           {
             "date": "2023-08",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 0
           },
           {
             "date": "2023-09",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 0
           },
           {
             "date": "2023-10",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 0
           },
           {
             "date": "2023-11",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 0
           },
           {
             "date": "2023-12",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 0
           },
           {
             "date": "2024-01",
-            "equity": 11884.456570655198,
+            "equity": 11888.89525066271,
             "monthlyPnL": 0
           },
           {
             "date": "2024-02",
-            "equity": 12004.181210708237,
+            "equity": 12008.619890715749,
             "monthlyPnL": 119.72464005303846
           },
           {
             "date": "2024-03",
-            "equity": 12004.181210708237,
+            "equity": 12008.619890715749,
             "monthlyPnL": 0
           },
           {
             "date": "2024-04",
-            "equity": 12004.181210708237,
+            "equity": 12008.619890715749,
             "monthlyPnL": 0
           },
           {
             "date": "2024-05",
-            "equity": 12004.181210708237,
+            "equity": 12008.619890715749,
             "monthlyPnL": 0
           },
           {
             "date": "2024-06",
-            "equity": 12415.6377131027,
+            "equity": 12420.076393110212,
             "monthlyPnL": 411.4565023944633
           },
           {
             "date": "2024-07",
-            "equity": 12415.6377131027,
+            "equity": 12420.076393110212,
             "monthlyPnL": 0
           },
           {
             "date": "2024-08",
-            "equity": 12415.6377131027,
+            "equity": 12420.076393110212,
             "monthlyPnL": 0
           },
           {
             "date": "2024-09",
-            "equity": 12415.6377131027,
+            "equity": 12420.076393110212,
             "monthlyPnL": 0
           },
           {
             "date": "2024-10",
-            "equity": 12415.6377131027,
+            "equity": 12420.076393110212,
             "monthlyPnL": 0
           },
           {
             "date": "2024-11",
-            "equity": 12415.6377131027,
+            "equity": 12420.076393110212,
             "monthlyPnL": 0
           },
           {
             "date": "2024-12",
-            "equity": 12435.63414769555,
+            "equity": 12440.072827703061,
             "monthlyPnL": 19.996434592849255
           },
           {
             "date": "2025-01",
-            "equity": 12435.63414769555,
+            "equity": 12440.072827703061,
             "monthlyPnL": 0
           },
           {
             "date": "2025-02",
-            "equity": 11835.903757226162,
+            "equity": 11840.342437233674,
             "monthlyPnL": -599.7303904693872
           },
           {
             "date": "2025-03",
-            "equity": 11873.324219983991,
+            "equity": 11877.762899991503,
             "monthlyPnL": 37.42046275782923
           },
           {
             "date": "2025-04",
-            "equity": 11873.324219983991,
+            "equity": 11877.762899991503,
             "monthlyPnL": 0
           },
           {
             "date": "2025-05",
-            "equity": 11873.324219983991,
+            "equity": 11877.762899991503,
             "monthlyPnL": 0
           },
           {
             "date": "2025-06",
-            "equity": 11873.324219983991,
+            "equity": 11877.762899991503,
             "monthlyPnL": 0
           },
           {
             "date": "2025-07",
-            "equity": 11873.324219983991,
+            "equity": 11877.762899991503,
             "monthlyPnL": 0
           },
           {
             "date": "2025-08",
-            "equity": 11646.930770087169,
+            "equity": 11651.36945009468,
             "monthlyPnL": -226.39344989682286
           },
           {
             "date": "2025-09",
-            "equity": 11646.930770087169,
+            "equity": 11651.36945009468,
             "monthlyPnL": 0
           },
           {
             "date": "2025-10",
-            "equity": 11646.930770087169,
+            "equity": 11651.36945009468,
             "monthlyPnL": 0
           },
           {
             "date": "2025-11",
-            "equity": 11646.930770087169,
+            "equity": 11651.36945009468,
             "monthlyPnL": 0
           },
           {
             "date": "2025-12",
-            "equity": 11854.703926719512,
+            "equity": 11859.142606727024,
             "monthlyPnL": 207.77315663234367
           },
           {
             "date": "2026-01",
-            "equity": 12150.371845466878,
+            "equity": 12154.81052547439,
             "monthlyPnL": 295.66791874736555
           },
           {
             "date": "2026-02",
-            "equity": 11907.106192181718,
+            "equity": 11911.54487218923,
             "monthlyPnL": -243.26565328515971
           },
           {
             "date": "2026-03",
-            "equity": 12214.078076433461,
+            "equity": 12218.516756440973,
             "monthlyPnL": 306.9718842517432
           }
         ]
@@ -12982,7 +12982,7 @@
       "nTakeProfit": 0,
       "finalEquity": 12803.708748517045,
       "totalReturn": 0.2803708748517045,
-      "annualizedReturn": 0.015497299308013135,
+      "annualizedReturn": 0.015499960202092433,
       "winRate": 0.7058823529411765,
       "meanPnLPerPos": 54.974681343471524,
       "maxDrawdown": -0.033100862813291256,
@@ -13019,8 +13019,8 @@
         "pnlMean": 54.974681343471524,
         "pnlStd": 141.2627227023924,
         "pnlSkew": -0.19742800153805465,
-        "bootstrapCI95Lo": 0.006711610487120989,
-        "bootstrapCI95Hi": 0.023088505857515207,
+        "bootstrapCI95Lo": 0.006376509924331364,
+        "bootstrapCI95Hi": 0.02347902148471559,
         "interimMaxDrawdown": -0.04615376472124789,
         "worstMonthlyMtmReturn": -0.022021876110283847,
         "postTaxAnnReturn22pct": 0.012378034593204523,
@@ -14025,10 +14025,10 @@
       "meanPnLPerPos": 24.92005436490355,
       "maxDrawdown": -0.0987538176779642,
       "metrics": {
-        "sharpeRatio": -0.6542855771363382,
-        "sortinoRatio": -0.8695277747817073,
+        "sharpeRatio": -0.656298497176105,
+        "sortinoRatio": -0.8696737918184115,
         "calmarRatio": 0.14265413807182192,
-        "informationRatio": -0.81390237957598,
+        "informationRatio": -0.8155760946127819,
         "yearlyPnL": {
           "2011": 384.5207803046389,
           "2012": 428.96565144029,
@@ -14059,8 +14059,8 @@
         "pnlMean": 24.92005436490355,
         "pnlStd": 162.39078727356997,
         "pnlSkew": 0.02851651208203025,
-        "bootstrapCI95Lo": -0.0008236943682394804,
-        "bootstrapCI95Hi": 0.025021910887602417,
+        "bootstrapCI95Lo": -0.0004639433071340626,
+        "bootstrapCI95Hi": 0.025747134782340808,
         "interimMaxDrawdown": -0.10691714564374151,
         "worstMonthlyMtmReturn": -0.039266851736259115,
         "postTaxAnnReturn22pct": 0.010492885058831503,
@@ -14669,13 +14669,13 @@
           },
           {
             "date": "2020-02",
-            "equity": 11365.624070630187,
-            "monthlyPnL": 160.56700132011065
+            "equity": 11515.814820778078,
+            "monthlyPnL": 310.7577514680015
           },
           {
             "date": "2020-03",
             "equity": 11742.293285981796,
-            "monthlyPnL": 376.6692153516087
+            "monthlyPnL": 226.47846520371786
           },
           {
             "date": "2020-04",
@@ -15060,7 +15060,7 @@
       "nTakeProfit": 0,
       "finalEquity": 11434.024922083148,
       "totalReturn": 0.14340249220831483,
-      "annualizedReturn": 0.008373292521141273,
+      "annualizedReturn": 0.008374725176972131,
       "winRate": 0.8181818181818182,
       "meanPnLPerPos": 65.18295100377956,
       "maxDrawdown": -0.025459170376921584,
@@ -15095,8 +15095,8 @@
         "pnlMean": 65.18295100377956,
         "pnlStd": 114.51501568566091,
         "pnlSkew": -0.9957146312389172,
-        "bootstrapCI95Lo": 0.0033391508359366107,
-        "bootstrapCI95Hi": 0.013016861381661027,
+        "bootstrapCI95Lo": 0.0032829075110791806,
+        "bootstrapCI95Hi": 0.012530554337021105,
         "interimMaxDrawdown": -0.02558945604815075,
         "worstMonthlyMtmReturn": -0.014472474190354084,
         "postTaxAnnReturn22pct": 0.006616999662607315,
@@ -16096,7 +16096,7 @@
       "nTakeProfit": 0,
       "finalEquity": 18540.44655830726,
       "totalReturn": 0.854044655830726,
-      "annualizedReturn": 0.039162073475142556,
+      "annualizedReturn": 0.039168875182310714,
       "winRate": 0.8571428571428571,
       "meanPnLPerPos": 406.6879313479651,
       "maxDrawdown": -0.023258079027951503,
@@ -16131,8 +16131,8 @@
         "pnlMean": 406.6879313479651,
         "pnlStd": 439.91233504985746,
         "pnlSkew": 0.23577425779301917,
-        "bootstrapCI95Lo": 0.0260262468899517,
-        "bootstrapCI95Hi": 0.05063842063467594,
+        "bootstrapCI95Lo": 0.028099650303230694,
+        "bootstrapCI95Hi": 0.05004364363378988,
         "interimMaxDrawdown": -0.08550022550325968,
         "worstMonthlyMtmReturn": -0.048102144130263674,
         "postTaxAnnReturn22pct": 0.032264835512048284,
@@ -17167,8 +17167,8 @@
         "pnlMean": -48.34151915799074,
         "pnlStd": 184.1229962769965,
         "pnlSkew": 0.9176245286701369,
-        "bootstrapCI95Lo": -0.02117646948038665,
-        "bootstrapCI95Hi": 0.002520745099213517,
+        "bootstrapCI95Lo": -0.021767840054818466,
+        "bootstrapCI95Hi": 0.002061134802564313,
         "interimMaxDrawdown": -0.2141829726993064,
         "worstMonthlyMtmReturn": -0.029523793757238372,
         "postTaxAnnReturn22pct": -0.006866463123913924,
@@ -18023,8 +18023,8 @@
         "pnlMean": -54.44461094458201,
         "pnlStd": 242.67808703974137,
         "pnlSkew": -0.0037455342745374765,
-        "bootstrapCI95Lo": -0.013460517976397024,
-        "bootstrapCI95Hi": 0.005079528682945478,
+        "bootstrapCI95Lo": -0.012997234265171076,
+        "bootstrapCI95Hi": 0.0054021017140806205,
         "interimMaxDrawdown": -0.08300398559795796,
         "worstMonthlyMtmReturn": -0.02679858104928504,
         "postTaxAnnReturn22pct": -0.002680198179508486,
@@ -18734,7 +18734,7 @@
       "nTakeProfit": 0,
       "finalEquity": 14302.074766249449,
       "totalReturn": 0.43020747662494485,
-      "annualizedReturn": 0.02251437189963501,
+      "annualizedReturn": 0.022518250922058503,
       "winRate": 0.8181818181818182,
       "meanPnLPerPos": 195.54885301133862,
       "maxDrawdown": -0.0668744510891585,
@@ -18769,8 +18769,8 @@
         "pnlMean": 195.54885301133862,
         "pnlStd": 343.54504705698275,
         "pnlSkew": -0.9957146312389162,
-        "bootstrapCI95Lo": 0.010322745663071897,
-        "bootstrapCI95Hi": 0.03279682042245291,
+        "bootstrapCI95Lo": 0.007798590293117247,
+        "bootstrapCI95Hi": 0.033068945941128636,
         "interimMaxDrawdown": -0.06472408339381482,
         "worstMonthlyMtmReturn": -0.03740207961022809,
         "postTaxAnnReturn22pct": 0.01816121414043903,
@@ -19770,7 +19770,7 @@
       "nTakeProfit": 0,
       "finalEquity": 15917.040450712753,
       "totalReturn": 0.5917040450712753,
-      "annualizedReturn": 0.029343942639548315,
+      "annualizedReturn": 0.029349015121915567,
       "winRate": 0.7333333333333333,
       "meanPnLPerPos": 131.48978779361687,
       "maxDrawdown": -0.04587658099835057,
@@ -19807,8 +19807,8 @@
         "pnlMean": 131.48978779361687,
         "pnlStd": 276.932154420533,
         "pnlSkew": -0.11645010958551481,
-        "bootstrapCI95Lo": 0.015744414392187656,
-        "bootstrapCI95Hi": 0.03970409498611627,
+        "bootstrapCI95Lo": 0.016247806040156076,
+        "bootstrapCI95Hi": 0.040406150993182344,
         "interimMaxDrawdown": -0.07390364204100121,
         "worstMonthlyMtmReturn": -0.03490881615936799,
         "postTaxAnnReturn22pct": 0.023885401819578433,
@@ -20808,7 +20808,7 @@
       "nTakeProfit": 0,
       "finalEquity": 17223.508265302837,
       "totalReturn": 0.7223508265302837,
-      "annualizedReturn": 0.03440886834953272,
+      "annualizedReturn": 0.034414830911967176,
       "winRate": 0.8888888888888888,
       "meanPnLPerPos": 401.30601473904653,
       "maxDrawdown": -0.02521400286399116,
@@ -20842,8 +20842,8 @@
         "pnlMean": 401.30601473904653,
         "pnlStd": 380.6671450592245,
         "pnlSkew": -0.1534467202456663,
-        "bootstrapCI95Lo": 0.023745559219854107,
-        "bootstrapCI95Hi": 0.04326975754447382,
+        "bootstrapCI95Lo": 0.024166761702315798,
+        "bootstrapCI95Hi": 0.04360089405328105,
         "interimMaxDrawdown": -0.09777241563885676,
         "worstMonthlyMtmReturn": -0.04491691026623557,
         "postTaxAnnReturn22pct": 0.02818704001385508,
@@ -21843,7 +21843,7 @@
       "nTakeProfit": 0,
       "finalEquity": 13896.105368064555,
       "totalReturn": 0.38961053680645547,
-      "annualizedReturn": 0.047852508068203514,
+      "annualizedReturn": 0.047871566452226455,
       "winRate": 0.7777777777777778,
       "meanPnLPerPos": 432.90059645161705,
       "maxDrawdown": -0.03201696836888326,
@@ -21872,8 +21872,8 @@
         "pnlMean": 432.90059645161705,
         "pnlStd": 585.1320238706105,
         "pnlSkew": 0.14724415190616755,
-        "bootstrapCI95Lo": 0.017390595678651977,
-        "bootstrapCI95Hi": 0.07721643019576918,
+        "bootstrapCI95Lo": 0.01432837394870079,
+        "bootstrapCI95Hi": 0.07423508128893075,
         "interimMaxDrawdown": -0.11899484185985806,
         "worstMonthlyMtmReturn": -0.06675031078447786,
         "postTaxAnnReturn22pct": 0.03820561040297932,
@@ -22333,7 +22333,7 @@
       "nTakeProfit": 0,
       "finalEquity": 18290.835044856776,
       "totalReturn": 0.8290835044856776,
-      "annualizedReturn": 0.03828600771252666,
+      "annualizedReturn": 0.03829265447746466,
       "winRate": 0.85,
       "meanPnLPerPos": 414.5417522428391,
       "maxDrawdown": -0.023605148216753687,
@@ -22367,8 +22367,8 @@
         "pnlMean": 414.5417522428391,
         "pnlStd": 449.82748736937634,
         "pnlSkew": 0.17764426347897025,
-        "bootstrapCI95Lo": 0.026021747740321066,
-        "bootstrapCI95Hi": 0.048886733843332975,
+        "bootstrapCI95Lo": 0.02574998776027959,
+        "bootstrapCI95Hi": 0.048312573466889,
         "interimMaxDrawdown": -0.08681355871681853,
         "worstMonthlyMtmReturn": -0.048835404366089484,
         "postTaxAnnReturn22pct": 0.031510385774442096,
@@ -23368,7 +23368,7 @@
       "nTakeProfit": 0,
       "finalEquity": 16831.5078559479,
       "totalReturn": 0.68315078559479,
-      "annualizedReturn": 0.032928097242358234,
+      "annualizedReturn": 0.0329337991447336,
       "winRate": 1,
       "meanPnLPerPos": 621.0461687225367,
       "maxDrawdown": 0,
@@ -23400,8 +23400,8 @@
         "pnlMean": 621.0461687225367,
         "pnlStd": 398.63115445482333,
         "pnlSkew": 0.32150798239511025,
-        "bootstrapCI95Lo": 0.024484694737115786,
-        "bootstrapCI95Hi": 0.04005797446236947,
+        "bootstrapCI95Lo": 0.024558343809984118,
+        "bootstrapCI95Hi": 0.04048382452871291,
         "interimMaxDrawdown": -0.09451777547724423,
         "worstMonthlyMtmReturn": -0.05030804934467994,
         "postTaxAnnReturn22pct": 0.026924651636635044,
@@ -24401,7 +24401,7 @@
       "nTakeProfit": 0,
       "finalEquity": 15348.847187651923,
       "totalReturn": 0.5348847187651924,
-      "annualizedReturn": 0.029206705568442848,
+      "annualizedReturn": 0.02921215712448455,
       "winRate": 0.8461538461538461,
       "meanPnLPerPos": 411.4497836655325,
       "maxDrawdown": -0.02663559494321119,
@@ -24432,8 +24432,8 @@
         "pnlMean": 411.4497836655325,
         "pnlStd": 476.9816934137462,
         "pnlSkew": 0.16894398067975244,
-        "bootstrapCI95Lo": 0.01510280840273337,
-        "bootstrapCI95Hi": 0.03976594803267597,
+        "bootstrapCI95Lo": 0.015981954537488408,
+        "bootstrapCI95Hi": 0.04044718383871482,
         "interimMaxDrawdown": -0.09665024864907397,
         "worstMonthlyMtmReturn": -0.05432206795223986,
         "postTaxAnnReturn22pct": 0.0236526096330667,
@@ -25363,7 +25363,7 @@
       "nTakeProfit": 0,
       "finalEquity": 16343.438850148264,
       "totalReturn": 0.6343438850148264,
-      "annualizedReturn": 0.03355775137972428,
+      "annualizedReturn": 0.033564028237415,
       "winRate": 0.8461538461538461,
       "meanPnLPerPos": 487.9568346267896,
       "maxDrawdown": -0.03827889234370892,
@@ -25394,8 +25394,8 @@
         "pnlMean": 487.9568346267896,
         "pnlStd": 629.1287799595831,
         "pnlSkew": 0.3133634131405892,
-        "bootstrapCI95Lo": 0.01745804232878534,
-        "bootstrapCI95Hi": 0.04775696822266062,
+        "bootstrapCI95Lo": 0.016488068392142896,
+        "bootstrapCI95Hi": 0.048236070460685454,
         "interimMaxDrawdown": -0.11899484185985794,
         "worstMonthlyMtmReturn": -0.06675031078447798,
         "postTaxAnnReturn22pct": 0.02731667231071433,
@@ -26325,7 +26325,7 @@
       "nTakeProfit": 0,
       "finalEquity": 19484.793111580235,
       "totalReturn": 0.9484793111580235,
-      "annualizedReturn": 0.04583924755311397,
+      "annualizedReturn": 0.04584787209112018,
       "winRate": 0.8461538461538461,
       "meanPnLPerPos": 729.5994701215562,
       "maxDrawdown": -0.05295867038077922,
@@ -26356,8 +26356,8 @@
         "pnlMean": 729.5994701215562,
         "pnlStd": 980.1247237807464,
         "pnlSkew": 0.36648257930902545,
-        "bootstrapCI95Lo": 0.02324856233615491,
-        "bootstrapCI95Hi": 0.06481292188621035,
+        "bootstrapCI95Lo": 0.023107548307388592,
+        "bootstrapCI95Hi": 0.06411717500151037,
         "interimMaxDrawdown": -0.15677828083621426,
         "worstMonthlyMtmReturn": -0.091792144792929,
         "postTaxAnnReturn22pct": 0.037824733684207246,
@@ -27287,7 +27287,7 @@
       "nTakeProfit": 0,
       "finalEquity": 20697.694375303847,
       "totalReturn": 1.0697694375303848,
-      "annualizedReturn": 0.050091388655534974,
+      "annualizedReturn": 0.05010083221665096,
       "winRate": 0.8461538461538461,
       "meanPnLPerPos": 822.899567331065,
       "maxDrawdown": -0.04019192278618437,
@@ -27318,8 +27318,8 @@
         "pnlMean": 822.899567331065,
         "pnlStd": 953.9633868274924,
         "pnlSkew": 0.16894398067975244,
-        "bootstrapCI95Lo": 0.028503625455426285,
-        "bootstrapCI95Hi": 0.06724836696060144,
+        "bootstrapCI95Lo": 0.027089163610746647,
+        "bootstrapCI95Hi": 0.06569620763447692,
         "interimMaxDrawdown": -0.14700854929005583,
         "worstMonthlyMtmReturn": -0.08474221418097472,
         "postTaxAnnReturn22pct": 0.041515501692298784,
@@ -28249,7 +28249,7 @@
       "nTakeProfit": 0,
       "finalEquity": 24917.708298767488,
       "totalReturn": 1.4917708298767487,
-      "annualizedReturn": 0.0632655807458562,
+      "annualizedReturn": 0.06327758190470179,
       "winRate": 0.8461538461538461,
       "meanPnLPerPos": 1147.5160229821145,
       "maxDrawdown": -0.074357001426441,
@@ -28280,8 +28280,8 @@
         "pnlMean": 1147.5160229821145,
         "pnlStd": 1634.7245350889684,
         "pnlSkew": 0.43912967457656127,
-        "bootstrapCI95Lo": 0.033619076664784586,
-        "bootstrapCI95Hi": 0.0874239552577627,
+        "bootstrapCI95Lo": 0.034094401943951747,
+        "bootstrapCI95Hi": 0.08623747794653425,
         "interimMaxDrawdown": -0.20578391840267207,
         "worstMonthlyMtmReturn": -0.1307789252058459,
         "postTaxAnnReturn22pct": 0.053103366700405275,
@@ -29209,9 +29209,9 @@
       "nWon": 11,
       "nStoppedOut": 0,
       "nTakeProfit": 0,
-      "finalEquity": 17026.328364927762,
-      "totalReturn": 0.7026328364927762,
-      "annualizedReturn": 0.03640437997352164,
+      "finalEquity": 17025.780794770337,
+      "totalReturn": 0.7025780794770337,
+      "annualizedReturn": 0.03640895860141158,
       "winRate": 0.8461538461538461,
       "meanPnLPerPos": 411.4497836655325,
       "maxDrawdown": -0.02663559494321119,
@@ -29242,8 +29242,8 @@
         "pnlMean": 411.4497836655325,
         "pnlStd": 476.9816934137462,
         "pnlSkew": 0.16894398067975244,
-        "bootstrapCI95Lo": 0.01584113751582561,
-        "bootstrapCI95Hi": 0.04097126078432822,
+        "bootstrapCI95Lo": 0.014806257423628955,
+        "bootstrapCI95Hi": 0.040282540475739204,
         "interimMaxDrawdown": -0.09665024864907397,
         "worstMonthlyMtmReturn": -0.05432206795223986,
         "postTaxAnnReturn22pct": 0.0236526096330667,
@@ -30173,7 +30173,7 @@
       "nTakeProfit": 0,
       "finalEquity": 24917.708298767488,
       "totalReturn": 1.4917708298767487,
-      "annualizedReturn": 0.0632655807458562,
+      "annualizedReturn": 0.06327758190470179,
       "winRate": 0.8461538461538461,
       "meanPnLPerPos": 1147.5160229821145,
       "maxDrawdown": -0.074357001426441,
@@ -30204,8 +30204,8 @@
         "pnlMean": 1147.5160229821145,
         "pnlStd": 1634.7245350889684,
         "pnlSkew": 0.43912967457656127,
-        "bootstrapCI95Lo": 0.030489807055778195,
-        "bootstrapCI95Hi": 0.08732368925516831,
+        "bootstrapCI95Lo": 0.03104158060961071,
+        "bootstrapCI95Hi": 0.08656219655008979,
         "interimMaxDrawdown": -0.20578391840267207,
         "worstMonthlyMtmReturn": -0.1307789252058459,
         "postTaxAnnReturn22pct": 0.053103366700405275,
@@ -31165,8 +31165,8 @@
         "pnlMean": 1053.930822747047,
         "pnlStd": 1519.4374933151757,
         "pnlSkew": 0.46880636090551353,
-        "bootstrapCI95Lo": 0.02401635746264308,
-        "bootstrapCI95Hi": 0.09686558857184724,
+        "bootstrapCI95Lo": 0.02627457605957373,
+        "bootstrapCI95Hi": 0.09736768691153608,
         "interimMaxDrawdown": -0.20578391840267207,
         "worstMonthlyMtmReturn": -0.1307789252058459,
         "postTaxAnnReturn22pct": 0.054358186804672526,
@@ -31881,7 +31881,7 @@
       "nTakeProfit": 0,
       "finalEquity": 12674.423593825957,
       "totalReturn": 0.2674423593825957,
-      "annualizedReturn": 0.01605178849795741,
+      "annualizedReturn": 0.016054765491208878,
       "winRate": 0.8461538461538461,
       "meanPnLPerPos": 205.72489183276625,
       "maxDrawdown": -0.01590583879468046,
@@ -31912,8 +31912,8 @@
         "pnlMean": 205.72489183276625,
         "pnlStd": 238.4908467068731,
         "pnlSkew": 0.16894398067975244,
-        "bootstrapCI95Lo": 0.00852358860889435,
-        "bootstrapCI95Hi": 0.022630812588660953,
+        "bootstrapCI95Lo": 0.0087587834632612,
+        "bootstrapCI95Hi": 0.02238758954340203,
         "interimMaxDrawdown": -0.05735555235152773,
         "worstMonthlyMtmReturn": -0.032347772127996666,
         "postTaxAnnReturn22pct": 0.012783434222640278,
@@ -32843,7 +32843,7 @@
       "nTakeProfit": 0,
       "finalEquity": 12915.663244784706,
       "totalReturn": 0.2915663244784706,
-      "annualizedReturn": 0.017339805333792535,
+      "annualizedReturn": 0.017343023237371247,
       "winRate": 0.8461538461538461,
       "meanPnLPerPos": 224.281788060362,
       "maxDrawdown": -0.01943334279639194,
@@ -32874,8 +32874,8 @@
         "pnlMean": 224.281788060362,
         "pnlStd": 274.264767198542,
         "pnlSkew": 0.24222738973670607,
-        "bootstrapCI95Lo": 0.008384542522688054,
-        "bootstrapCI95Hi": 0.025486380913253948,
+        "bootstrapCI95Lo": 0.009132282552395177,
+        "bootstrapCI95Hi": 0.025030524322269487,
         "interimMaxDrawdown": -0.06454842660353584,
         "worstMonthlyMtmReturn": -0.03638148457858209,
         "postTaxAnnReturn22pct": 0.01383296339306761,
@@ -33805,7 +33805,7 @@
       "nTakeProfit": 0,
       "finalEquity": 14563.211402266732,
       "totalReturn": 0.4563211402266732,
-      "annualizedReturn": 0.025579669686901507,
+      "annualizedReturn": 0.025584435857135768,
       "winRate": 0.8888888888888888,
       "meanPnLPerPos": 507.02348914074787,
       "maxDrawdown": -0.028126210883934133,
@@ -33836,8 +33836,8 @@
         "pnlMean": 507.02348914074787,
         "pnlStd": 515.9657133283448,
         "pnlSkew": -0.11083788194298752,
-        "bootstrapCI95Lo": 0.012760640363231879,
-        "bootstrapCI95Hi": 0.03635220439179854,
+        "bootstrapCI95Lo": 0.013438456041634739,
+        "bootstrapCI95Hi": 0.03600600959675204,
         "interimMaxDrawdown": -0.10245406826559875,
         "worstMonthlyMtmReturn": -0.05517159966104444,
         "postTaxAnnReturn22pct": 0.020623555378878944,
@@ -34767,7 +34767,7 @@
       "nTakeProfit": 0,
       "finalEquity": 15343.48703892332,
       "totalReturn": 0.534348703892332,
-      "annualizedReturn": 0.02918255178272977,
+      "annualizedReturn": 0.02918799876674205,
       "winRate": 0.8888888888888888,
       "meanPnLPerPos": 593.7207821025911,
       "maxDrawdown": -0.038254533792222156,
@@ -34798,8 +34798,8 @@
         "pnlMean": 593.7207821025911,
         "pnlStd": 650.05857735102,
         "pnlSkew": -0.12585840125867548,
-        "bootstrapCI95Lo": 0.015731785319252678,
-        "bootstrapCI95Hi": 0.041263240704654036,
+        "bootstrapCI95Lo": 0.014429294775780477,
+        "bootstrapCI95Hi": 0.04105916568188861,
         "interimMaxDrawdown": -0.118994841859858,
         "worstMonthlyMtmReturn": -0.06568391720866731,
         "postTaxAnnReturn22pct": 0.02363236067379293,
@@ -35729,7 +35729,7 @@
       "nTakeProfit": 0,
       "finalEquity": 16685.977899963666,
       "totalReturn": 0.6685977899963665,
-      "annualizedReturn": 0.034999212542241365,
+      "annualizedReturn": 0.03500576355876128,
       "winRate": 1,
       "meanPnLPerPos": 1114.329649993944,
       "maxDrawdown": 0,
@@ -35759,8 +35759,8 @@
         "pnlMean": 1114.329649993944,
         "pnlStd": 641.45928675471,
         "pnlSkew": -0.36581032540909053,
-        "bootstrapCI95Lo": 0.024217390183394638,
-        "bootstrapCI95Hi": 0.04427538002440223,
+        "bootstrapCI95Lo": 0.02489461971944884,
+        "bootstrapCI95Hi": 0.04368884241898341,
         "interimMaxDrawdown": -0.19143881978233707,
         "worstMonthlyMtmReturn": -0.09844505412291368,
         "postTaxAnnReturn22pct": 0.028537593714413667,
@@ -36690,7 +36690,7 @@
       "nTakeProfit": 0,
       "finalEquity": 18691.353868337977,
       "totalReturn": 0.8691353868337978,
-      "annualizedReturn": 0.04292193199269634,
+      "annualizedReturn": 0.04292999645345197,
       "winRate": 1,
       "meanPnLPerPos": 1448.5589780563294,
       "maxDrawdown": 0,
@@ -36720,8 +36720,8 @@
         "pnlMean": 1448.5589780563294,
         "pnlStd": 918.6583084292774,
         "pnlSkew": 0.41558022182114696,
-        "bootstrapCI95Lo": 0.030132976391260557,
-        "bootstrapCI95Hi": 0.05439643634415914,
+        "bootstrapCI95Lo": 0.028799336467303815,
+        "bootstrapCI95Hi": 0.054695685893216606,
         "interimMaxDrawdown": -0.2405529865337903,
         "worstMonthlyMtmReturn": -0.13077892520584583,
         "postTaxAnnReturn22pct": 0.0353076552421292,
@@ -37680,8 +37680,8 @@
         "pnlMean": 732.4244111274378,
         "pnlStd": 1240.6944340229943,
         "pnlSkew": -1.048520107518849,
-        "bootstrapCI95Lo": -0.006805591088571705,
-        "bootstrapCI95Hi": 0.05040284407514273,
+        "bootstrapCI95Lo": -0.004024944384136253,
+        "bootstrapCI95Hi": 0.04987316465090963,
         "interimMaxDrawdown": -0.28928818290034725,
         "worstMonthlyMtmReturn": -0.13077892520584583,
         "postTaxAnnReturn22pct": 0.022414928160529257,
@@ -38394,9 +38394,9 @@
       "nWon": 8,
       "nStoppedOut": 0,
       "nTakeProfit": 0,
-      "finalEquity": 17246.969568720666,
-      "totalReturn": 0.7246969568720666,
-      "annualizedReturn": 0.03730138444127529,
+      "finalEquity": 17246.42199856324,
+      "totalReturn": 0.724642199856324,
+      "annualizedReturn": 0.037306160827963675,
       "winRate": 0.8888888888888888,
       "meanPnLPerPos": 593.7207821025911,
       "maxDrawdown": -0.038254533792222156,
@@ -38427,8 +38427,8 @@
         "pnlMean": 593.7207821025911,
         "pnlStd": 650.05857735102,
         "pnlSkew": -0.12585840125867548,
-        "bootstrapCI95Lo": 0.015439321356115032,
-        "bootstrapCI95Hi": 0.0408622846542368,
+        "bootstrapCI95Lo": 0.013607241656056868,
+        "bootstrapCI95Hi": 0.04105570395846447,
         "interimMaxDrawdown": -0.118994841859858,
         "worstMonthlyMtmReturn": -0.06568391720866731,
         "postTaxAnnReturn22pct": 0.02363236067379293,
@@ -39358,7 +39358,7 @@
       "nTakeProfit": 0,
       "finalEquity": 13806.511762210313,
       "totalReturn": 0.38065117622103134,
-      "annualizedReturn": 0.027093759591759747,
+      "annualizedReturn": 0.027099991459256012,
       "winRate": 0.6,
       "meanPnLPerPos": 253.7674508140209,
       "maxDrawdown": -0.13537298499520234,
@@ -39391,8 +39391,8 @@
         "pnlMean": 253.7674508140209,
         "pnlStd": 893.1251239529248,
         "pnlSkew": 0.7766993452664008,
-        "bootstrapCI95Lo": -0.013665625552544025,
-        "bootstrapCI95Hi": 0.055506876107789926,
+        "bootstrapCI95Lo": -0.01625858913476519,
+        "bootstrapCI95Hi": 0.05622304206584605,
         "interimMaxDrawdown": -0.19354650477442137,
         "worstMonthlyMtmReturn": -0.06512916553819338,
         "postTaxAnnReturn22pct": 0.02176110936090203,
@@ -40152,7 +40152,7 @@
       "nTakeProfit": 0,
       "finalEquity": 11996.406354480141,
       "totalReturn": 0.1996406354480141,
-      "annualizedReturn": 0.015333479056683919,
+      "annualizedReturn": 0.015337016251617097,
       "winRate": 0.4,
       "meanPnLPerPos": 399.28127089602765,
       "maxDrawdown": -0.09741388115485607,
@@ -40180,8 +40180,8 @@
         "pnlMean": 399.28127089602765,
         "pnlStd": 1334.7745450576363,
         "pnlSkew": 1.0158163224039694,
-        "bootstrapCI95Lo": -0.01973068503335007,
-        "bootstrapCI95Hi": 0.04246050807528001,
+        "bootstrapCI95Lo": -0.021764640381116362,
+        "bootstrapCI95Hi": 0.04502589448669503,
         "interimMaxDrawdown": -0.10906883589944609,
         "worstMonthlyMtmReturn": -0.04693683326534649,
         "postTaxAnnReturn22pct": 0.012133290244068506,
@@ -40930,31 +40930,31 @@
       "unleveraged": true,
       "meets12PctBar": false,
       "nFiltered": 46,
-      "nTaken": 19,
-      "nWon": 10,
+      "nTaken": 20,
+      "nWon": 12,
       "nStoppedOut": 0,
       "nTakeProfit": 0,
-      "finalEquity": 12243.906230638737,
-      "totalReturn": 0.2243906230638737,
-      "annualizedReturn": 0.016919946843353628,
-      "winRate": 0.5263157894736842,
-      "meanPnLPerPos": 118.10032792835452,
+      "finalEquity": 13432.750678840164,
+      "totalReturn": 0.3432750678840164,
+      "annualizedReturn": 0.024765885820941858,
+      "winRate": 0.6,
+      "meanPnLPerPos": 171.63753394200836,
       "maxDrawdown": -0.13858379608024735,
       "metrics": {
-        "sharpeRatio": -0.19124931208014406,
-        "sortinoRatio": -0.38069098317639016,
-        "calmarRatio": 0.1219801661447927,
-        "informationRatio": -0.6360813872685015,
+        "sharpeRatio": -0.10033850121262587,
+        "sortinoRatio": -0.20585180406666126,
+        "calmarRatio": 0.1785018830103775,
+        "informationRatio": -0.5765016908093885,
         "yearlyPnL": {
           "2015": -91.8189165603103,
           "2016": -45.54204002912725,
           "2017": -396.6182283386506,
           "2018": 254.80448794268185,
           "2019": 2109.862416617784,
-          "2020": -112.0168300688772,
-          "2021": -765.5878939064074,
-          "2022": 41.941910300278664,
-          "2023": -159.41666830063767,
+          "2020": 20.294812015540444,
+          "2021": 328.325177112029,
+          "2022": 686.0352139353649,
+          "2023": -840.8902368371471,
           "2024": 698.605373229442,
           "2025": -649.5547671012055,
           "2026": 1359.2473868537654
@@ -40964,21 +40964,21 @@
           "pnl": 2109.862416617784
         },
         "worstYear": {
-          "year": "2021",
-          "pnl": -765.5878939064074
+          "year": "2023",
+          "pnl": -840.8902368371471
         },
-        "longestWinStreak": 2,
+        "longestWinStreak": 3,
         "longestLossStreak": 2,
-        "pnlMean": 118.10032792835452,
-        "pnlStd": 797.3284409252082,
-        "pnlSkew": 1.2298096381448147,
-        "bootstrapCI95Lo": -0.02760262105824518,
-        "bootstrapCI95Hi": 0.04900710091679783,
-        "interimMaxDrawdown": -0.15017986836355832,
-        "worstMonthlyMtmReturn": -0.07584468712756792,
-        "postTaxAnnReturn22pct": 0.013445026534076643,
-        "postTaxAnnReturn32pct": 0.011828270099807137,
-        "postTaxAnnReturn37pct": 0.011009036045695364,
+        "pnlMean": 171.63753394200836,
+        "pnlStd": 833.4995012049624,
+        "pnlSkew": 0.9442974615515237,
+        "bootstrapCI95Lo": -0.022236542906834744,
+        "bootstrapCI95Hi": 0.060074620943959545,
+        "interimMaxDrawdown": -0.11993304019769667,
+        "worstMonthlyMtmReturn": -0.05124446109339914,
+        "postTaxAnnReturn22pct": 0.019839341330339932,
+        "postTaxAnnReturn32pct": 0.01752383624208398,
+        "postTaxAnnReturn37pct": 0.01634383084467461,
         "equityCurve": [
           {
             "date": "2014-02",
@@ -41342,372 +41342,372 @@
           },
           {
             "date": "2020-02",
-            "equity": 11718.6708895635,
-            "monthlyPnL": -112.01683006887652
+            "equity": 11850.982531647916,
+            "monthlyPnL": 20.29481201553972
           },
           {
             "date": "2020-03",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2020-04",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2020-05",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2020-06",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2020-07",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2020-08",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2020-09",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2020-10",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2020-11",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2020-12",
-            "equity": 11718.6708895635,
+            "equity": 11850.982531647916,
             "monthlyPnL": 0
           },
           {
             "date": "2021-01",
-            "equity": 10712.859699400384,
+            "equity": 10845.1713414848,
             "monthlyPnL": -1005.8111901631164
           },
           {
             "date": "2021-02",
-            "equity": 10953.082995657092,
-            "monthlyPnL": 240.22329625670864
+            "equity": 12179.307708759945,
+            "monthlyPnL": 1334.136367275145
           },
           {
             "date": "2021-03",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2021-04",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2021-05",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2021-06",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2021-07",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2021-08",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2021-09",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2021-10",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2021-11",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2021-12",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2022-01",
-            "equity": 10953.082995657092,
+            "equity": 12179.307708759945,
             "monthlyPnL": 0
           },
           {
             "date": "2022-02",
-            "equity": 11389.872163902866,
-            "monthlyPnL": 436.7891682457739
+            "equity": 12865.342922695309,
+            "monthlyPnL": 686.0352139353636
           },
           {
             "date": "2022-03",
-            "equity": 11389.872163902866,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2022-04",
-            "equity": 11389.872163902866,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2022-05",
-            "equity": 11389.872163902866,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2022-06",
-            "equity": 11389.872163902866,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2022-07",
-            "equity": 11389.872163902866,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2022-08",
-            "equity": 10995.02490595737,
-            "monthlyPnL": -394.8472579454956
+            "equity": 12865.342922695309,
+            "monthlyPnL": 0
           },
           {
             "date": "2022-09",
-            "equity": 10995.02490595737,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2022-10",
-            "equity": 10995.02490595737,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2022-11",
-            "equity": 10995.02490595737,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2022-12",
-            "equity": 10995.02490595737,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2023-01",
-            "equity": 10995.02490595737,
+            "equity": 12865.342922695309,
             "monthlyPnL": 0
           },
           {
             "date": "2023-02",
-            "equity": 10835.608237656734,
-            "monthlyPnL": -159.41666830063696
+            "equity": 12024.452685858163,
+            "monthlyPnL": -840.8902368371455
           },
           {
             "date": "2023-03",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2023-04",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2023-05",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2023-06",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2023-07",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2023-08",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2023-09",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2023-10",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2023-11",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2023-12",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2024-01",
-            "equity": 10835.608237656734,
+            "equity": 12024.452685858163,
             "monthlyPnL": 0
           },
           {
             "date": "2024-02",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 598.6232002651959
           },
           {
             "date": "2024-03",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 0
           },
           {
             "date": "2024-04",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 0
           },
           {
             "date": "2024-05",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 0
           },
           {
             "date": "2024-06",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 0
           },
           {
             "date": "2024-07",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 0
           },
           {
             "date": "2024-08",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 0
           },
           {
             "date": "2024-09",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 0
           },
           {
             "date": "2024-10",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 0
           },
           {
             "date": "2024-11",
-            "equity": 11434.23143792193,
+            "equity": 12623.075886123359,
             "monthlyPnL": 0
           },
           {
             "date": "2024-12",
-            "equity": 11534.213610886176,
+            "equity": 12723.058059087605,
             "monthlyPnL": 99.98217296424627
           },
           {
             "date": "2025-01",
-            "equity": 11534.213610886176,
+            "equity": 12723.058059087605,
             "monthlyPnL": 0
           },
           {
             "date": "2025-02",
-            "equity": 10884.658843784971,
-            "monthlyPnL": -649.5547671012046
+            "equity": 12073.503291986399,
+            "monthlyPnL": -649.5547671012064
           },
           {
             "date": "2025-03",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2025-04",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2025-05",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2025-06",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2025-07",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2025-08",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2025-09",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2025-10",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2025-11",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2025-12",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2026-01",
-            "equity": 10884.658843784971,
+            "equity": 12073.503291986399,
             "monthlyPnL": 0
           },
           {
             "date": "2026-02",
-            "equity": 11324.256781495704,
+            "equity": 12513.101229697131,
             "monthlyPnL": 439.59793771073237
           },
           {
             "date": "2026-03",
-            "equity": 12243.906230638737,
+            "equity": 13432.750678840164,
             "monthlyPnL": 919.649449143033
           }
         ]
@@ -41733,7 +41733,7 @@
       "nTakeProfit": 0,
       "finalEquity": 12973.040570430392,
       "totalReturn": 0.2973040570430392,
-      "annualizedReturn": 0.02917436972398213,
+      "annualizedReturn": 0.02918332463809481,
       "winRate": 0.8,
       "meanPnLPerPos": 594.6081140860786,
       "maxDrawdown": -0.039484725794549556,
@@ -41762,8 +41762,8 @@
         "pnlMean": 594.6081140860786,
         "pnlStd": 730.9794629209557,
         "pnlSkew": -0.620123987453184,
-        "bootstrapCI95Lo": 0.004587308783887911,
-        "bootstrapCI95Hi": 0.04743428942721617,
+        "bootstrapCI95Lo": 0.004731198663011638,
+        "bootstrapCI95Hi": 0.04706725588881899,
         "interimMaxDrawdown": -0.11899484185985794,
         "worstMonthlyMtmReturn": -0.06568391720866741,
         "postTaxAnnReturn22pct": 0.023244888090224958,
@@ -42390,7 +42390,7 @@
       "nTakeProfit": 0,
       "finalEquity": 15753.319233380325,
       "totalReturn": 0.5753319233380325,
-      "annualizedReturn": 0.04914448845291308,
+      "annualizedReturn": 0.049159039802421756,
       "winRate": 1,
       "meanPnLPerPos": 1438.3298083450811,
       "maxDrawdown": 0,
@@ -42419,7 +42419,7 @@
         "pnlStd": 729.4668871444809,
         "pnlSkew": 1.201567644755198,
         "bootstrapCI95Lo": 0.03503317297549069,
-        "bootstrapCI95Hi": 0.06296501589883507,
+        "bootstrapCI95Hi": 0.06476859055905937,
         "interimMaxDrawdown": -0.24055298653379026,
         "worstMonthlyMtmReturn": -0.1307789252058458,
         "postTaxAnnReturn22pct": 0.03981510549959766,
@@ -43055,8 +43055,8 @@
         "pnlMean": 220.21407927090578,
         "pnlStd": 1059.9632653878475,
         "pnlSkew": 0.7404551211474996,
-        "bootstrapCI95Lo": -0.034868635505576284,
-        "bootstrapCI95Hi": 0.06318040437546135,
+        "bootstrapCI95Lo": -0.028201478081782527,
+        "bootstrapCI95Hi": 0.06201566061919528,
         "interimMaxDrawdown": -0.23776408903045115,
         "worstMonthlyMtmReturn": -0.07303005417258446,
         "postTaxAnnReturn22pct": 0.01732082535091717,
@@ -43725,7 +43725,7 @@
         "pnlStd": 1484.6335236622726,
         "pnlSkew": 0.8575432753582859,
         "bootstrapCI95Lo": -0.06325862505516622,
-        "bootstrapCI95Hi": 0.07855294574591554,
+        "bootstrapCI95Hi": 0.08090414433582627,
         "interimMaxDrawdown": -0.19197665585574586,
         "worstMonthlyMtmReturn": -0.07303005417258446,
         "postTaxAnnReturn22pct": 0.016546459529188873,
@@ -44181,8 +44181,8 @@
         "pnlMean": 222.05800250725332,
         "pnlStd": 1044.1491896587697,
         "pnlSkew": 0.7105354412651949,
-        "bootstrapCI95Lo": -0.03137593537140082,
-        "bootstrapCI95Hi": 0.06091140141920737,
+        "bootstrapCI95Lo": -0.03387750545100854,
+        "bootstrapCI95Hi": 0.06185263086471937,
         "interimMaxDrawdown": -0.22347971672033085,
         "worstMonthlyMtmReturn": -0.07178369803608703,
         "postTaxAnnReturn22pct": 0.01745506816475917,
@@ -44853,8 +44853,8 @@
         "pnlMean": 164.1974104529842,
         "pnlStd": 2007.3790179554114,
         "pnlSkew": 0.8289392452027442,
-        "bootstrapCI95Lo": -0.09499979327870367,
-        "bootstrapCI95Hi": 0.07325395584952443,
+        "bootstrapCI95Lo": -0.09520168393914585,
+        "bootstrapCI95Hi": 0.06821480078523923,
         "interimMaxDrawdown": -0.4166240683653366,
         "worstMonthlyMtmReturn": -0.20751851384907707,
         "postTaxAnnReturn22pct": 0.008555735802108222,
@@ -45526,8 +45526,8 @@
         "pnlMean": 143.5555158988028,
         "pnlStd": 944.0614247734513,
         "pnlSkew": 0.5200726521598308,
-        "bootstrapCI95Lo": -0.03839218930143262,
-        "bootstrapCI95Hi": 0.0559652786834306,
+        "bootstrapCI95Lo": -0.03926455249937799,
+        "bootstrapCI95Hi": 0.056289069538685066,
         "interimMaxDrawdown": -0.2877456075556712,
         "worstMonthlyMtmReturn": -0.07178369803608718,
         "postTaxAnnReturn22pct": 0.013575930731386965,
@@ -47583,7 +47583,7 @@
       "nTakeProfit": 0,
       "finalEquity": 11839.298898286064,
       "totalReturn": 0.18392988982860642,
-      "annualizedReturn": 0.18406681138766023,
+      "annualizedReturn": 0.18461653776319942,
       "winRate": 1,
       "meanPnLPerPos": 1839.2988982860645,
       "maxDrawdown": 0,
@@ -47734,7 +47734,7 @@
         "pnlStd": 3095.5189769976046,
         "pnlSkew": -1.2035308125894464,
         "bootstrapCI95Lo": -0.027370871651825834,
-        "bootstrapCI95Hi": 0.09529958854721743,
+        "bootstrapCI95Hi": 0.09169844905199986,
         "interimMaxDrawdown": -0.46607395736418306,
         "worstMonthlyMtmReturn": -0.25923361232249237,
         "postTaxAnnReturn22pct": 0.042518464339765805,
@@ -48449,7 +48449,7 @@
       "nTakeProfit": 0,
       "finalEquity": 32510.59530427769,
       "totalReturn": 2.251059530427769,
-      "annualizedReturn": 0.08243902279292681,
+      "annualizedReturn": 0.08245479980007908,
       "winRate": 1,
       "meanPnLPerPos": 3751.765884046281,
       "maxDrawdown": 0,
@@ -48479,8 +48479,8 @@
         "pnlMean": 3751.765884046281,
         "pnlStd": 2776.716963737087,
         "pnlSkew": 1.189728917714691,
-        "bootstrapCI95Lo": 0.0598160727825463,
-        "bootstrapCI95Hi": 0.10461337979102403,
+        "bootstrapCI95Lo": 0.05685416872506388,
+        "bootstrapCI95Hi": 0.10411208786982318,
         "interimMaxDrawdown": -0.38309985915657435,
         "worstMonthlyMtmReturn": -0.25923361232249237,
         "postTaxAnnReturn22pct": 0.07032528265234284,
@@ -49438,8 +49438,8 @@
         "pnlMean": 1263.7218159489817,
         "pnlStd": 3198.8760287064774,
         "pnlSkew": -0.6453807226058227,
-        "bootstrapCI95Lo": -0.044846201153263765,
-        "bootstrapCI95Hi": 0.07883714125657004,
+        "bootstrapCI95Lo": -0.05726048642655779,
+        "bootstrapCI95Hi": 0.07887736172870796,
         "interimMaxDrawdown": -0.3235954286245805,
         "worstMonthlyMtmReturn": -0.14459636126996303,
         "postTaxAnnReturn22pct": 0.029758201100661852,
@@ -50154,7 +50154,7 @@
       "nTakeProfit": 0,
       "finalEquity": 11405.803254502123,
       "totalReturn": 0.14058032545021232,
-      "annualizedReturn": 0.008260637592548914,
+      "annualizedReturn": 0.008262058155819929,
       "winRate": 0.5,
       "meanPnLPerPos": 175.7254068127653,
       "maxDrawdown": -0.5628365371966738,
@@ -50186,8 +50186,8 @@
         "pnlMean": 175.7254068127653,
         "pnlStd": 4956.609264554396,
         "pnlSkew": 0.4738190974711779,
-        "bootstrapCI95Lo": -0.11488463367060198,
-        "bootstrapCI95Hi": 0.08203854395185961,
+        "bootstrapCI95Lo": -0.09982578697232103,
+        "bootstrapCI95Hi": 0.08537116478225393,
         "interimMaxDrawdown": -0.6295951328359619,
         "worstMonthlyMtmReturn": -0.269736518650481,
         "postTaxAnnReturn22pct": 0.006524130141094986,
@@ -51182,7 +51182,7 @@
       "nTakeProfit": 0,
       "finalEquity": 22452.369790812918,
       "totalReturn": 1.2452369790812918,
-      "annualizedReturn": 0.055848578914796665,
+      "annualizedReturn": 0.055859136440030044,
       "winRate": 0.8888888888888888,
       "meanPnLPerPos": 1383.5966434236573,
       "maxDrawdown": -0.07419736346858492,
@@ -51213,8 +51213,8 @@
         "pnlMean": 1383.5966434236573,
         "pnlStd": 1635.5819619625843,
         "pnlSkew": -0.090423160801082,
-        "bootstrapCI95Lo": 0.027856661257287474,
-        "bootstrapCI95Hi": 0.07669141475798047,
+        "bootstrapCI95Lo": 0.0253922718585764,
+        "bootstrapCI95Hi": 0.07709338121455955,
         "interimMaxDrawdown": -0.20578391840267218,
         "worstMonthlyMtmReturn": -0.13077892520584591,
         "postTaxAnnReturn22pct": 0.04655213639667499,
@@ -52142,7 +52142,7 @@
       "nWon": 5,
       "finalEquity": 11170.846346663979,
       "totalReturn": 0.11708463466639787,
-      "annualizedReturn": 0.0070592957933584,
+      "annualizedReturn": 0.007060528249609455,
       "winRate": 0.7142857142857143,
       "meanPnLPerPos": 167.26376380913993,
       "maxDrawdown": -0.134234660028655,
@@ -52297,7 +52297,7 @@
       "nWon": 4,
       "finalEquity": 5724.708377448217,
       "totalReturn": -0.4275291622551783,
-      "annualizedReturn": -0.06717140814355615,
+      "annualizedReturn": -0.06719355302515972,
       "winRate": 0.36363636363636365,
       "meanPnLPerPos": -388.6628747774348,
       "maxDrawdown": -0.45201874637051886,
@@ -52409,7 +52409,7 @@
       "nWon": 2,
       "finalEquity": 10959.793602634381,
       "totalReturn": 0.09597936026343813,
-      "annualizedReturn": 0.015185995499880534,
+      "annualizedReturn": 0.015192887741040773,
       "winRate": 0.6666666666666666,
       "meanPnLPerPos": 319.9312008781265,
       "maxDrawdown": -0.02814365535195393,
@@ -52442,7 +52442,7 @@
       "nWon": 5,
       "finalEquity": 12647.258538502332,
       "totalReturn": 0.26472585385023323,
-      "annualizedReturn": 0.06021710921409218,
+      "annualizedReturn": 0.06025939847819295,
       "winRate": 1,
       "meanPnLPerPos": 529.4517077004664,
       "maxDrawdown": 0,
@@ -52464,7 +52464,7 @@
     "name": "[59] 2x lev + winning sectors + compound 100% × 1",
     "description": "leveraged single-position, winning sectors (Util/CS/RE)",
     "finalEquity": 32510.59530427769,
-    "annualizedReturn": 0.08243902279292681,
+    "annualizedReturn": 0.08245479980007908,
     "metrics": {
       "sharpeRatio": 0.314196273469335,
       "sortinoRatio": 4.373250259054662,
@@ -52491,8 +52491,8 @@
       "pnlMean": 3751.765884046281,
       "pnlStd": 2776.716963737087,
       "pnlSkew": 1.189728917714691,
-      "bootstrapCI95Lo": 0.057176182062831815,
-      "bootstrapCI95Hi": 0.10399424215300868,
+      "bootstrapCI95Lo": 0.058303754800837826,
+      "bootstrapCI95Hi": 0.10251064585324698,
       "interimMaxDrawdown": -0.38309985915657435,
       "worstMonthlyMtmReturn": -0.25923361232249237,
       "postTaxAnnReturn22pct": 0.07032528265234284,
@@ -53471,7 +53471,7 @@
         "ticker": "CCI",
         "sector": "Real Estate",
         "entryDate": "2025-03-14",
-        "exitDate": "2026-03-14",
+        "exitDate": "2026-03-13",
         "daysHeld": 365,
         "size": 23767.491220792293,
         "ret": -0.3878460904032772,
@@ -53489,13 +53489,13 @@
       "finalEquity": 2537.448408114157,
       "annualizedReturn": -0.08221078497708434,
       "nTaken": 12,
-      "delta": -0.16464980777001115
+      "delta": -0.16466558477716342
     },
     {
       "name": "drop ocf-2y filter",
       "description": "remove 'no ocfDecline2y' rule",
       "finalEquity": 32510.59530427769,
-      "annualizedReturn": 0.08243902279292681,
+      "annualizedReturn": 0.08245479980007908,
       "nTaken": 6,
       "delta": 0
     },
@@ -53503,89 +53503,89 @@
       "name": "drop anti-momentum",
       "description": "remove trailing-6m ≤ 0% requirement",
       "finalEquity": 13012.11267905341,
-      "annualizedReturn": 0.01766165668616626,
+      "annualizedReturn": 0.017664900812523587,
       "nTaken": 8,
-      "delta": -0.06477736610676055
+      "delta": -0.0647898989875555
     },
     {
       "name": "drop leverage (1x)",
       "description": "set pair leverage to 1",
       "finalEquity": 18691.353868337977,
-      "annualizedReturn": 0.04292193199269634,
+      "annualizedReturn": 0.04292999645345197,
       "nTaken": 6,
-      "delta": -0.03951709080023047
+      "delta": -0.03952480334662711
     },
     {
       "name": "drop compounding (fixed $10K)",
       "description": "remove compoundFraction; use fixed positionSize",
       "finalEquity": 23371.95579992733,
-      "annualizedReturn": 0.05870014073089669,
+      "annualizedReturn": 0.05871125214877937,
       "nTaken": 6,
-      "delta": -0.02373888206203012
+      "delta": -0.023743547651299712
     }
   ],
   "sensitivities": [
     {
       "annualBorrow": 0.005,
       "finalEquity": 33957.912433262085,
-      "annualizedReturn": 0.0856114837520694,
-      "deltaPp": 0.0031724609591425867
+      "annualizedReturn": 0.08562789157187578,
+      "deltaPp": 0.003173091771796699
     },
     {
       "annualBorrow": 0.02,
       "finalEquity": 32510.59530427769,
-      "annualizedReturn": 0.08243902279292681,
+      "annualizedReturn": 0.08245479980007908,
       "deltaPp": 0
     },
     {
       "annualBorrow": 0.05,
       "finalEquity": 29615.961046308883,
-      "annualizedReturn": 0.07567795463511384,
-      "deltaPp": -0.006761068157812966
+      "annualizedReturn": 0.07569239298586639,
+      "deltaPp": -0.006762406814212696
     },
     {
       "annualBorrow": 0.1,
       "finalEquity": 24791.570616360885,
-      "annualizedReturn": 0.06290307341005263,
-      "deltaPp": -0.019535949382874174
+      "annualizedReturn": 0.06291500378918946,
+      "deltaPp": -0.01953979601088962
     },
     {
       "annualBorrow": 0.2,
       "finalEquity": 15142.789756464881,
-      "annualizedReturn": 0.02827246150733065,
-      "deltaPp": -0.05416656128559616
+      "annualizedReturn": 0.028277736297932732,
+      "deltaPp": -0.05417706350214635
     }
   ],
   "txnSensitivities": [
     {
       "bpsRoundTrip": 0,
       "finalEquity": 32510.59530427769,
-      "annualizedReturn": 0.08243902279292681,
+      "annualizedReturn": 0.08245479980007908,
       "deltaPp": 0
     },
     {
       "bpsRoundTrip": 10,
       "finalEquity": 32317.48751199949,
-      "annualizedReturn": 0.0820058160598216,
-      "deltaPp": -0.00043320673310520696
+      "annualizedReturn": 0.08202150706074485,
+      "deltaPp": -0.0004332927393342345
     },
     {
       "bpsRoundTrip": 25,
       "finalEquity": 32027.825823582207,
-      "annualizedReturn": 0.08135145705568303,
-      "deltaPp": -0.0010875657372437786
+      "annualizedReturn": 0.08136701820467573,
+      "deltaPp": -0.0010877815954033476
     },
     {
       "bpsRoundTrip": 50,
       "finalEquity": 31545.056342886717,
-      "annualizedReturn": 0.08024849057404149,
-      "deltaPp": -0.0021905322188853216
+      "annualizedReturn": 0.08026383301375217,
+      "deltaPp": -0.002190966786326909
     },
     {
       "bpsRoundTrip": 100,
       "finalEquity": 30579.51738149576,
-      "annualizedReturn": 0.07799449888218501,
-      "deltaPp": -0.004444523910741793
+      "annualizedReturn": 0.07800939501841841,
+      "deltaPp": -0.004445404781660667
     }
   ],
   "benchmarks": [
@@ -53593,29 +53593,29 @@
       "name": "SPY buy-and-hold",
       "description": "100% SPY, no rebalancing, same window (2011-04→2026-03)",
       "finalEquity": 62746.0313558886,
-      "annualizedReturn": 0.13133331974882134
+      "annualizedReturn": 0.13135900596243788
     },
     {
       "name": "60/40 (SPY + T-bills)",
       "description": "60% SPY, 40% 4% T-bills, no rebalancing",
-      "finalEquity": 44818.399591077745,
-      "annualizedReturn": 0.10604289469336114
+      "finalEquity": 44817.629630676674,
+      "annualizedReturn": 0.10606212877308274
     },
     {
       "name": "T-bills only",
       "description": "100% T-bills compounding at 4% annual",
-      "finalEquity": 17926.951943861462,
+      "finalEquity": 17925.027042858776,
       "annualizedReturn": 0.04
     }
   ],
   "pValueResult": {
     "iters": 5000,
     "n": 6,
-    "randomMean": 0.007620784887979311,
-    "randomP05": -0.19980740936824537,
-    "randomP95": 0.15241765862615186,
-    "ourAnnualizedReturn": 0.08243902279292681,
-    "pValue": 0.24821203197307531
+    "randomMean": 0.008644670539787841,
+    "randomP05": -0.194485230366381,
+    "randomP95": 0.15270638686179083,
+    "ourAnnualizedReturn": 0.08245479980007908,
+    "pValue": 0.2514681208053691
   },
   "hpSensitivities": [
     {
@@ -53643,28 +53643,28 @@
       "knob": "trailing6m_max",
       "value": "0.00",
       "finalEquity": 32510.59530427769,
-      "annualizedReturn": 0.08243902279292681,
+      "annualizedReturn": 0.08245479980007908,
       "nTaken": 6
     },
     {
       "knob": "trailing6m_max",
       "value": "0.05",
       "finalEquity": 16949.33185399946,
-      "annualizedReturn": 0.036088801211639154,
+      "annualizedReturn": 0.036095559707771896,
       "nTaken": 7
     },
     {
       "knob": "trailing6m_max",
       "value": "0.10",
       "finalEquity": 13899.677662495718,
-      "annualizedReturn": 0.022136545406122643,
+      "annualizedReturn": 0.022140620390676657,
       "nTaken": 7
     },
     {
       "knob": "trailing6m_max",
       "value": "0.20",
       "finalEquity": 13012.11267905341,
-      "annualizedReturn": 0.01766165668616626,
+      "annualizedReturn": 0.017664900812523587,
       "nTaken": 8
     },
     {
@@ -53685,7 +53685,7 @@
       "knob": "sector_list",
       "value": "RE only",
       "finalEquity": 13700.167999545605,
-      "annualizedReturn": 0.053137254923465216,
+      "annualizedReturn": 0.053161815875026885,
       "nTaken": 3
     },
     {
@@ -53699,21 +53699,21 @@
       "knob": "sector_list",
       "value": "Util+RE",
       "finalEquity": 20052.793573468873,
-      "annualizedReturn": 0.07985236089531544,
+      "annualizedReturn": 0.07987744704486621,
       "nTaken": 4
     },
     {
       "knob": "sector_list",
       "value": "CS+RE",
       "finalEquity": 24494.004711379224,
-      "annualizedReturn": 0.06204103448042941,
+      "annualizedReturn": 0.06205279663750196,
       "nTaken": 6
     },
     {
       "knob": "sector_list",
       "value": "Util+CS+RE",
       "finalEquity": 32510.59530427769,
-      "annualizedReturn": 0.08243902279292681,
+      "annualizedReturn": 0.08245479980007908,
       "nTaken": 6
     },
     {
@@ -53727,7 +53727,7 @@
       "knob": "hold_months",
       "value": "12m",
       "finalEquity": 32510.59530427769,
-      "annualizedReturn": 0.08243902279292681,
+      "annualizedReturn": 0.08245479980007908,
       "nTaken": 6
     },
     {
@@ -53741,8 +53741,8 @@
   "dividendImpact": {
     "totalDivCost": 3038.8137678736352,
     "finalEquity": 29471.78153640405,
-    "annualizedReturn": 0.07532529248806052,
-    "deltaPp": -0.007113730304866284
+    "annualizedReturn": 0.07533966122771396,
+    "deltaPp": -0.007115138572365121
   },
   "positionDDs": [
     {
@@ -53814,7 +53814,7 @@
       "nEvents": 52,
       "nTaken": 3,
       "finalEquity": 23825.02266961168,
-      "annualizedReturn": 0.15294724249301495,
+      "annualizedReturn": 0.15302092655467625,
       "winRate": 1
     }
   ],
@@ -53996,7 +53996,7 @@
       "label": "headline (strict)",
       "description": "winning sectors + no-ocf2y + anti-mom (≤0%)",
       "nTrades": 6,
-      "annualizedReturn": 0.08243902279292681,
+      "annualizedReturn": 0.08245479980007908,
       "winRate": 1,
       "maxDrawdown": 0,
       "finalEquity": 32510.59530427769
@@ -54005,7 +54005,7 @@
       "label": "drop anti-mom",
       "description": "no anti-momentum filter",
       "nTrades": 8,
-      "annualizedReturn": 0.01766165668616626,
+      "annualizedReturn": 0.017664900812523587,
       "winRate": 0.625,
       "maxDrawdown": -0.2598219068404823,
       "finalEquity": 13012.11267905341
@@ -54014,7 +54014,7 @@
       "label": "anti-mom ≤+10%",
       "description": "loosen trailing-6m threshold to +10%",
       "nTrades": 7,
-      "annualizedReturn": 0.022136545406122643,
+      "annualizedReturn": 0.022140620390676657,
       "winRate": 0.7142857142857143,
       "maxDrawdown": -0.2598219068404823,
       "finalEquity": 13899.677662495718
@@ -54023,7 +54023,7 @@
       "label": "+ Tech & Comm",
       "description": "expand sector list to include Technology & Communication Services",
       "nTrades": 9,
-      "annualizedReturn": 0.11961942754292032,
+      "annualizedReturn": 0.1196413219227892,
       "winRate": 1,
       "maxDrawdown": 0,
       "finalEquity": 59757.74813300645
@@ -54041,7 +54041,7 @@
       "label": "all sectors + drop ocf2y",
       "description": "only anti-momentum filter remains",
       "nTrades": 12,
-      "annualizedReturn": 0.04716191536902481,
+      "annualizedReturn": 0.04717019701429659,
       "winRate": 0.5833333333333334,
       "maxDrawdown": -0.5447150048454227,
       "finalEquity": 20861.46014348158
@@ -54050,7 +54050,7 @@
       "label": "broadest reasonable",
       "description": "expanded sectors, no-ocf2y, allow trail-6m ≤ +10%",
       "nTrades": 10,
-      "annualizedReturn": 0.05994223727786285,
+      "annualizedReturn": 0.059952750861388626,
       "winRate": 0.8,
       "maxDrawdown": -0.2598219068404821,
       "finalEquity": 25486.77399886469
@@ -54058,11 +54058,11 @@
     {
       "label": "no filter (gross)",
       "description": "every base-screen trigger taken — quality test",
-      "nTrades": 15,
-      "annualizedReturn": -0.04981559046437789,
-      "winRate": 0.4666666666666667,
-      "maxDrawdown": -0.6835954451275337,
-      "finalEquity": 4408.167209958594
+      "nTrades": 16,
+      "annualizedReturn": 0.003990646999529668,
+      "winRate": 0.625,
+      "maxDrawdown": -0.6029073879196097,
+      "finalEquity": 10659.252831195328
     }
   ],
   "ytd2026": [
@@ -54070,7 +54070,7 @@
       "ticker": "CCI",
       "sector": "Real Estate",
       "entryDate": "2025-03-14",
-      "expectedExitDate": "2026-03-14",
+      "expectedExitDate": "2026-03-13",
       "daysOpen": 365,
       "size": 23767.491220792293,
       "realized": true,
@@ -54087,7 +54087,7 @@
       "ticker": "CCI",
       "sector": "Real Estate",
       "entryDate": "2025-03-14",
-      "expectedExitDate": "2026-03-14",
+      "expectedExitDate": "2026-03-13",
       "daysOpen": 365,
       "size": 23767.491220792293,
       "realized": true,
@@ -54194,7 +54194,7 @@
       "nEvents": 127,
       "nTaken": 4,
       "finalEquity": 17682.620011051913,
-      "annualizedReturn": 0.039041495412002636,
+      "annualizedReturn": 0.039048817219895726,
       "winRate": 1
     },
     {
@@ -54218,7 +54218,7 @@
     "name": "ML-weighted sizing",
     "description": "size = $10K × clamp(score-0.4, 0, 0.6)/0.6 — high-conviction trades scale up",
     "finalEquity": 31300.856489962633,
-    "annualizedReturn": 0.1280093271630085,
+    "annualizedReturn": 0.128048609058677,
     "winRate": 1,
     "nTaken": 5
   },
