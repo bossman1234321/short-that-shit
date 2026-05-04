@@ -173,6 +173,20 @@ type BenchmarkRow = {
   annualizedReturn: number;
 };
 
+type YtdEntry = {
+  ticker: string;
+  sector: string;
+  entryDate: string;
+  expectedExitDate: string;
+  daysOpen: number;
+  size: number;
+  realized: boolean;
+  realizedPnL: number | null;
+  unrealizedMtmPnL: number | null;
+  unrealizedMtmRet: number | null;
+  pnlAsOfToday: number;
+};
+
 type PortfolioFile = {
   generatedAt: string;
   startingBalance: number;
@@ -250,19 +264,9 @@ type PortfolioFile = {
     annualizedReturn: number | null;
     winRate: number;
   }>;
-  ytd2026?: Array<{
-    ticker: string;
-    sector: string;
-    entryDate: string;
-    expectedExitDate: string;
-    daysOpen: number;
-    size: number;
-    realized: boolean;
-    realizedPnL: number | null;
-    unrealizedMtmPnL: number | null;
-    unrealizedMtmRet: number | null;
-    pnlAsOfToday: number;
-  }>;
+  ytd2026?: Array<YtdEntry>;
+  ytd2026Opened?: Array<YtdEntry>;
+  ytd2026Exited?: Array<YtdEntry>;
   ytd2026Total?: number;
   ytd2026Candidates?: Array<{
     ticker: string;
@@ -445,34 +449,46 @@ function Header({
 // ────────────────────────────────────────────────────────────────────────
 function Ytd2026Panel({ portfolio }: { portfolio: PortfolioFile }) {
   const candidates = portfolio.ytd2026Candidates ?? [];
-  const opened = portfolio.ytd2026 ?? [];
+  const opened = portfolio.ytd2026Opened ?? portfolio.ytd2026 ?? [];
+  const exited = portfolio.ytd2026Exited ?? [];
   const total = portfolio.ytd2026Total ?? 0;
   const passed = candidates.filter((c) => c.matchesHeadline);
+  // 2026 P&L now properly accumulates BOTH (a) exits booked in 2026 (P&L
+  // realized this year regardless of when opened) and (b) MTM of 2026-
+  // opened positions still open. Earlier this panel only counted (b)
+  // which read $0; the +$9,327 from the CCI 2025-2026 exit was hidden.
+  const exitedPnL = exited.reduce(
+    (a, p) => a + (p.realizedPnL ?? p.pnlAsOfToday),
+    0
+  );
+  const openedMtmPnL = opened
+    .filter((p) => !p.realized && !p.expectedExitDate.startsWith("2026"))
+    .reduce((a, p) => a + (p.unrealizedMtmPnL ?? 0), 0);
   return (
     <section>
       <h2 className="font-display text-xl text-terminal-fg">
-        2026 YTD — headline strategy P&amp;L
+        2026 calendar-year P&amp;L
       </h2>
       <p className="mt-1 text-xs text-terminal-muted">
-        Live tally of what the headline strategy has done in calendar year
-        2026. The base screen triggered on{" "}
-        <span className="font-data text-amber-accent">{candidates.length}</span>{" "}
-        ticker(s) so far; the strict filter passed{" "}
-        <span className="font-data text-amber-accent">{passed.length}</span>{" "}
-        of them.
+        Total P&amp;L the headline strategy booked in 2026, broken into two
+        categories: positions that <em>exited</em> in 2026 (opened earlier,
+        realized P&amp;L lands this year) and positions <em>opened</em> in
+        2026 (still open, mark-to-market).
       </p>
       <div className="mt-3 grid gap-4 md:grid-cols-3">
         <div className="rounded border border-amber-accent/40 bg-amber-accent/5 p-3">
           <div className="text-[10px] uppercase tracking-wider text-amber-accent">
-            2026 YTD P&amp;L (headline)
+            Total 2026 P&amp;L
           </div>
           <div className="mt-1 font-data text-3xl text-amber-accent">
             {fmtUSD(total)}
           </div>
           <div className="mt-1 text-[11px] text-terminal-muted">
-            {opened.length === 0
-              ? "no positions opened yet — strategy in cash"
-              : `${opened.length} position${opened.length === 1 ? "" : "s"} opened`}
+            <span className="font-data">{fmtUSD(exitedPnL)}</span> realized
+            on {exited.length} exit{exited.length === 1 ? "" : "s"} ·{" "}
+            <span className="font-data">{fmtUSD(openedMtmPnL)}</span> MTM on{" "}
+            {opened.filter((p) => !p.realized).length} new open position
+            {opened.filter((p) => !p.realized).length === 1 ? "" : "s"}
           </div>
         </div>
         <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
@@ -495,10 +511,70 @@ function Ytd2026Panel({ portfolio }: { portfolio: PortfolioFile }) {
         </div>
       </div>
 
+      {exited.length > 0 && (
+        <div className="mt-4 overflow-x-auto rounded border border-emerald-700/40 bg-emerald-950/10">
+          <div className="px-3 pt-3 text-[10px] uppercase tracking-wider text-emerald-400">
+            Positions EXITED in 2026 (P&amp;L realized this year)
+          </div>
+          <table className="w-full text-xs">
+            <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+              <tr>
+                <th className="px-3 py-2 text-left">Ticker</th>
+                <th className="px-3 py-2 text-left">Sector</th>
+                <th className="px-3 py-2 text-left">Entry</th>
+                <th className="px-3 py-2 text-left">Exit</th>
+                <th className="px-3 py-2 text-right">Days held</th>
+                <th className="px-3 py-2 text-right">Size $</th>
+                <th className="px-3 py-2 text-right">Realized P&amp;L</th>
+              </tr>
+            </thead>
+            <tbody>
+              {exited.map((y, i) => (
+                <tr
+                  key={`exit-${y.ticker}-${y.entryDate}-${i}`}
+                  className="border-t border-terminal-border/50"
+                >
+                  <td className="px-3 py-1.5 font-data font-semibold">
+                    <a
+                      href={`https://finance.yahoo.com/quote/${encodeURIComponent(y.ticker)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-amber-accent hover:underline"
+                    >
+                      {y.ticker}
+                    </a>
+                  </td>
+                  <td className="px-3 py-1.5 text-terminal-muted">
+                    {y.sector}
+                  </td>
+                  <td className="px-3 py-1.5 font-data text-[10px]">
+                    {y.entryDate}
+                  </td>
+                  <td className="px-3 py-1.5 font-data text-[10px]">
+                    {y.expectedExitDate}
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-data">
+                    {y.daysOpen}
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-data">
+                    {fmtUSD(y.size)}
+                  </td>
+                  <td
+                    className={`px-3 py-1.5 text-right font-data ${(y.realizedPnL ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                  >
+                    {fmtUSD(y.realizedPnL ?? 0)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {opened.length > 0 && (
         <div className="mt-4 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
           <div className="px-3 pt-3 text-[10px] uppercase tracking-wider text-terminal-muted">
-            Positions opened in 2026
+            Positions OPENED in 2026 (still open, MTM)
           </div>
           <table className="w-full text-xs">
             <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">

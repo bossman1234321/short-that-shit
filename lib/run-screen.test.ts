@@ -82,7 +82,11 @@ describe("EXCLUDED_SECTORS", () => {
 describe("runScreen across all sectors", () => {
   it("matches eligible sector regardless of sector — no a-priori filter", async () => {
     // Every ticker has identical declining-revenue + high-D/E fundamentals.
-    // After removal of the sector exclusion, all five should match.
+    // After removal of the sector exclusion, all five qualify by rules.
+    // UTIL is currently REGIME-EXCLUDED through 2026-12-31 (AI / data-center
+    // boom invalidates the short thesis), so it surfaces with
+    // matched=false + regime_excluded flag, even though sector_ineligible
+    // remains false. The other four should match cleanly.
     vi.mocked(fetchFundamentals).mockImplementation(async (t: string) =>
       fund(t)
     );
@@ -90,12 +94,18 @@ describe("runScreen across all sectors", () => {
     const result = await runScreen({ kind: "fixed", value: 2.0 });
     const byTicker = Object.fromEntries(result.rows.map((r) => [r.ticker, r]));
 
-    for (const t of ["INDU", "TECH", "BANK", "REIT", "UTIL"]) {
+    for (const t of ["INDU", "TECH", "BANK", "REIT"]) {
       expect(byTicker[t].sectorIneligible).toBe(false);
       expect(byTicker[t].matched).toBe(true);
       expect(byTicker[t].flags).not.toContain("sector_ineligible");
     }
-    expect(result.matchedCount).toBe(5);
+    // UTIL: regime-excluded, so matched=false even though sector eligible
+    expect(byTicker.UTIL.sectorIneligible).toBe(false);
+    expect(byTicker.UTIL.regimeExcluded).toBe(true);
+    expect(byTicker.UTIL.matched).toBe(false);
+    expect(byTicker.UTIL.flags).toContain("regime_excluded");
+
+    expect(result.matchedCount).toBe(4);
   });
 
   it("universe-avg D/E is computed over the full universe", async () => {

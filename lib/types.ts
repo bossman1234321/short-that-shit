@@ -50,7 +50,8 @@ export type ScreenFlag =
   | "ocf_resilient"
   | "sector_ineligible"
   | "ttm_recovering"
-  | "ttm_accelerating";
+  | "ttm_accelerating"
+  | "regime_excluded";
 
 export type NegEquityType = "buyback_driven" | "buyback_winding_down" | "distress" | null;
 
@@ -105,6 +106,13 @@ export type ScreenRow = {
   // sectorIneligible: D/E is structurally meaningless for this sector
   // (Financials, Real Estate, Utilities) — match is suppressed by default.
   sectorIneligible: boolean;
+  // regimeExcluded: sector is currently in REGIME_EXCLUSIONS due to active
+  // macro conditions that invalidate the alpha thesis (e.g., Utilities
+  // during the 2026 AI / data-center boom). Match flag stays true but
+  // matched is forced false; UI renders with a warning badge + sunset date.
+  regimeExcluded: boolean;
+  regimeExclusionReason: string | null;
+  regimeExclusionUntil: string | null;
   matched: boolean;
   highConvictionMatched: boolean;
   flags: ScreenFlag[];
@@ -201,4 +209,33 @@ export type ScreenResult = {
   backtest: BacktestSummary | null;
   mlModel: MlMetadata | null;
   portfolio: PortfolioSummary | null;
+  guardrails: GuardrailState;
+};
+
+// Guardrails enforce the live deployment recommendations from the
+// stress-test review. Each rule maps to a check the UI surfaces; user
+// inputs (capital, borrow rates, checklist acks) are persisted in
+// localStorage on the client so they survive across sessions.
+export type GuardrailState = {
+  // Rule 1: position size as % of total trading capital (suggested cap 10%)
+  capitalCapPct: number;
+  // Rule 2: regime exclusions currently active
+  regimeExclusions: Array<{
+    sector: string;
+    reason: string;
+    until: string;
+    addedOn: string;
+  }>;
+  // Rule 4: max acceptable short-borrow rate before rejecting an entry
+  maxBorrowRate: number;
+  // Rule 5: stop-loss threshold on margin equity (NOT position)
+  marginEquityStopLossPct: number;
+  // Rule 6: forward paper-trade tracking gate
+  paperTradeRequiredDays: number;
+  paperTradeTrackingSince: string;
+  paperTradeDaysAccumulated: number;
+  paperTradeReady: boolean;
+  // Rule 7: ML score is for reference only (not decision input)
+  mlScoreDecisionUse: boolean;
+  mlTestAuc: number | null;
 };

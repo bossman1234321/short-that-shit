@@ -2369,10 +2369,18 @@ async function main() {
     unrealizedMtmRet: number | null;
     pnlAsOfToday: number;
   };
+  // Track ALL 2026 P&L: positions opened in 2026 (still open) + positions
+  // that EXITED in 2026 (opened in earlier years, P&L lands in 2026).
+  // Earlier we only tracked opened-in-2026, hiding the CCI 2025→2026 exit
+  // that contributed +$9,327 to the calendar year.
+  const ytd2026Opened: YtdEntry[] = [];
+  const ytd2026Exited: YtdEntry[] = [];
   const ytd2026: YtdEntry[] = [];
   let total2026PnL = 0;
   for (const p of headlineResult.positions) {
-    if (!p.entryDate.startsWith("2026")) continue;
+    const openedIn2026 = p.entryDate.startsWith("2026");
+    const exitedIn2026 = p.exitDate.startsWith("2026");
+    if (!openedIn2026 && !exitedIn2026) continue;
     const realized = p.exitDate <= today;
     let unrealizedPnL: number | null = null;
     let unrealizedRet: number | null = null;
@@ -2394,8 +2402,12 @@ async function main() {
       }
     }
     const pnlAsOfToday = realized ? p.pnl : unrealizedPnL ?? 0;
-    total2026PnL += pnlAsOfToday;
-    ytd2026.push({
+    // For total 2026 P&L: count exits booked in 2026 + MTM of 2026-opened
+    // positions (still open). Don't double-count cross-year positions.
+    if (exitedIn2026) total2026PnL += p.pnl;
+    if (openedIn2026 && !exitedIn2026) total2026PnL += pnlAsOfToday;
+
+    const entry: YtdEntry = {
       ticker: p.ticker,
       sector: p.sector,
       entryDate: p.entryDate,
@@ -2411,7 +2423,10 @@ async function main() {
       unrealizedMtmPnL: unrealizedPnL,
       unrealizedMtmRet: unrealizedRet,
       pnlAsOfToday,
-    });
+    };
+    if (openedIn2026) ytd2026Opened.push(entry);
+    if (exitedIn2026) ytd2026Exited.push(entry);
+    ytd2026.push(entry); // legacy field kept for backward-compat
   }
   // Also collect 2026 candidate events that DID trigger the screen but
   // failed the headline filter — helpful for transparency on why the
@@ -3179,6 +3194,8 @@ async function main() {
         tailRisk,
         calibration: calibBuckets,
         ytd2026,
+        ytd2026Opened,
+        ytd2026Exited,
         ytd2026Total: total2026PnL,
         ytd2026Candidates,
         regimes,

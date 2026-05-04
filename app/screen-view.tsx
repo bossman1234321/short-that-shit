@@ -264,6 +264,7 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
       <Header data={data} />
 
       <TradeGate data={data} />
+      <GuardrailsBar data={data} />
 
       <FilterBar
         data={data}
@@ -444,6 +445,232 @@ function TradeGate({ data }: { data: ScreenResult }) {
             trades until the strategy clears the threshold.
           </span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Persisted user inputs for guardrails (capital, borrow rates, checklist
+// state). Stored in localStorage so the gates survive across sessions.
+function useLocalStorageState<T>(key: string, initial: T): [T, (v: T) => void] {
+  const [v, setV] = useState<T>(initial);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw != null) setV(JSON.parse(raw) as T);
+    } catch {}
+  }, [key]);
+  const setter = (nv: T) => {
+    setV(nv);
+    try {
+      localStorage.setItem(key, JSON.stringify(nv));
+    } catch {}
+  };
+  return [v, setter];
+}
+
+// GuardrailsBar enforces the seven stress-test recommendations. Each rule
+// is either auto-evaluated from server data (regime exclusions, paper-
+// trade days, ML test AUC) or backed by user input persisted client-side
+// (capital, borrow rates, checklist acks). When any rule fails, real
+// trade signals downgrade visually and a "PRE-TRADE BLOCKED" indicator
+// shows above the matched names.
+function GuardrailsBar({ data }: { data: ScreenResult }) {
+  const g = data.guardrails;
+  const [capital, setCapital] = useLocalStorageState<number>(
+    "stt:capital",
+    100_000
+  );
+  const [checklistAcked, setChecklistAcked] = useLocalStorageState<{
+    stopLoss: boolean;
+    borrowVerified: boolean;
+    paperReady: boolean;
+    mlNotUsed: boolean;
+  }>("stt:checklist", {
+    stopLoss: false,
+    borrowVerified: false,
+    paperReady: false,
+    mlNotUsed: false,
+  });
+  const [showPanel, setShowPanel] = useState<boolean>(false);
+
+  const fmtPctNoSign = (n: number) => `${(n * 100).toFixed(0)}%`;
+  const recommendedSize = capital * g.capitalCapPct;
+  const allChecked =
+    checklistAcked.stopLoss &&
+    checklistAcked.borrowVerified &&
+    checklistAcked.paperReady &&
+    checklistAcked.mlNotUsed;
+
+  const ruleStatuses: Array<{
+    key: string;
+    label: string;
+    ok: boolean;
+    detail: string;
+  }> = [
+    {
+      key: "capital",
+      label: `1) Position size ≤ ${fmtPctNoSign(g.capitalCapPct)} of capital`,
+      ok: capital > 0,
+      detail: capital > 0
+        ? `$${recommendedSize.toLocaleString()} max per trade on $${capital.toLocaleString()} stated capital`
+        : "set your total trading capital below",
+    },
+    {
+      key: "regime",
+      label: `2) Regime exclusions active (${g.regimeExclusions.length})`,
+      ok: true,
+      detail:
+        g.regimeExclusions.length > 0
+          ? g.regimeExclusions
+              .map((r) => `${r.sector} until ${r.until}`)
+              .join(", ")
+          : "none",
+    },
+    {
+      key: "borrow",
+      label: `4) Reject if borrow > ${fmtPctNoSign(g.maxBorrowRate)}`,
+      ok: checklistAcked.borrowVerified,
+      detail: "verify per-name borrow rate before entry",
+    },
+    {
+      key: "stop",
+      label: `5) Margin-equity stop at ${fmtPctNoSign(g.marginEquityStopLossPct)}`,
+      ok: checklistAcked.stopLoss,
+      detail:
+        "place a hard stop at -20% of margin equity (NOT position) before opening any trade",
+    },
+    {
+      key: "paper",
+      label: `6) Paper-trade ${g.paperTradeRequiredDays} days before live`,
+      ok: g.paperTradeReady,
+      detail: `${g.paperTradeDaysAccumulated} / ${g.paperTradeRequiredDays} days accumulated since ${g.paperTradeTrackingSince}`,
+    },
+    {
+      key: "ml",
+      label: "7) ML score is reference-only",
+      ok: !g.mlScoreDecisionUse,
+      detail: g.mlTestAuc != null
+        ? `model test AUC ${g.mlTestAuc.toFixed(2)} — do not use as decision input`
+        : "model AUC unknown",
+    },
+  ];
+
+  const failingCount = ruleStatuses.filter((r) => !r.ok).length;
+
+  return (
+    <div className="border-b border-terminal-border bg-terminal-panel/40">
+      <div className="mx-auto max-w-[1400px] px-6 py-2 text-xs">
+        <div className="flex flex-wrap items-center gap-3">
+          <span
+            className={`rounded px-2 py-0.5 font-data text-[10px] uppercase ${failingCount === 0 ? "bg-emerald-700 text-white" : "bg-amber-accent text-terminal-bg"}`}
+          >
+            guardrails {failingCount === 0 ? "✓ all green" : `${failingCount} pending`}
+          </span>
+          <span className="text-terminal-muted">
+            paper trade <span className="font-data">{g.paperTradeDaysAccumulated}</span>/<span className="font-data">{g.paperTradeRequiredDays}</span>d
+          </span>
+          <span className="text-terminal-muted">
+            cap{" "}
+            <input
+              type="number"
+              min="0"
+              value={capital}
+              onChange={(e) => setCapital(Number(e.target.value) || 0)}
+              className="w-24 rounded border border-terminal-border bg-terminal-bg px-1 py-0.5 font-data text-[11px] text-terminal-fg focus:border-amber-accent focus:outline-none"
+            />{" "}
+            → max <span className="font-data text-amber-accent">${recommendedSize.toLocaleString()}</span>/pos
+          </span>
+          {g.regimeExclusions.length > 0 && (
+            <span className="text-purple-400">
+              regime: {g.regimeExclusions.map((r) => r.sector).join(", ")}{" "}
+              excluded
+            </span>
+          )}
+          <button
+            onClick={() => setShowPanel(!showPanel)}
+            className="ml-auto rounded border border-terminal-border px-2 py-0.5 text-[10px] uppercase tracking-wider text-terminal-muted hover:text-amber-accent hover:border-amber-accent"
+          >
+            {showPanel ? "hide" : "show"} pre-trade checklist
+          </button>
+        </div>
+
+        {showPanel && (
+          <div className="mt-3 rounded border border-terminal-border bg-terminal-bg p-3">
+            <div className="mb-2 text-[10px] uppercase tracking-wider text-terminal-muted">
+              Pre-trade checklist (must all be acked before opening any
+              real-money position)
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              {ruleStatuses.map((r) => {
+                const interactiveKey =
+                  r.key === "stop"
+                    ? ("stopLoss" as const)
+                    : r.key === "borrow"
+                      ? ("borrowVerified" as const)
+                      : r.key === "ml"
+                        ? ("mlNotUsed" as const)
+                        : null;
+                const showCheckbox = interactiveKey != null;
+                return (
+                  <div
+                    key={r.key}
+                    className={`rounded border p-2 ${r.ok ? "border-emerald-700/40 bg-emerald-950/10" : "border-amber-accent/40 bg-amber-accent/5"}`}
+                  >
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span
+                        className={`font-data ${r.ok ? "text-emerald-400" : "text-amber-accent"}`}
+                      >
+                        {r.ok ? "✓" : "✗"}
+                      </span>
+                      <span className="font-medium">{r.label}</span>
+                      {showCheckbox && (
+                        <label className="ml-auto flex items-center gap-1 text-[10px] uppercase tracking-wider text-terminal-muted">
+                          <input
+                            type="checkbox"
+                            checked={
+                              checklistAcked[interactiveKey!]
+                            }
+                            onChange={(e) =>
+                              setChecklistAcked({
+                                ...checklistAcked,
+                                [interactiveKey!]: e.target.checked,
+                              })
+                            }
+                            className="accent-amber-accent"
+                          />
+                          ack
+                        </label>
+                      )}
+                    </div>
+                    <div className="mt-1 text-[10px] text-terminal-muted">
+                      {r.detail}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 text-[10px] text-terminal-muted">
+              {allChecked && g.paperTradeReady ? (
+                <span className="text-emerald-400">
+                  ✓ All gates passed — ok to open a real-money position at
+                  the recommended size.
+                </span>
+              ) : !g.paperTradeReady ? (
+                <span className="text-amber-accent">
+                  ⚠ Paper-trade window incomplete ({g.paperTradeDaysAccumulated}{" "}
+                  / {g.paperTradeRequiredDays} days). Stay on paper trades
+                  until the gate clears.
+                </span>
+              ) : (
+                <span className="text-amber-accent">
+                  ⚠ Some checklist items unacknowledged — do not open a
+                  real-money trade yet.
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -748,6 +975,7 @@ const FLAG_STYLE: Record<ScreenFlag, string> = {
   sector_ineligible: "border-slate-700 text-slate-400",
   ttm_recovering: "border-yellow-700 text-yellow-500",
   ttm_accelerating: "border-rose-700 text-rose-400",
+  regime_excluded: "border-purple-700 text-purple-400",
 };
 
 const FLAG_LABEL: Record<ScreenFlag, string> = {
@@ -761,6 +989,7 @@ const FLAG_LABEL: Record<ScreenFlag, string> = {
   sector_ineligible: "sector excl",
   ttm_recovering: "ttm ↑",
   ttm_accelerating: "ttm ↓↓",
+  regime_excluded: "regime ✋",
 };
 
 function Row({ row, dim }: { row: ScreenRow; dim: boolean }) {

@@ -3,6 +3,7 @@ import { buildRow, universeAverageDE } from "./screen";
 import { SP500_UNIVERSE, getSectorMap, type Sector } from "./universe";
 import type {
   BacktestSummary,
+  GuardrailState,
   MlMetadata,
   PortfolioStrategySummary,
   PortfolioSummary,
@@ -143,6 +144,47 @@ async function loadPortfolioSummary(): Promise<PortfolioSummary | null> {
   }
 }
 
+// Build the GuardrailState from disk + the trained ML model. Encodes the
+// stress-test recommendations into hard rules the UI can enforce.
+async function buildGuardrails(
+  model: ModelWeights | null
+): Promise<GuardrailState> {
+  // Paper-trade tracking: read trackingSince from the scaffolded file.
+  let trackingSince = "2026-05-03";
+  try {
+    const file = path.resolve(process.cwd(), "public/data/paper-trades.json");
+    const raw = await fs.readFile(file, "utf8");
+    const parsed = JSON.parse(raw) as { trackingSince?: string };
+    if (parsed.trackingSince) trackingSince = parsed.trackingSince;
+  } catch {
+    /* default already set */
+  }
+  const sinceMs = new Date(trackingSince).getTime();
+  const daysAccumulated = Math.max(
+    0,
+    Math.floor((Date.now() - sinceMs) / (24 * 3600 * 1000))
+  );
+  const required = 365;
+
+  return {
+    capitalCapPct: 0.10, // Rule 1: max 10% of total trading capital
+    regimeExclusions: REGIME_EXCLUSIONS.map((r) => ({
+      sector: r.sector,
+      reason: r.reason,
+      until: r.until,
+      addedOn: r.addedOn,
+    })),
+    maxBorrowRate: 0.05, // Rule 4: reject if borrow > 5%
+    marginEquityStopLossPct: 0.20, // Rule 5: -20% margin equity hard stop
+    paperTradeRequiredDays: required,
+    paperTradeTrackingSince: trackingSince,
+    paperTradeDaysAccumulated: daysAccumulated,
+    paperTradeReady: daysAccumulated >= required,
+    mlScoreDecisionUse: false, // Rule 7: ML is reference only
+    mlTestAuc: model?.testAuc ?? null,
+  };
+}
+
 function modelToMetadata(m: ModelWeights | null): MlMetadata | null {
   if (!m) return null;
   const ranked = m.features
@@ -162,15 +204,47 @@ function modelToMetadata(m: ModelWeights | null): MlMetadata | null {
   };
 }
 
-// Historically excluded sectors (Financials, Real Estate, Utilities) under
-// the a-priori argument that D/E is structurally high there by design (bank
-// deposits, REIT leverage, utility regulation). Empirically that didn't
-// hold: backtest showed Utilities (n=19, hit 63%) and REITs (n=3, hit 67%)
-// were *better* short setups than several included sectors, and Financials
-// (n=60) tracked the same as Industrials. Default exclusion is now empty;
-// the constant remains so the infrastructure can be re-armed if a future
-// study warrants it.
+// Historical sector-exclusion infrastructure (see audit history above).
+// Currently empty — empirical study said no sector is systematically bad.
 export const EXCLUDED_SECTORS: ReadonlyArray<Sector> = [];
+
+// Regime exclusions are TIME-BOUNDED suppressions of specific sectors
+// when the alpha thesis is materially threatened by current macro
+// conditions. Unlike EXCLUDED_SECTORS (a permanent filter), these expire
+// on `until` dates and force a re-review. Per the 2026-05-03 stress-test
+// review, Utilities are excluded through 2026 because the AI / data-center
+// power-demand boom has flipped the sector's "secular decline" thesis to
+// "secular growth", making the screen's short setups dangerous in that
+// sector specifically.
+export type RegimeExclusion = {
+  sector: Sector;
+  reason: string;
+  until: string; // YYYY-MM-DD inclusive
+  addedOn: string;
+};
+export const REGIME_EXCLUSIONS: ReadonlyArray<RegimeExclusion> = [
+  {
+    sector: "Utilities",
+    reason:
+      "AI / data-center power-demand boom has flipped sector thesis from secular decline to secular growth. Utility shorts likely fight a powerful tailwind through 2026.",
+    until: "2026-12-31",
+    addedOn: "2026-05-03",
+  },
+];
+
+function isRegimeExcluded(sector: Sector | undefined, asOf: Date): {
+  excluded: boolean;
+  reason?: string;
+  until?: string;
+} {
+  if (!sector) return { excluded: false };
+  for (const ex of REGIME_EXCLUSIONS) {
+    if (ex.sector !== sector) continue;
+    if (asOf > new Date(ex.until)) continue;
+    return { excluded: true, reason: ex.reason, until: ex.until };
+  }
+  return { excluded: false };
+}
 
 function isIneligible(
   sector: Sector | undefined,
@@ -210,6 +284,7 @@ export async function runScreen(
   const mlModel = await loadMlModel();
   const backtest = await loadBacktestSummary();
   const portfolio = await loadPortfolioSummary();
+  const guardrails = await buildGuardrails(mlModel);
 
   const universe = tickers
     ? tickers.map((t) => ({ ticker: t.toUpperCase(), sector: undefined as any }))
@@ -256,23 +331,53 @@ export async function runScreen(
 
   const thresholdValue = threshold.kind === "average" ? avg : threshold.value;
 
+  const now = new Date();
   const rows: ScreenRow[] = enriched.map((x) => {
     const row = buildRow(x.fundamentals, thresholdValue, {
       declineYears,
       sector: x.sector,
       model: mlModel,
     });
+    const regimeCheck = isRegimeExcluded(x.sector, now);
+
     if (x.ineligible) {
       return {
         ...row,
         sector: x.sector,
         sectorIneligible: true,
+        regimeExcluded: regimeCheck.excluded,
+        regimeExclusionReason: regimeCheck.reason ?? null,
+        regimeExclusionUntil: regimeCheck.until ?? null,
         matched: false,
         highConvictionMatched: false,
-        flags: [...row.flags, "sector_ineligible"],
+        flags: [
+          ...row.flags,
+          "sector_ineligible",
+          ...(regimeCheck.excluded ? (["regime_excluded"] as const) : []),
+        ],
       };
     }
-    return { ...row, sector: x.sector };
+    if (regimeCheck.excluded) {
+      // Sector currently regime-excluded → don't surface as matched even
+      // if the rules fire.
+      return {
+        ...row,
+        sector: x.sector,
+        regimeExcluded: true,
+        regimeExclusionReason: regimeCheck.reason ?? null,
+        regimeExclusionUntil: regimeCheck.until ?? null,
+        matched: false,
+        highConvictionMatched: false,
+        flags: [...row.flags, "regime_excluded"],
+      };
+    }
+    return {
+      ...row,
+      sector: x.sector,
+      regimeExcluded: false,
+      regimeExclusionReason: null,
+      regimeExclusionUntil: null,
+    };
   });
 
   rows.sort((a, b) => {
@@ -298,5 +403,6 @@ export async function runScreen(
     backtest,
     mlModel: modelToMetadata(mlModel),
     portfolio,
+    guardrails,
   };
 }
