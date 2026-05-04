@@ -598,9 +598,11 @@ function PaperTradeTracker() {
                         href={`https://finance.yahoo.com/quote/${encodeURIComponent(t.ticker)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:text-amber-accent hover:underline"
+                        title={`Open ${t.ticker} on Yahoo Finance`}
+                        className="text-amber-accent underline decoration-dotted underline-offset-2 hover:decoration-solid hover:text-amber-300"
                       >
                         {t.ticker}
+                        <span aria-hidden="true" className="ml-1 text-[9px]">↗</span>
                       </a>
                     </td>
                     <td className="px-3 py-1.5 text-terminal-muted">
