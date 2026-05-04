@@ -9,6 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "bake": "tsx scripts/build-cache.ts",
+    "notify:test": "tsx --env-file-if-exists=.env.local scripts/notify-test.ts",
+    "paper:update": "tsx --env-file-if-exists=.env.local scripts/paper-trade-update.ts",
+    "monthly:summary": "tsx --env-file-if-exists=.env.local scripts/monthly-summary.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
