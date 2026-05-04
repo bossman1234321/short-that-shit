@@ -146,6 +146,11 @@ export type StrategyMetrics = {
   pnlSkew: number;
   bootstrapCI95Lo: number | null;
   bootstrapCI95Hi: number | null;
+  equityCurve?: Array<{
+    date: string;
+    equity: number;
+    monthlyPnL: number;
+  }>;
 };
 
 export type PortfolioStrategySummary = {

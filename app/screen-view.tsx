@@ -265,6 +265,7 @@ export function ScreenView({ initial }: { initial: ScreenResult }) {
 
       <TradeGate data={data} />
       <GuardrailsBar data={data} />
+      <EquityComboChart data={data} />
 
       <FilterBar
         data={data}
@@ -671,6 +672,289 @@ function GuardrailsBar({ data }: { data: ScreenResult }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Combo chart: portfolio value as a line (left axis), per-month P&L as
+// bars (right axis). Renders the headline strategy's backtested equity
+// curve. Pure SVG — no chart library — to keep the terminal aesthetic
+// and avoid adding a dependency.
+function EquityComboChart({ data }: { data: ScreenResult }) {
+  // Pull the equity curve from the best-by-equity strategy's metrics.
+  const curve = data.portfolio?.bestByEquity?.metrics?.equityCurve ?? [];
+  const [hover, setHover] = useState<number | null>(null);
+  if (curve.length < 2) return null;
+
+  const W = 1300;
+  const H = 280;
+  const padL = 60;
+  const padR = 60;
+  const padT = 24;
+  const padB = 36;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+
+  const equityVals = curve.map((c) => c.equity);
+  const pnlVals = curve.map((c) => c.monthlyPnL);
+  const equityMin = Math.min(...equityVals, 10000);
+  const equityMax = Math.max(...equityVals);
+  const pnlAbsMax = Math.max(...pnlVals.map((v) => Math.abs(v)), 1);
+
+  const xAt = (i: number) =>
+    padL + (i / Math.max(1, curve.length - 1)) * innerW;
+  // Equity scale: linear, 10K→max
+  const yEquity = (v: number) =>
+    padT + innerH * (1 - (v - equityMin) / Math.max(1, equityMax - equityMin));
+  // P&L scale: symmetric around 0
+  const yPnL = (v: number) =>
+    padT + innerH / 2 - (v / pnlAbsMax) * (innerH / 2 - 8);
+
+  const linePath = curve
+    .map(
+      (c, i) =>
+        `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yEquity(c.equity).toFixed(1)}`
+    )
+    .join(" ");
+
+  const barW = Math.max(1, innerW / curve.length - 0.5);
+  const finalEquity = curve[curve.length - 1].equity;
+  const totalReturn = (finalEquity - 10000) / 10000;
+  const startDate = curve[0].date;
+  const endDate = curve[curve.length - 1].date;
+
+  // Year ticks for the x-axis
+  const yearTicks: Array<{ x: number; label: string }> = [];
+  let lastYear = "";
+  curve.forEach((c, i) => {
+    const y = c.date.slice(0, 4);
+    if (y !== lastYear) {
+      yearTicks.push({ x: xAt(i), label: y });
+      lastYear = y;
+    }
+  });
+
+  const fmtUSD = (n: number) => `$${Math.round(n).toLocaleString()}`;
+  const hoveredPoint = hover != null ? curve[hover] : null;
+
+  return (
+    <div className="border-b border-terminal-border bg-terminal-panel/40">
+      <div className="mx-auto max-w-[1400px] px-6 py-4">
+        <div className="mb-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h3 className="font-display text-base text-terminal-fg">
+            Headline backtest — equity curve &amp; monthly P&amp;L
+          </h3>
+          <span className="text-[11px] text-terminal-muted">
+            {startDate} → {endDate} · final{" "}
+            <span className="font-data text-amber-accent">
+              {fmtUSD(finalEquity)}
+            </span>{" "}
+            · total{" "}
+            <span className="font-data text-amber-accent">
+              {totalReturn >= 0 ? "+" : ""}
+              {(totalReturn * 100).toFixed(1)}%
+            </span>{" "}
+            · {data.portfolio?.bestByEquity?.name}
+          </span>
+        </div>
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          width="100%"
+          className="block max-h-[320px]"
+          onMouseLeave={() => setHover(null)}
+        >
+          {/* y-grid */}
+          {[0, 0.25, 0.5, 0.75, 1].map((p) => {
+            const y = padT + innerH * (1 - p);
+            const v = equityMin + p * (equityMax - equityMin);
+            return (
+              <g key={p}>
+                <line
+                  x1={padL}
+                  x2={W - padR}
+                  y1={y}
+                  y2={y}
+                  stroke="#1f2937"
+                  strokeWidth="0.5"
+                />
+                <text
+                  x={padL - 6}
+                  y={y + 3}
+                  fontSize="10"
+                  textAnchor="end"
+                  fill="#6b7280"
+                  fontFamily="ui-monospace, monospace"
+                >
+                  {fmtUSD(v)}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* zero-line for P&L axis */}
+          <line
+            x1={padL}
+            x2={W - padR}
+            y1={padT + innerH / 2}
+            y2={padT + innerH / 2}
+            stroke="#374151"
+            strokeWidth="0.5"
+            strokeDasharray="2 3"
+          />
+
+          {/* P&L axis labels (right) */}
+          <text
+            x={W - padR + 6}
+            y={padT + 6}
+            fontSize="10"
+            fill="#6b7280"
+            fontFamily="ui-monospace, monospace"
+          >
+            +{fmtUSD(pnlAbsMax)}
+          </text>
+          <text
+            x={W - padR + 6}
+            y={padT + innerH + 4}
+            fontSize="10"
+            fill="#6b7280"
+            fontFamily="ui-monospace, monospace"
+          >
+            -{fmtUSD(pnlAbsMax)}
+          </text>
+          <text
+            x={W - padR + 6}
+            y={padT + innerH / 2 + 4}
+            fontSize="10"
+            fill="#6b7280"
+            fontFamily="ui-monospace, monospace"
+          >
+            $0
+          </text>
+
+          {/* P&L bars */}
+          {curve.map((c, i) => {
+            if (c.monthlyPnL === 0) return null;
+            const zero = padT + innerH / 2;
+            const y2 = yPnL(c.monthlyPnL);
+            const y = Math.min(zero, y2);
+            const h = Math.abs(zero - y2);
+            const isPos = c.monthlyPnL > 0;
+            const fill = isPos ? "rgb(4 120 87 / 0.55)" : "rgb(185 28 28 / 0.55)";
+            return (
+              <rect
+                key={`bar-${i}`}
+                x={xAt(i) - barW / 2}
+                y={y}
+                width={barW}
+                height={Math.max(1, h)}
+                fill={fill}
+              />
+            );
+          })}
+
+          {/* Equity line */}
+          <path
+            d={linePath}
+            fill="none"
+            stroke="#f59e0b"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+
+          {/* Hover capture overlay */}
+          {curve.map((_, i) => (
+            <rect
+              key={`hover-${i}`}
+              x={xAt(i) - barW / 2}
+              y={padT}
+              width={barW}
+              height={innerH}
+              fill="transparent"
+              onMouseEnter={() => setHover(i)}
+            />
+          ))}
+
+          {/* Hover indicator */}
+          {hoveredPoint != null && hover != null && (
+            <>
+              <line
+                x1={xAt(hover)}
+                x2={xAt(hover)}
+                y1={padT}
+                y2={padT + innerH}
+                stroke="#f59e0b"
+                strokeWidth="0.5"
+                strokeDasharray="3 2"
+                opacity="0.6"
+              />
+              <circle
+                cx={xAt(hover)}
+                cy={yEquity(hoveredPoint.equity)}
+                r="3"
+                fill="#f59e0b"
+                stroke="#0b0d12"
+                strokeWidth="1"
+              />
+            </>
+          )}
+
+          {/* X-axis year labels */}
+          {yearTicks.map((t) => (
+            <text
+              key={t.label}
+              x={t.x}
+              y={H - 12}
+              fontSize="10"
+              textAnchor="middle"
+              fill="#6b7280"
+              fontFamily="ui-monospace, monospace"
+            >
+              {t.label}
+            </text>
+          ))}
+
+          {/* Frame */}
+          <rect
+            x={padL}
+            y={padT}
+            width={innerW}
+            height={innerH}
+            fill="none"
+            stroke="#1f2937"
+            strokeWidth="0.5"
+          />
+        </svg>
+
+        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-terminal-muted">
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-0.5 w-3 bg-amber-accent" />
+            portfolio value (left axis)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 bg-emerald-700/55" />
+            monthly P&amp;L positive (right axis)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 bg-red-700/55" />
+            monthly P&amp;L negative
+          </span>
+          {hoveredPoint && (
+            <span className="ml-auto font-data text-amber-accent">
+              {hoveredPoint.date} · equity {fmtUSD(hoveredPoint.equity)} · P&amp;L{" "}
+              <span
+                className={
+                  hoveredPoint.monthlyPnL >= 0
+                    ? "text-emerald-400"
+                    : "text-red-400"
+                }
+              >
+                {hoveredPoint.monthlyPnL >= 0 ? "+" : ""}
+                {fmtUSD(hoveredPoint.monthlyPnL)}
+              </span>
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

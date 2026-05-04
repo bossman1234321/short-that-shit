@@ -226,20 +226,18 @@ type StrategyMetrics = {
   pnlSkew: number;
   bootstrapCI95Lo: number | null;
   bootstrapCI95Hi: number | null;
-  // ─── New (2026-05-03): mark-to-market interim risk + tax/cost adj ─
-  // Interim peak-to-trough drawdown using monthly mark-to-market on open
-  // positions. Different from the exit-only `maxDrawdown` because it
-  // captures intra-trade swings that could trigger margin calls.
   interimMaxDrawdown: number | null;
-  // Worst monthly equity drop across the simulation (for sizing margin
-  // requirement intuition).
   worstMonthlyMtmReturn: number | null;
-  // Post-tax annualized return at three federal-marginal-rate scenarios.
-  // Short-sale P&L is always short-term gain (Section 1233) so taxed at
-  // ordinary income. Pair-trade SPY long held 12m = also short-term.
   postTaxAnnReturn22pct: number | null;
   postTaxAnnReturn32pct: number | null;
   postTaxAnnReturn37pct: number | null;
+  // Monthly equity curve and per-month P&L delta. Used by the home-page
+  // combo chart (line = portfolio value, bars = monthly P&L).
+  equityCurve: Array<{
+    date: string;        // YYYY-MM (first of month)
+    equity: number;      // cumulative portfolio equity
+    monthlyPnL: number;  // delta from prior month (0 if no exits closed this month)
+  }>;
 };
 
 type StrategyResult = {
@@ -300,9 +298,23 @@ function buildEquityCurve(
   const out: Array<{ date: string; equity: number }> = [];
   let equity = startBalance;
   let pIdx = 0;
-  // Iterate months from start to end inclusive
-  let cur = new Date(`${startMonth}-01`);
-  const last = new Date(`${endMonth}-01`);
+  // Iterate months from start to end inclusive. UTC-only Date math —
+  // local-TZ Date constructors caused the loop to terminate one month
+  // early when local offset put cur ahead of last in UTC ms.
+  let cur = new Date(
+    Date.UTC(
+      parseInt(startMonth.slice(0, 4), 10),
+      parseInt(startMonth.slice(5, 7), 10) - 1,
+      1
+    )
+  );
+  const last = new Date(
+    Date.UTC(
+      parseInt(endMonth.slice(0, 4), 10),
+      parseInt(endMonth.slice(5, 7), 10) - 1,
+      1
+    )
+  );
   while (cur <= last) {
     const ym = cur.toISOString().slice(0, 7);
     while (pIdx < sorted.length && sorted[pIdx].exitDate.slice(0, 7) <= ym) {
@@ -310,7 +322,9 @@ function buildEquityCurve(
       pIdx++;
     }
     out.push({ date: ym + "-01", equity });
-    cur = new Date(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 1);
+    cur = new Date(
+      Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 1)
+    );
   }
   return out;
 }
@@ -466,6 +480,7 @@ function computeMetrics(
       postTaxAnnReturn22pct: null,
       postTaxAnnReturn32pct: null,
       postTaxAnnReturn37pct: null,
+      equityCurve: [],
     };
   }
   const curve = buildEquityCurve(positions, startBalance);
@@ -616,6 +631,19 @@ function computeMetrics(
     return Math.pow(postTaxFinal / startBalance, 1 / totalYears) - 1;
   };
 
+  // Monthly equity curve with per-month P&L deltas — feeds the home-page
+  // combo chart. The equity curve we already built (`curve`) tracks
+  // running equity at each month; convert to (date, equity, monthlyPnL).
+  const equityCurveOut: StrategyMetrics["equityCurve"] = [];
+  for (let i = 0; i < curve.length; i++) {
+    const prev = i === 0 ? startBalance : curve[i - 1].equity;
+    equityCurveOut.push({
+      date: curve[i].date.slice(0, 7),
+      equity: curve[i].equity,
+      monthlyPnL: curve[i].equity - prev,
+    });
+  }
+
   return {
     sharpeRatio: sharpe,
     sortinoRatio: sortino,
@@ -636,6 +664,7 @@ function computeMetrics(
     postTaxAnnReturn22pct: postTaxAnn(0.22),
     postTaxAnnReturn32pct: postTaxAnn(0.32),
     postTaxAnnReturn37pct: postTaxAnn(0.37),
+    equityCurve: equityCurveOut,
   };
 }
 
