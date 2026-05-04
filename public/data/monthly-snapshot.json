@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-05-04T04:15:41.513Z",
+  "matchedTickers": [
+    "HPQ",
+    "MMM",
+    "MTB",
+    "PRU"
+  ],
+  "highConvictionTickers": [
+    "HPQ"
+  ],
+  "universeSize": 321,
+  "mlTestAuc": 0.3383838383838384,
+  "headlineFinalEquity": 32510.59530427769,
+  "headlineAnnualized": 0.08245479980007908
+}

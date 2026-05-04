@@ -20,9 +20,13 @@ import { notify } from "../lib/notify";
 import type { ScreenResult, MlMetadata, PortfolioSummary } from "../lib/types";
 
 const SITE_URL = process.env.SITE_URL ?? "https://short-that-shit.vercel.app";
+// Snapshot lives under public/data/ so it gets picked up by the routine's
+// `git add public/data/*.json` pattern and survives across cloud runs.
+// Without persistence the diff would always be a "first snapshot".
 const SNAPSHOT_PATH = path.resolve(
   process.cwd(),
-  ".cache",
+  "public",
+  "data",
   "monthly-snapshot.json"
 );
 
@@ -89,13 +93,14 @@ async function main() {
     console.error("[monthly-summary] screen.json not found; aborting.");
     process.exit(1);
   }
-  const portfolio = await loadJson<{ generatedAt: string; bestByEquity?: PortfolioSummary["bestByEquity"] }>(
-    "public/data/portfolio-sim.json"
-  );
+  // Read headline equity straight off the embedded portfolio summary in
+  // screen.json — it's the same object the UI footer renders so there's
+  // no schema drift risk. portfolio-sim.json has the same data nested
+  // differently and would need a separate adapter.
   const ml = await loadJson<MlMetadata>("public/data/ml-model.json");
 
-  const cur = buildSnapshot(screen, (portfolio as any) ?? null, ml);
-  const prev = await loadJson<Snapshot>(".cache/monthly-snapshot.json");
+  const cur = buildSnapshot(screen, screen.portfolio ?? null, ml);
+  const prev = await loadJson<Snapshot>("public/data/monthly-snapshot.json");
 
   let body: string;
   if (!prev) {
