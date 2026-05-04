@@ -1009,10 +1009,11 @@ function Row({ row, dim }: { row: ScreenRow; dim: boolean }) {
           href={`https://finance.yahoo.com/quote/${encodeURIComponent(row.ticker)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-amber-accent hover:underline"
-          title={`${row.ticker} on Yahoo Finance`}
+          title={`Open ${row.ticker} on Yahoo Finance`}
+          className="text-amber-accent underline decoration-dotted underline-offset-2 hover:decoration-solid hover:text-amber-300"
         >
           {row.ticker}
+          <span aria-hidden="true" className="ml-1 text-[9px]">↗</span>
         </a>
         {row.highConvictionMatched ? (
           <span

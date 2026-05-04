@@ -332,6 +332,25 @@ const fmtNum = (n: number | null | undefined, dp = 2): string => {
   return n.toFixed(dp);
 };
 
+// Reusable Yahoo Finance ticker link — visible by default (amber w/
+// dotted underline + ↗) so users can identify it as clickable without
+// hovering. Keep all in-table ticker references using this component
+// to prevent visual drift.
+function TickerLink({ ticker }: { ticker: string }) {
+  return (
+    <a
+      href={`https://finance.yahoo.com/quote/${encodeURIComponent(ticker)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`Open ${ticker} on Yahoo Finance`}
+      className="text-amber-accent underline decoration-dotted underline-offset-2 hover:decoration-solid hover:text-amber-300"
+    >
+      {ticker}
+      <span aria-hidden="true" className="ml-1 text-[9px]">↗</span>
+    </a>
+  );
+}
+
 function alphaColor(n: number | null | undefined, baseDim?: boolean): string {
   if (n == null) return "text-terminal-muted";
   if (n < -0.05) return "text-emerald-400";
@@ -594,16 +613,7 @@ function PaperTradeTracker() {
                     className="border-t border-terminal-border/50"
                   >
                     <td className="px-3 py-1.5 font-data font-semibold">
-                      <a
-                        href={`https://finance.yahoo.com/quote/${encodeURIComponent(t.ticker)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={`Open ${t.ticker} on Yahoo Finance`}
-                        className="text-amber-accent underline decoration-dotted underline-offset-2 hover:decoration-solid hover:text-amber-300"
-                      >
-                        {t.ticker}
-                        <span aria-hidden="true" className="ml-1 text-[9px]">↗</span>
-                      </a>
+                      <TickerLink ticker={t.ticker} />
                     </td>
                     <td className="px-3 py-1.5 text-terminal-muted">
                       {t.sector}
@@ -924,14 +934,7 @@ function Ytd2026Panel({ portfolio }: { portfolio: PortfolioFile }) {
                   className="border-t border-terminal-border/50"
                 >
                   <td className="px-3 py-1.5 font-data font-semibold">
-                    <a
-                      href={`https://finance.yahoo.com/quote/${encodeURIComponent(y.ticker)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-amber-accent hover:underline"
-                    >
-                      {y.ticker}
-                    </a>
+                    <TickerLink ticker={y.ticker} />
                   </td>
                   <td className="px-3 py-1.5 text-terminal-muted">
                     {y.sector}
@@ -1038,14 +1041,7 @@ function Ytd2026Panel({ portfolio }: { portfolio: PortfolioFile }) {
                 className="border-t border-terminal-border/50"
               >
                 <td className="px-3 py-1.5 font-data font-semibold">
-                  <a
-                    href={`https://finance.yahoo.com/quote/${encodeURIComponent(c.ticker)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-amber-accent hover:underline"
-                  >
-                    {c.ticker}
-                  </a>
+                  <TickerLink ticker={c.ticker} />
                 </td>
                 <td className="px-3 py-1.5 text-terminal-muted">{c.sector}</td>
                 <td className="px-3 py-1.5 font-data text-[10px]">
@@ -1698,14 +1694,7 @@ function PerTradeDetail({ portfolio }: { portfolio: PortfolioFile }) {
                   className="border-t border-terminal-border/50"
                 >
                   <td className="px-3 py-1.5 font-data font-semibold">
-                    <a
-                      href={`https://finance.yahoo.com/quote/${encodeURIComponent(p.ticker)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-amber-accent hover:underline"
-                    >
-                      {p.ticker}
-                    </a>
+                    <TickerLink ticker={p.ticker} />
                   </td>
                   <td className="px-3 py-1.5 text-terminal-muted">
                     {p.sector}
@@ -2996,14 +2985,7 @@ function Events({ backtest }: { backtest: BacktestFile }) {
                 className="border-t border-terminal-border/50"
               >
                 <td className="px-3 py-1.5 font-data font-semibold">
-                  <a
-                    href={`https://finance.yahoo.com/quote/${encodeURIComponent(e.ticker)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-amber-accent hover:underline"
-                  >
-                    {e.ticker}
-                  </a>
+                  <TickerLink ticker={e.ticker} />
                 </td>
                 <td className="px-3 py-1.5 text-terminal-muted">{e.sector}</td>
                 <td className="px-3 py-1.5 font-data text-[10px] text-terminal-muted">
