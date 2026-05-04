@@ -160,7 +160,7 @@
   "trainAuc": 0.8431372549019608,
   "testAuc": 0.3383838383838384,
   "trainSplitYearLt": 2020,
-  "trainedAt": "2026-05-04T01:23:36.541Z",
+  "trainedAt": "2026-05-04T04:49:20.681Z",
   "positiveLabelDef": "alpha1y < -0.05",
   "notes": "Logistic regression, L2=0.1, walk-forward split. Treat score as ranking signal, not calibrated probability."
 }
