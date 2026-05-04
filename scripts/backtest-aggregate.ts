@@ -32,11 +32,10 @@ const OUT_PATH = path.resolve(process.cwd(), "public/data/backtest.json");
 
 // Sector-exclusion mirror of EXCLUDED_SECTORS in lib/run-screen.ts. Kept
 // identical so backtest aggregates reflect the live default behavior.
-const EXCLUDED_SECTORS: ReadonlyArray<Sector> = [
-  "Financials",
-  "Real Estate",
-  "Utilities",
-];
+// Per the 2026-05-03 audit: lib version was emptied but this copy was
+// left populated, causing the `aggregates` view to drop Util/RE/Fin
+// while the live screen included them. Reset to match.
+const EXCLUDED_SECTORS: ReadonlyArray<Sector> = [];
 
 // ────────────────────────────────────────────────────────────────────────
 // EDGAR data: copy of the local helpers from scripts/backtest.ts. Kept

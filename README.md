@@ -28,15 +28,23 @@ model is then trained on the historical events with a **walk-forward train/test 
 candidates. Read the train/test AUCs in the footer before trusting the score; a
 small dataset means the test AUC is the only number that matters.
 
-**Portfolio simulator.** `scripts/portfolio-sim.ts` evaluates 25+ strategy variants
-against a $10,000 starting balance, walking actual Yahoo monthly bars per ticker
-to apply stop-loss / take-profit / max-hold logic. Key finding: **naked shorts on
-the screen lose money** (mean S&P stocks rise over time). **Pair trades** (short
-the matched name, long SPY for the same dollar amount) capture the alpha
-predicted by the screen *without* market-direction risk and produce $10K → $18K
-over 15 years (+5.3% annualized, 93% win rate, 1.8% max drawdown). The robustness
-check (excluding FY2019 events that caught the COVID crash) still produces +4.1%
-annualized — the alpha isn't entirely a one-time regime windfall.
+**Portfolio simulator.** `scripts/portfolio-sim.ts` evaluates 60+ strategy
+variants against a $10,000 starting balance, walking actual Yahoo monthly bars
+per ticker to apply stop-loss / take-profit / max-hold logic. Key finding:
+**naked shorts on the screen lose money** (mean S&P stocks rise over time).
+**Pair trades** (short the matched name, long SPY for the same dollar amount)
+capture the alpha predicted by the screen *without* market-direction risk.
+Current best results (16-year window 2010–2026 with delisted universe extension):
+
+- **Unleveraged headline**: $10K → $18,950 / **+4.5% annualized** / 100% win rate / ~0% drawdown — does not clear the 8% trade gate.
+- **Leveraged headline (2x portfolio margin)**: $10K → $34,683 / **+8.7% annualized** / 100% win rate / ~0% exit-only drawdown — clears the 8% gate.
+
+The 8% bar is enforced in the UI: when no strategy clears it, the trade-gate
+banner reads "DON'T TRADE"; when only a leveraged variant clears, "TRADE WITH
+MARGIN". A full evaluation review (Sharpe / Sortino / Calmar / bootstrap CI /
+p-value vs random / hyperparameter grid / ablation / regime-conditional /
+borrow + transaction-cost sensitivity / post-tax / interim mark-to-market
+drawdown / per-trade detail / causal-mechanism write-up) is at `/backtest`.
 
 **Levers**: D/E threshold (universe-avg / custom), conviction mode (matched / high-only),
 sector exclusion (financials/REITs/utilities default-off), TTM-confirmed filter,
