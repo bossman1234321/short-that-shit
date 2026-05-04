@@ -2349,6 +2349,272 @@ async function main() {
   );
   const tailRisk = { var95, var99, cvar95, cvar99 };
 
+  // ─── Walk-forward parameter optimization ──────────────────────────
+  // For each test year, optimize parameters using ONLY events filed in
+  // earlier years (no hindsight), then deploy those parameters on the
+  // test year. This is the most-honest out-of-sample test: every
+  // parameter choice is made with knowledge available at decision time.
+  console.log("\n=== walk-forward parameter optimization ===");
+  type WfYear = {
+    testYear: number;
+    trainNEvents: number;
+    bestParamsLabel: string;
+    trainAnnReturn: number;
+    testNTrades: number;
+    testPnL: number;
+    testEquityEnd: number;
+  };
+  const wfYearly: WfYear[] = [];
+
+  // Compact parameter grid: 12 combinations covering the headline-strategy
+  // dimensions that ablation flagged as most load-bearing.
+  const paramGrid: Array<{
+    label: string;
+    sectors: Sector[];
+    trailingMax: number;
+    holdMonths: 6 | 12 | 24;
+  }> = [];
+  const sectorOptions: Array<{ name: string; arr: Sector[] }> = [
+    { name: "Util+CS+RE", arr: ["Utilities", "Consumer Staples", "Real Estate"] },
+    { name: "Util+CS", arr: ["Utilities", "Consumer Staples"] },
+    { name: "CS+RE", arr: ["Consumer Staples", "Real Estate"] },
+    { name: "CS only", arr: ["Consumer Staples"] },
+  ];
+  for (const sec of sectorOptions) {
+    for (const tt of [-0.10, 0, 0.10]) {
+      paramGrid.push({
+        label: `${sec.name}, trail≤${(tt * 100).toFixed(0)}%`,
+        sectors: sec.arr,
+        trailingMax: tt,
+        holdMonths: 12,
+      });
+    }
+  }
+
+  let wfRunningEquity = STARTING_BALANCE;
+  for (let yr = 2014; yr <= 2026; yr++) {
+    const trainCutoff = `${yr}-01-01`;
+    const trainEvents = allEvents.filter((e) => e.filed < trainCutoff);
+    const testEvents = allEvents.filter(
+      (e) => e.filed >= trainCutoff && e.filed < `${yr + 1}-01-01`
+    );
+    if (trainEvents.length < 20) continue;
+
+    let best: { params: typeof paramGrid[number]; ann: number; n: number } | null = null;
+    for (const params of paramGrid) {
+      const cfg: StrategyConfig = {
+        name: `wf-${params.label}`,
+        description: "",
+        positionSize: 10000,
+        maxConcurrent: 1,
+        holdMonths: params.holdMonths,
+        stopLossPct: null,
+        takeProfitPct: null,
+        pairTrade: true,
+        pairLeverage: 2,
+        compoundFraction: 1.0,
+        filter: (e, ctx) =>
+          (params.sectors as readonly string[]).includes(e.sector) &&
+          !e.ocfDecline2y &&
+          (ctx.trailing6m == null || ctx.trailing6m <= params.trailingMax),
+      };
+      const r = await simulate(trainEvents, cfg, model, barsByTicker, wfModels, spyBars);
+      const ann = r.annualizedReturn ?? -1;
+      if (!best || ann > best.ann) {
+        best = { params, ann, n: r.nTaken };
+      }
+    }
+    if (!best) continue;
+
+    // Deploy best params on the test year
+    const cfg: StrategyConfig = {
+      name: `wf-deploy-${yr}`,
+      description: "",
+      positionSize: 10000,
+      maxConcurrent: 1,
+      holdMonths: best.params.holdMonths,
+      stopLossPct: null,
+      takeProfitPct: null,
+      pairTrade: true,
+      pairLeverage: 2,
+      compoundFraction: 1.0,
+      filter: (e, ctx) =>
+        (best!.params.sectors as readonly string[]).includes(e.sector) &&
+        !e.ocfDecline2y &&
+        (ctx.trailing6m == null || ctx.trailing6m <= best!.params.trailingMax),
+    };
+    const testResult = await simulate(
+      testEvents,
+      cfg,
+      model,
+      barsByTicker,
+      wfModels,
+      spyBars
+    );
+    const testPnL = testResult.finalEquity - STARTING_BALANCE;
+    wfRunningEquity += testPnL;
+    wfYearly.push({
+      testYear: yr,
+      trainNEvents: trainEvents.length,
+      bestParamsLabel: best.params.label,
+      trainAnnReturn: best.ann,
+      testNTrades: testResult.nTaken,
+      testPnL,
+      testEquityEnd: wfRunningEquity,
+    });
+    console.log(
+      `  ${yr}: train n=${String(trainEvents.length).padStart(3)} → best="${best.params.label}" trainAnn=${(best.ann * 100).toFixed(1).padStart(5)}% | test n=${testResult.nTaken} pnl=$${testPnL.toFixed(0).padStart(5)} cumEquity=$${wfRunningEquity.toFixed(0)}`
+    );
+  }
+  const wfYears =
+    wfYearly.length > 0
+      ? wfYearly[wfYearly.length - 1].testYear - wfYearly[0].testYear + 1
+      : 0;
+  const wfTotalReturn =
+    (wfRunningEquity - STARTING_BALANCE) / STARTING_BALANCE;
+  const wfAnn =
+    wfYears > 0 && 1 + wfTotalReturn > 0
+      ? Math.pow(1 + wfTotalReturn, 1 / wfYears) - 1
+      : 0;
+  console.log(
+    `  WALK-FORWARD TOTAL: $${wfRunningEquity.toFixed(0)} (${(wfTotalReturn * 100).toFixed(1)}%, ann ${(wfAnn * 100).toFixed(1)}% over ${wfYears}y)`
+  );
+  const walkForward = {
+    yearly: wfYearly,
+    finalEquity: wfRunningEquity,
+    totalReturn: wfTotalReturn,
+    annualizedReturn: wfAnn,
+    yearsCovered: wfYears,
+  };
+
+  // ─── Loosen-filter analysis ───────────────────────────────────────
+  // Sweep variants from strict (headline) → loose (more trades, lower
+  // per-event quality). Show whether alpha persists or collapses with
+  // broader inclusion.
+  console.log("\n=== loosen-filter analysis ===");
+  type LooseRow = {
+    label: string;
+    description: string;
+    nTrades: number;
+    annualizedReturn: number | null;
+    winRate: number;
+    maxDrawdown: number;
+    finalEquity: number;
+  };
+  const looseVariants: Array<{
+    label: string;
+    desc: string;
+    cfg: StrategyConfig;
+  }> = [
+    {
+      label: "headline (strict)",
+      desc: "winning sectors + no-ocf2y + anti-mom (≤0%)",
+      cfg: headlineCfg,
+    },
+    {
+      label: "drop anti-mom",
+      desc: "no anti-momentum filter",
+      cfg: {
+        ...headlineCfg,
+        filter: (e) =>
+          ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+          !e.ocfDecline2y,
+      },
+    },
+    {
+      label: "anti-mom ≤+10%",
+      desc: "loosen trailing-6m threshold to +10%",
+      cfg: {
+        ...headlineCfg,
+        filter: (e, ctx) =>
+          ["Utilities", "Consumer Staples", "Real Estate"].includes(e.sector) &&
+          !e.ocfDecline2y &&
+          (ctx.trailing6m == null || ctx.trailing6m <= 0.10),
+      },
+    },
+    {
+      label: "+ Tech & Comm",
+      desc: "expand sector list to include Technology & Communication Services",
+      cfg: {
+        ...headlineCfg,
+        filter: (e, ctx) =>
+          [
+            "Utilities",
+            "Consumer Staples",
+            "Real Estate",
+            "Technology",
+            "Communication Services",
+          ].includes(e.sector) &&
+          !e.ocfDecline2y &&
+          (ctx.trailing6m == null || ctx.trailing6m <= 0),
+      },
+    },
+    {
+      label: "all sectors",
+      desc: "no sector filter",
+      cfg: {
+        ...headlineCfg,
+        filter: (e, ctx) =>
+          !e.ocfDecline2y &&
+          (ctx.trailing6m == null || ctx.trailing6m <= 0),
+      },
+    },
+    {
+      label: "all sectors + drop ocf2y",
+      desc: "only anti-momentum filter remains",
+      cfg: {
+        ...headlineCfg,
+        filter: (_e, ctx) => ctx.trailing6m == null || ctx.trailing6m <= 0,
+      },
+    },
+    {
+      label: "broadest reasonable",
+      desc: "expanded sectors, no-ocf2y, allow trail-6m ≤ +10%",
+      cfg: {
+        ...headlineCfg,
+        filter: (e, ctx) =>
+          [
+            "Utilities",
+            "Consumer Staples",
+            "Real Estate",
+            "Technology",
+            "Communication Services",
+            "Materials",
+          ].includes(e.sector) &&
+          !e.ocfDecline2y &&
+          (ctx.trailing6m == null || ctx.trailing6m <= 0.10),
+      },
+    },
+    {
+      label: "no filter (gross)",
+      desc: "every base-screen trigger taken — quality test",
+      cfg: { ...headlineCfg, filter: () => true },
+    },
+  ];
+  const looseResults: LooseRow[] = [];
+  for (const v of looseVariants) {
+    const r = await simulate(
+      allEvents,
+      v.cfg,
+      model,
+      barsByTicker,
+      wfModels,
+      spyBars
+    );
+    looseResults.push({
+      label: v.label,
+      description: v.desc,
+      nTrades: r.nTaken,
+      annualizedReturn: r.annualizedReturn,
+      winRate: r.winRate,
+      maxDrawdown: r.maxDrawdown,
+      finalEquity: r.finalEquity,
+    });
+    console.log(
+      `  ${v.label.padEnd(28)} n=${String(r.nTaken).padStart(3)}  ann ${((r.annualizedReturn ?? 0) * 100).toFixed(1).padStart(5)}%  win ${((r.winRate ?? 0) * 100).toFixed(0).padStart(3)}%  DD ${(r.maxDrawdown * 100).toFixed(1).padStart(5)}%  final $${r.finalEquity.toFixed(0)}`
+    );
+  }
+
   // ─── 2026 YTD P&L ────────────────────────────────────────────────
   // Show positions the headline strategy would have opened in 2026, with
   // current mark-to-market for any still open. Useful to see the "live"
@@ -3193,6 +3459,8 @@ async function main() {
         subperiods,
         tailRisk,
         calibration: calibBuckets,
+        walkForward,
+        looseResults,
         ytd2026,
         ytd2026Opened,
         ytd2026Exited,

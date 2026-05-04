@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ModelWeights } from "@/lib/ml-score";
 
@@ -287,6 +287,30 @@ type PortfolioFile = {
     winRate: number;
     nTaken: number;
   };
+  walkForward?: {
+    yearly: Array<{
+      testYear: number;
+      trainNEvents: number;
+      bestParamsLabel: string;
+      trainAnnReturn: number;
+      testNTrades: number;
+      testPnL: number;
+      testEquityEnd: number;
+    }>;
+    finalEquity: number;
+    totalReturn: number;
+    annualizedReturn: number;
+    yearsCovered: number;
+  };
+  looseResults?: Array<{
+    label: string;
+    description: string;
+    nTrades: number;
+    annualizedReturn: number | null;
+    winRate: number;
+    maxDrawdown: number;
+    finalEquity: number;
+  }>;
 };
 
 const fmtPct = (n: number | null | undefined): string => {
@@ -330,6 +354,13 @@ export function BacktestReview({
       <main className="mx-auto max-w-[1400px] space-y-12 px-6 pb-24">
         {portfolio?.ytd2026Candidates && portfolio.ytd2026Candidates.length > 0 && (
           <Ytd2026Panel portfolio={portfolio} />
+        )}
+        <PaperTradeTracker />
+        {portfolio?.walkForward && (
+          <WalkForwardPanel portfolio={portfolio} />
+        )}
+        {portfolio?.looseResults && portfolio.looseResults.length > 0 && (
+          <LooseFilterPanel portfolio={portfolio} />
         )}
         {portfolio?.headline && (
           <HeadlineEvaluation portfolio={portfolio} />
@@ -443,6 +474,362 @@ function Header({
         </div>
       </div>
     </header>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function PaperTradeTracker() {
+  const [paper, setPaper] = useState<{
+    trackingSince: string;
+    lastUpdated: string;
+    trades: Array<{
+      ticker: string;
+      entityName: string;
+      sector: string;
+      entryDate: string;
+      expectedExitDate: string;
+      matchesHeadline: boolean;
+      matchedFilter: string;
+      matchExclusions: string[];
+      deAtEntry: number | null;
+      yoy_t_atEntry: number | null;
+      status: "open" | "closed";
+      currentMtmPnL: number | null;
+      realizedPnL: number | null;
+      realizedReturn: number | null;
+      exitDate: string | null;
+      notes: string;
+    }>;
+  } | null>(null);
+  useEffect(() => {
+    fetch("/data/paper-trades.json")
+      .then((r) => r.json())
+      .then(setPaper)
+      .catch(() => setPaper(null));
+  }, []);
+  if (!paper) return null;
+  const open = paper.trades.filter((t) => t.status === "open");
+  const closed = paper.trades.filter((t) => t.status === "closed");
+  const closedPnL = closed.reduce((a, t) => a + (t.realizedPnL ?? 0), 0);
+  const openMtmPnL = open.reduce((a, t) => a + (t.currentMtmPnL ?? 0), 0);
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Live forward paper-trade tracker
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        The credible out-of-sample test. Paper trades opened by the monthly
+        routine when the screen surfaces matched names. Each held 12 months,
+        marked-to-market between updates. After the first ~12 months we'll
+        have real out-of-sample data — independent of the in-sample backtest
+        that selected the strategy. Tracking since{" "}
+        <span className="font-data text-amber-accent">{paper.trackingSince}</span>
+        ; last updated{" "}
+        <span className="font-data text-amber-accent">{paper.lastUpdated}</span>
+        .
+      </p>
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className="rounded border border-amber-accent/40 bg-amber-accent/5 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-amber-accent">
+            Open trades
+          </div>
+          <div className="mt-1 font-data text-2xl text-amber-accent">
+            {open.length}
+          </div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            MTM P&amp;L:{" "}
+            <span className="font-data">
+              {openMtmPnL === 0 ? "—" : fmtUSD(openMtmPnL)}
+            </span>
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Closed trades
+          </div>
+          <div className="mt-1 font-data text-2xl">{closed.length}</div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            realized P&amp;L:{" "}
+            <span
+              className={`font-data ${closedPnL >= 0 ? "text-emerald-400" : "text-red-400"}`}
+            >
+              {fmtUSD(closedPnL)}
+            </span>
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Headline-pass / total
+          </div>
+          <div className="mt-1 font-data text-2xl">
+            {paper.trades.filter((t) => t.matchesHeadline).length}
+            <span className="text-terminal-muted"> / {paper.trades.length}</span>
+          </div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            base-screen matches included for transparency
+          </div>
+        </div>
+      </div>
+      {paper.trades.length > 0 && (
+        <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+          <table className="w-full text-xs">
+            <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+              <tr>
+                <th className="px-3 py-2 text-left">Ticker</th>
+                <th className="px-3 py-2 text-left">Sector</th>
+                <th className="px-3 py-2 text-left">Filter</th>
+                <th className="px-3 py-2 text-left">Entry</th>
+                <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-right">P&amp;L</th>
+                <th className="px-3 py-2 text-right">Return</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paper.trades.map((t, i) => {
+                const pnl =
+                  t.status === "closed" ? t.realizedPnL : t.currentMtmPnL;
+                return (
+                  <tr
+                    key={`${t.ticker}-${t.entryDate}-${i}`}
+                    className="border-t border-terminal-border/50"
+                  >
+                    <td className="px-3 py-1.5 font-data font-semibold">
+                      <a
+                        href={`https://finance.yahoo.com/quote/${encodeURIComponent(t.ticker)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-amber-accent hover:underline"
+                      >
+                        {t.ticker}
+                      </a>
+                    </td>
+                    <td className="px-3 py-1.5 text-terminal-muted">
+                      {t.sector}
+                    </td>
+                    <td className="px-3 py-1.5 text-[10px]">
+                      {t.matchesHeadline ? (
+                        <span className="text-emerald-400">headline ✓</span>
+                      ) : (
+                        <span className="text-amber-accent">base-screen</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 font-data text-[10px]">
+                      {t.entryDate}
+                    </td>
+                    <td
+                      className={`px-3 py-1.5 ${t.status === "closed" ? "text-terminal-muted" : "text-amber-accent"}`}
+                    >
+                      {t.status}
+                    </td>
+                    <td
+                      className={`px-3 py-1.5 text-right font-data ${pnl == null ? "text-terminal-muted" : pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                    >
+                      {pnl == null ? "—" : fmtUSD(pnl)}
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-data text-terminal-muted">
+                      {t.realizedReturn != null
+                        ? fmtPct(t.realizedReturn)
+                        : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        <span className="text-amber-accent">Note:</span> these paper trades
+        are tracked at $5K notional per leg, single-leg short (no SPY
+        hedge), no leverage. Used for forward-validation of the screen's
+        signal — not the same dollar P&amp;L that the headline strategy
+        would generate. Closed positions accumulate as a real out-of-sample
+        record over time.
+      </p>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function WalkForwardPanel({ portfolio }: { portfolio: PortfolioFile }) {
+  const wf = portfolio.walkForward!;
+  const headlineAnn = portfolio.headline?.annualizedReturn ?? 0;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Walk-forward parameter optimization
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        For each test year, parameters were optimized using <em>only</em>{" "}
+        events filed in earlier years (no hindsight), then deployed on the
+        test year. Sums per-year P&amp;L into a real out-of-sample track
+        record. Tests for hindsight bias in the kitchen-sink filter
+        selection.
+      </p>
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className="rounded border border-amber-accent/40 bg-amber-accent/5 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-amber-accent">
+            Walk-forward final
+          </div>
+          <div className="mt-1 font-data text-2xl text-amber-accent">
+            {fmtUSD(wf.finalEquity)}
+          </div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            ann{" "}
+            <span className="font-data">
+              {fmtPct(wf.annualizedReturn)}
+            </span>{" "}
+            over {wf.yearsCovered}y
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            In-sample headline
+          </div>
+          <div className="mt-1 font-data text-2xl">
+            {fmtPct(headlineAnn)}
+          </div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            for comparison — selected with hindsight
+          </div>
+        </div>
+        <div className="rounded border border-terminal-border bg-terminal-panel/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            Hindsight-bias estimate
+          </div>
+          <div className="mt-1 font-data text-2xl text-red-400">
+            {((headlineAnn - wf.annualizedReturn) * 100).toFixed(1)}pp
+          </div>
+          <div className="mt-1 text-[11px] text-terminal-muted">
+            in-sample minus walk-forward
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">Test year</th>
+              <th className="px-3 py-2 text-left">Best params (chosen on prior data)</th>
+              <th className="px-3 py-2 text-right">Train n</th>
+              <th className="px-3 py-2 text-right">Train ann</th>
+              <th className="px-3 py-2 text-right">Test trades</th>
+              <th className="px-3 py-2 text-right">Test P&amp;L</th>
+              <th className="px-3 py-2 text-right">Cum equity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {wf.yearly.map((y) => (
+              <tr key={y.testYear} className="border-t border-terminal-border/50">
+                <td className="px-3 py-1.5 font-data">{y.testYear}</td>
+                <td className="px-3 py-1.5 text-[11px]">{y.bestParamsLabel}</td>
+                <td className="px-3 py-1.5 text-right font-data text-terminal-muted">
+                  {y.trainNEvents}
+                </td>
+                <td className="px-3 py-1.5 text-right font-data text-terminal-muted">
+                  {fmtPct(y.trainAnnReturn)}
+                </td>
+                <td className="px-3 py-1.5 text-right font-data">
+                  {y.testNTrades}
+                </td>
+                <td
+                  className={`px-3 py-1.5 text-right font-data ${y.testPnL > 0 ? "text-emerald-400" : y.testPnL < 0 ? "text-red-400" : "text-terminal-muted"}`}
+                >
+                  {fmtUSD(y.testPnL)}
+                </td>
+                <td className="px-3 py-1.5 text-right font-data">
+                  {fmtUSD(y.testEquityEnd)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        <span className="text-amber-accent">Honest read:</span> walk-forward
+        annualized of <span className="font-data">{fmtPct(wf.annualizedReturn)}</span>{" "}
+        is <strong>~4pp below the in-sample headline</strong>. The strategy
+        produces real, modest, out-of-sample alpha — but ~half of the
+        in-sample number was hindsight fitting. Years with 0 test trades
+        reflect periods when no event matched the trained-best parameters;
+        the strategy is in cash by design.
+      </p>
+    </section>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+function LooseFilterPanel({ portfolio }: { portfolio: PortfolioFile }) {
+  const items = portfolio.looseResults!;
+  return (
+    <section>
+      <h2 className="font-display text-xl text-terminal-fg">
+        Loosen-filter analysis
+      </h2>
+      <p className="mt-1 text-xs text-terminal-muted">
+        How does alpha change as we relax the strict headline filter? Each
+        row represents a different filter strictness. Look for the variant
+        that maximizes <em>both</em> annualized return and trade count
+        (the latter tightens our statistical confidence).
+      </p>
+      <div className="mt-3 overflow-x-auto rounded border border-terminal-border bg-terminal-panel/30">
+        <table className="w-full text-xs">
+          <thead className="text-[10px] uppercase tracking-wider text-terminal-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">Variant</th>
+              <th className="px-3 py-2 text-right">n trades</th>
+              <th className="px-3 py-2 text-right">Annualized</th>
+              <th className="px-3 py-2 text-right">Win rate</th>
+              <th className="px-3 py-2 text-right">Max DD</th>
+              <th className="px-3 py-2 text-right">Final $</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((r, i) => (
+              <tr
+                key={`${r.label}-${i}`}
+                className={`border-t border-terminal-border/50 ${i === 0 ? "bg-amber-accent/10" : ""}`}
+              >
+                <td className="px-3 py-1.5">
+                  <div className="font-data">{r.label}</div>
+                  <div className="text-[10px] text-terminal-muted">
+                    {r.description}
+                  </div>
+                </td>
+                <td className="px-3 py-1.5 text-right font-data">
+                  {r.nTrades}
+                </td>
+                <td
+                  className={`px-3 py-1.5 text-right font-data ${(r.annualizedReturn ?? 0) >= 0.08 ? "text-emerald-400" : (r.annualizedReturn ?? 0) >= 0 ? "text-amber-accent" : "text-red-400"}`}
+                >
+                  {fmtPct(r.annualizedReturn)}
+                </td>
+                <td className="px-3 py-1.5 text-right font-data">
+                  {fmtPctNoSign(r.winRate)}
+                </td>
+                <td
+                  className={`px-3 py-1.5 text-right font-data ${r.maxDrawdown < -0.05 ? "text-red-400" : "text-terminal-muted"}`}
+                >
+                  {fmtPct(r.maxDrawdown)}
+                </td>
+                <td className="px-3 py-1.5 text-right font-data">
+                  {fmtUSD(r.finalEquity)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-terminal-muted">
+        <span className="text-amber-accent">Honest read:</span> the headline
+        strict filter survives broader inclusion — adding Tech &amp;
+        Communication Services to the sector list <em>increases</em>
+        annualized to ~12% and triples trade count to 9 (still 100% win).
+        Dropping the anti-momentum filter collapses alpha hard (≤2.2%
+        ann), confirming the trailing-6m rule is doing real work.
+        Dropping all filters = full strategy collapse to negative alpha.
+      </p>
+    </section>
   );
 }
 
