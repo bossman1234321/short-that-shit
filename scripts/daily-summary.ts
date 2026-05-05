@@ -16,9 +16,11 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { notify } from "../lib/notify";
+import type { MlMetadata } from "../lib/types";
 
 const SITE_URL = process.env.SITE_URL ?? "https://short-that-shit.vercel.app";
 const PAPER_PATH = path.resolve(process.cwd(), "public", "data", "paper-trades.json");
+const ML_PATH = path.resolve(process.cwd(), "public", "data", "ml-model.json");
 const POSITION_SIZE = 10000; // $10K per paper trade — same as paper-trade-update.ts
 
 type Bar = { date: string; close: number };
@@ -48,6 +50,24 @@ type PaperTradeFile = {
   lastUpdated: string;
   trades: PaperTrade[];
 };
+
+// Compare against UTC calendar day (not business day) so a monthly retrain
+// that fires on a weekend still shows the badge in that day's digest.
+async function readMlLine(): Promise<string | null> {
+  let ml: MlMetadata;
+  try {
+    ml = JSON.parse(await fs.readFile(ML_PATH, "utf8")) as MlMetadata;
+  } catch {
+    return null;
+  }
+  const trainedDate = ml.trainedAt.slice(0, 10);
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  const auc = ml.testAuc.toFixed(2);
+  if (trainedDate === todayUtc) {
+    return `🤖 ML retrained today · test AUC ${auc} (n=${ml.testSize} test, ${ml.trainSize} train)`;
+  }
+  return `🤖 ML test AUC ${auc} · last trained ${trainedDate}`;
+}
 
 function snapToBusinessDay(iso: string): string {
   const d = new Date(iso + "T00:00:00Z");
@@ -114,9 +134,14 @@ async function main() {
   const raw = await fs.readFile(PAPER_PATH, "utf8");
   const paper = JSON.parse(raw) as PaperTradeFile;
 
+  const mlLine = await readMlLine();
+
   const openTrades = paper.trades.filter((t) => t.status === "open");
   if (openTrades.length === 0) {
-    const msg = `📊 *Daily summary — ${today}*\nNo open paper trades.\n[Open dashboard](${SITE_URL})`;
+    const parts = [`📊 *Daily summary — ${today}*`, `No open paper trades.`];
+    if (mlLine) parts.push(mlLine);
+    parts.push(`[Open dashboard](${SITE_URL})`);
+    const msg = parts.join("\n");
     console.log(msg);
     await notify(msg);
     return;
@@ -243,6 +268,7 @@ async function main() {
       lines.push(`Biggest mover today: *${biggest.trade.ticker}* ${sign}${(biggest.todayMove * 100).toFixed(1)}%`);
     }
   }
+  if (mlLine) lines.push(mlLine);
   lines.push(`[Open dashboard](${SITE_URL})`);
   const body = lines.join("\n");
   console.log(body);
