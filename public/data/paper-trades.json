@@ -1,7 +1,7 @@
 {
   "_doc": "Live forward paper-trade tracker. Populated/updated by scripts/paper-trade-update.ts (run via the monthly routine). Each entry records entry date, ticker, sector, headline-filter status, and gets marked-to-market over time. After 12 months a trade closes and realized P&L is recorded.",
   "trackingSince": "2026-05-01",
-  "lastUpdated": "2026-06-25",
+  "lastUpdated": "2026-06-26",
   "trades": [
     {
       "ticker": "PRU",
